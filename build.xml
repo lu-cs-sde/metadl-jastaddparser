@@ -37,13 +37,15 @@
 			</fileset>
 			
     	</jastadd>
-		<!--
+		
 		<jflex 
 			file  = "parser/Grammar.flex" 
 			nobak = "yes" />
 		
 		<java 
-			classpath = "tools/JastAddParser.jar:tools/beaver-rt.jar" 
+			fork      = "true"
+			dir		  = "${basedir}"
+			classpath = "${basedir}:tools/JastAddParser.jar:tools/beaver-rt.jar" 
 			classname = "Main" >
 			<arg line = "parser/GrammarParser.jastadd parser/GrammarParser.beaver" />
 		</java>
@@ -60,7 +62,7 @@
     		srcdir    = "." 
     		includes  = "**/*.java" 
     		classpath = "tools/beaver-rt.jar:." />
-		-->
+		
 	</target>
 	
 	
