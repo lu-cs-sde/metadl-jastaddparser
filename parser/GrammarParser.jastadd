@@ -1,0 +1,80 @@
+/*
+ * The JastAdd Extensible Java Compiler (http://jastadd.org) is covered
+ * by the modified BSD License. You should have received a copy of the
+ * modified BSD license with this compiler.
+ * 
+ * Copyright (c) 2005-2008, Torbjorn Ekman
+ * All rights reserved.
+ */
+
+
+%header {:
+/* source is GrammarParser.jastadd */
+ package parser;
+ import AST.*;
+:};
+%embed {:
+	/* comment */
+:};
+
+Grammar grammar = 
+  clause+                         {: return new Grammar(clause); :}
+  ;
+
+Clause clause =
+    declaration
+  | rule
+  | goal
+  ;
+
+Goal goal =
+  GOAL IDENT SEMI {: return new Goal(IDENT); :}
+  ;
+
+Declaration declaration	=
+    header                                   {: return header; :}
+  | class_code                               {: return class_code; :}
+  ;
+  
+Header header =
+  HEADER CODE SEMI                           {: return new Header(CODE); :}
+  ;
+
+ClassCode class_code = 
+  EMBED CODE SEMI                            {: return new ClassCode(CODE); :}
+  ;
+
+Rule rule =
+    idDecl IS def_list SEMI                  {: return new Rule(new Opt(), idDecl, def_list); :}
+	| idUse idDecl IS def_list SEMI            {: return new Rule(new Opt(idUse), idDecl, def_list); :}
+  | idDecl REPLACE def_list SEMI             {: return new ReplaceRule(new Opt(), idDecl, def_list); :}
+	| idUse idDecl REPLACE def_list SEMI       {: return new ReplaceRule(new Opt(idUse), idDecl, def_list); :}
+	;
+	
+List def_list	=
+    definition                               {: return new List().add(definition); :}
+	| def_list BAR definition                  {: return def_list.add(definition); :}
+	;
+
+Definition definition	=
+    def_element*                            {: return new Definition(def_element, ""); :}
+  | def_element* CODE                       {: return new Definition(def_element, CODE); :}
+	;
+
+Element def_element	=
+    idUse alias? QUESTION                    {: return new OptionalElement(idUse, alias); :}
+	| idUse alias? PLUS                        {: return new ListPlusElement(idUse, alias); :}
+	| idUse alias? STAR                        {: return new ListElement(idUse, alias); :}
+	| idUse alias?                             {: return new Element(idUse, alias); :}
+	;
+	
+IdUse alias	= 
+    DOT idUse                                {: return idUse; :} 
+  ;
+
+IdDecl idDecl = 
+    IDENT                                    {: return new IdDecl(IDENT); :}
+  ;
+IdUse idUse = 
+    IDENT                                    {: return new IdUse(IDENT); :} 
+  ;

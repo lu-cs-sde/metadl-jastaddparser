@@ -1,0 +1,77 @@
+<project name="JastAddParser" default="build">
+
+<property name="package" value="AST"/>
+	
+<taskdef name="jflex" classname="JFlex.anttask.JFlexTask" classpath="tools/JFlex.jar"/>
+<taskdef name="beaver" classname="beaver.comp.run.AntTask" classpath="tools/beaver.jar"/>
+<taskdef name="jastadd" classname="jastadd.JastAddTask" classpath="tools/jastadd2.jar"/>
+
+<target name="build">
+	<jflex file="parser/Grammar.flex" nobak="yes"/>
+	<java classpath="tools/JastAddParser.jar:tools/beaver-rt.jar" classname="Main">
+		<arg line="parser/GrammarParser.jastadd parser/GrammarParser.beaver"/>
+	</java>
+    <beaver file="parser/GrammarParser.beaver" terminalNames="yes" compress="no" useSwitch="yes"/>
+	<jastadd package="${package}" rewrite="true" beaver="true">
+		<fileset dir=".">
+			<include name="**/*.ast"/>
+			<include name="**/*.jrag"/>
+			<include name="**/*.jadd"/>
+		</fileset>
+    </jastadd>
+    <javac debug="true" srcdir="." includes="**/*.java" classpath="tools/beaver-rt.jar:."/>
+</target>
+	
+<target name="jar" depends="build">
+	<jar destfile="JastAddParser.jar" basedir="." includes="**/*.class">
+	 <manifest>
+	      <attribute name="Built-By" value="torbjorn@comlab.ox.ac.uk"/>
+        <attribute name="Main-Class" value="Main"/>
+	 </manifest>
+	</jar>
+</target>
+
+<target name="source" depends="build">
+   <jar destfile="JastAddParser-src.jar">
+			<fileset dir="..">
+				<include name="JastAddParser/Main.java"/>
+				<include name="JastAddParser/NameBinding.jrag"/>
+				<include name="JastAddParser/Grammar.ast"/>
+				<include name="JastAddParser/PrettyPrint.jrag"/>
+				<include name="JastAddParser/ErrorCheck.jrag"/>
+				<include name="JastAddParser/parser/GrammarParser.jastadd"/>
+				<include name="JastAddParser/parser/Grammar.flex"/>
+				<include name="JastAddParser/beaver/**/*.java"/>
+				<include name="JastAddParser/tools/*.jar"/>
+				<include name="JastAddParser/build.xml"/>
+				<include name="JastAddParser/licences/BSD"/>
+				<include name="JastAddParser/licences/CPL"/>
+				<include name="JastAddParser/licences/GPL"/>
+				<include name="JastAddParser/licences/LICENSE"/>
+      </fileset>
+      <manifest>
+      </manifest>
+    </jar>
+</target>
+	
+<target name="bootstrap" depends="build">
+	<echo>
+		Copying the generated jar-file to directory tools
+	</echo>
+	<copy file="JastAddParser.jar" todir="tools/" overwrite="true"/>
+</target>
+	
+<target name="clean">
+    <delete dir="${package}"/>
+    <delete file="parser/GrammarParser.beaver"/>
+    <delete file="parser/GrammarParser.java"/>
+    <delete file="parser/GrammarScanner.java"/>
+    <delete file="JastAddParser.jar"/>
+    <delete>
+      <fileset dir="." includes="**/*.class"/>
+    </delete>
+</target>
+
+
+
+</project>
