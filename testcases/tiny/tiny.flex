@@ -29,15 +29,12 @@ import tiny.parser.TestParser.Terminals;
   int strlit_start_line, strlit_start_column;
 
   private Symbol sym(short id) {
-    return new Symbol(id, yyline + 1, yycolumn + 1, len(), str());
+    return new Symbol(id, yyline + 1, yycolumn + 1, yylength(), yytext());
   }
 
   private Symbol sym(short id, String value) {
-    return new Symbol(id, yyline + 1, yycolumn + 1, len(), value);
+    return new Symbol(id, yyline + 1, yycolumn + 1, yylength(), value);
   }
-
-  private String str() { return yytext(); }
-  private int len() { return yylength(); }
 
   private void error(String msg) throws Scanner.Exception {
     throw new Scanner.Exception(yyline + 1, yycolumn + 1, msg);
@@ -52,6 +49,6 @@ TerminalName = [A-Za-z] [A-Za-z0-9]*
 
 <YYINITIAL> {
 	    {WhiteSpace}	{}
-	    {TerminalName}	{ return sym(Terminals.TERMINAL, str()); }
-	    . | \n		{ error("Error: " + str()); }
+	    {TerminalName}	{ return sym(Terminals.TERMINAL, yytext()); }
+	    .				{ error("Error: " + yytext()); }
 }
