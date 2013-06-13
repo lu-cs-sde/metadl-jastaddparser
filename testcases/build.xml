@@ -1,0 +1,95 @@
+<project name="JastAddParser tests" default="test">
+	
+	<property name="test.dir" location="${basedir}/../testcases"/>
+	<property name="gen.dir" location="${basedir}/../gen"/>
+	<property name="bin.dir" location="${basedir}/../bin"/>
+	<property name="tools.dir" location="${basedir}/../tools"/>
+	
+	<!-- define scanner generator task -->
+	<taskdef name="jflex" classname="JFlex.anttask.JFlexTask"
+		classpath="${tools.dir}/JFlex.jar"/>
+
+	<!-- parser generator task -->
+	<taskdef name="beaver" classname="beaver.comp.run.AntTask"
+		classpath="${tools.dir}/beaver.jar"/>
+
+	<!-- jastadd task -->
+	<taskdef name="jastadd" classname="jastadd.JastAddTask"
+		classpath="${tools.dir}/jastadd2.jar"/>
+
+	<target name="build" description="generate test files">
+		<mkdir dir="${gen.dir}"/>
+		<input message="Test name"
+			addproperty="testname"
+			defaultvalue="small"/>
+		
+		<!-- Generate AST classes and weave aspects -->
+		<jastadd
+			package="${testname}.ast"
+			outdir="${gen.dir}"
+			beaver="true">
+			<fileset dir="${test.dir}/${testname}">
+				<include name="*.ast"/>
+				<include name="*.jadd"/>
+				<include name="*.jrag"/>
+			</fileset>
+		</jastadd>
+		
+		<!-- Generate scanner -->
+		<jflex
+			file="${test.dir}/${testname}/${testname}.flex"
+			outdir="${gen.dir}/${testname}/scanner"
+			nobak="yes"/>
+		
+		<!-- Generate parser specification -->
+		<concat destfile="${gen.dir}/${testname}/TestParser.all">
+			<!-- NOTE The order may be important; this needs fix -->
+			<fileset dir="${test.dir}/${testname}"
+				includes="*.parser" />
+		</concat>
+		
+		<java
+			fork="true"
+			classpath="${tools.dir}/JastAddParser.jar"
+			classname="Main">
+			<arg line="${gen.dir}/${testname}/TestParser.all ${gen.dir}/${testname}/TestParser.beaver"/>
+		</java>
+		
+		<!-- Generate parser -->
+		<mkdir dir="${gen.dir}/${testname}/parser"/>
+		<beaver file="${gen.dir}/${testname}/TestParser.beaver"
+					destdir="${gen.dir}/${testname}/parser"
+					terminalNames="yes"
+					compress="no"
+					useSwitch="yes"/>
+		
+		<!-- compile -->
+		<javac
+			debug="true"
+			srcdir="../gen"
+			includes="${testname}/**/*.java">
+			<classpath>
+				<pathelement path="${tools.dir}/beaver-rt.jar"/>
+			</classpath>
+		</javac>
+	</target>
+	
+	<target name="test" depends="build" description="run test">
+		<java classname="TestRunner" fork="true">
+			<classpath>
+				<pathelement path="${gen.dir}"/>
+				<pathelement path="${bin.dir}"/>
+			</classpath>
+			<arg value="${test.dir}"/>
+			<arg value="${testname}"/>
+		</java>
+	</target>
+
+	<target name="clean" description="remove generated source and class files">
+		<delete includeemptydirs="true">
+			<fileset dir="${gen.dir}" includes="**/*"/>
+		</delete>
+	</target>
+
+</project>
+

@@ -1,6 +1,10 @@
 /bin
 /gen
+/src/AST
+/src/parser
 /JastAddParser.jar
+*.beaver
+
 *#
 *~
 .#*

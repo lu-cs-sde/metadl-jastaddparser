@@ -1,9 +1,8 @@
 <project 
 	name    = "JastAddParser" 
-	default = "build" 
-	basedir = "." >
+	default = "build" >
 
-	<property name = "package" value = "AST" />	
+	<property name = "ASTPackage" value = "AST" />
 	
 	<taskdef 
 		name      = "jflex" 
@@ -22,15 +21,16 @@
 
 	
 	<target name = "build" >
+		<mkdir dir = "src/parser"/>
 
 		<jastadd 
-			package = "${package}" 
+			package = "${ASTPackage}" 
 			rewrite = "true" 
 			beaver  = "true"
-			outdir  = "."
+			outdir  = "src"
 			>
 			
-			<fileset dir = "." >
+			<fileset dir = "parser" >
 			<include name = "*.ast" />
 			<include name = "*.jrag" />
 			<include name = "*.jadd" />
@@ -40,28 +40,38 @@
 		
 		<jflex 
 			file  = "parser/Grammar.flex" 
+			outdir= "src/parser"
 			nobak = "yes" />
 		
 		<java 
 			fork      = "true"
-			dir		  = "${basedir}"
-			classpath = "${basedir}:tools/JastAddParser.jar:tools/beaver-rt.jar" 
+			classpath = "tools/JastAddParser.jar" 
 			classname = "Main" >
 			<arg line = "parser/GrammarParser.jastadd parser/GrammarParser.beaver" />
 		</java>
+		<!--java
+			classname="Main"
+			fork="true">
+			<classpath>
+				<pathelement path="tools/beaver.jar"/>
+			</classpath>
+			<arg line = "parser/GrammarParser.jastadd parser/GrammarParser.beaver" />
+		</java-->
 		
     	<beaver 
-    		file          = "parser/GrammarParser.beaver" 
+    		file          = "parser/GrammarParser.beaver"
+    		destdir		  = "src/parser"
     		compress      = "no" 
     		useSwitch     = "yes"
     		terminalNames = "yes" />
 		
-		
+	<mkdir  dir       = "bin" />
+	    
     	<javac 
     		debug     = "true" 
-    		srcdir    = "." 
-    		includes  = "**/*.java" 
-    		classpath = "tools/beaver-rt.jar:." />
+    		srcdir    = "src:test" 
+    		destdir   = "bin"
+    		includes  = "**/*.java" />
 		
 	</target>
 	
@@ -72,8 +82,11 @@
 		
 		<jar 
 			destfile = "JastAddParser.jar" 
-			basedir  = "." 
-			includes = "**/*.class" >
+			basedir  = "bin" 
+			includes = "**/*.class" 
+			excludes = "TestRunner.class"
+			
+			compress = "false">
 	 		
 	 		<manifest>
 	 		<attribute name = "Built-By" value = "${user.home}" />
@@ -89,7 +102,15 @@
 		depends = "build" >
 		
    		<jar destfile = "JastAddParser-src.jar" >
-			<fileset dir = ".." >
+   			<fileset dir = "." >
+   				<include name = "src/Main.java"/>
+   				  <include name = "src/beaver/**/*.java"/>
+   				<include name = "licenses/**/*" />
+   				<include name = "parser/**/*"/>
+   				<include name = "tools/**/*.jar"/>
+   				<include name = "build.xml"/>
+   			</fileset>
+			<!--fileset dir = ".." >
 				<include name = "JastAddParser/Main.java" />
 				<include name = "JastAddParser/NameBinding.jrag" />
 				<include name = "JastAddParser/Grammar.ast" />
@@ -104,7 +125,7 @@
 				<include name = "JastAddParser/licences/CPL" />
 				<include name = "JastAddParser/licences/GPL" />
 				<include name = "JastAddParser/licences/LICENSE" />
-      		</fileset>
+      		</fileset-->
       		<manifest></manifest>
     	</jar>
 		
@@ -113,9 +134,13 @@
 	
 	<target 
 		name    = "bootstrap" 
-		depends = "build" >
+		depends = "jar" >
 		
 		<echo>Copying the generated jar-file to directory tools</echo>
+		<!--copy
+			file = "tools/JastAddParser.jar"
+			tofile="tools/JastAddParser_old.jar"
+			overwrite="true"/-->
 		<copy 
 			file      = "JastAddParser.jar" 
 			todir     = "tools/" 
@@ -127,14 +152,15 @@
 	<target	name = "clean" >
 		
 	    <delete file = "parser/GrammarParser.beaver" />
-	    <delete file = "parser/GrammarParser.java" />
-	    <delete file = "parser/GrammarScanner.java" />
+	    <delete dir = "src/parser" />
+	    <delete dir = "src/${ASTPackage}" />
 	    <delete file = "JastAddParser.jar" />
-    	<delete>
-    		<fileset dir = "." includes = "**/*.class" />
-    		<fileset dir = "${package}"  includes = "*.java" />
-    	</delete>
-		
+    	<delete dir = "bin"/>
+    	<ant antfile="testcases/build.xml" inheritAll="false" target="clean"/>
+	</target>
+	
+	<target name = "test" description="test JastAddParser" depends="jar,bootstrap">
+		<ant antfile="testcases/build.xml" inheritAll="false"/>
 	</target>
 
 </project>

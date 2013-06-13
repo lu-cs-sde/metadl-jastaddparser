@@ -1,0 +1,14 @@
+ExprTree ::= Expr;
+
+abstract Expr;
+abstract BinExpr : Expr ::= Left:Expr Right:Expr;
+AddExpr: BinExpr;
+SubExpr: BinExpr;
+MulExpr: BinExpr;
+DivExpr: BinExpr;
+
+abstract UnExpr: Expr;
+Num: UnExpr ::= <NUMBER>;
+IdUse: UnExpr ::= <IDENTIFIER>;
+
+ParExpr: Expr ::= Expr;
