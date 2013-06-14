@@ -1,0 +1,16 @@
+%header {:
+
+/*
+Comments, package declarations, import specifications etc.
+*/
+package declaration.parser;
+
+:};
+
+%embed {:
+
+/* This will be embedded in the parser class code by Beaver */
+
+:};
+
+non_terminal = TERMINAL; //JastAddParser requires at least one production

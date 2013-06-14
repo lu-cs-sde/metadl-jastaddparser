@@ -22,6 +22,8 @@ public class TestRunner {
 	 * @param genPath path for generated code
 	 */
 	public static void runTest(String testRoot, String testName, String genPath) {
+		File testGenDir = new File(genPath + '/' + testName);
+		testGenDir.mkdirs();
 		
 		invokeJastAdd(testRoot, testName, genPath);
 		boolean hasParser = invokeJFlex(testRoot, testName, genPath);
