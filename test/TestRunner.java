@@ -28,7 +28,9 @@ public class TestRunner {
 		invokeJastAdd(testRoot, testName, genPath);
 		boolean hasParser = invokeJFlex(testRoot, testName, genPath);
 		invokeJastAddParser(testRoot, testName, genPath);
-		invokeBeaver(testRoot, testName, genPath);
+		if (hasParser) {
+			invokeBeaver(testRoot, testName, genPath);
+		}
 		compileSourceFiles(testRoot, testName, genPath);
 		
 		if (hasParser) {
@@ -149,7 +151,7 @@ public class TestRunner {
 	 * @param errorMsg Error message for JUnit
 	 */
 	private static void executeCommand(String command, String errorMsg) {
-//		System.out.println(command);
+		System.out.println(command);
 		StringBuffer errors = new StringBuffer();
 		try {
 			Process p = Runtime.getRuntime().exec(command);
@@ -160,8 +162,13 @@ public class TestRunner {
 			}
 			err.close();
 			int exitValue = p.waitFor();
-			if (exitValue != 0) {
-				fail(errorMsg + ":\n" + errors);
+			if (errors.length() > 0) {
+				StringBuffer fullErrorMsg = new StringBuffer(errorMsg);
+				fullErrorMsg.append(":\n").append(errors);
+				if (exitValue != 0) {
+					fullErrorMsg.append("\nProcess exited with value ").append(exitValue);
+				}
+				fail(fullErrorMsg.toString());
 			}
 		} catch (IOException e) {
 			fail(errorMsg + ":\n" + e);

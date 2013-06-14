@@ -1,0 +1,3 @@
+parser input files can specify one or more %goal tags.
+
+JastAddParser will not complain if any of the specified goal productions do not exist. 

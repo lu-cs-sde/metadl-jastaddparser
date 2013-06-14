@@ -1,0 +1,7 @@
+%header {:
+package declaration.parser;
+:};
+
+%goal goal_production;
+%goal goal_production;
+%goal goal_production2;
