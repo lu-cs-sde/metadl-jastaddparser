@@ -49,15 +49,7 @@
 			classname = "Main" >
 			<arg line = "parser/GrammarParser.jastadd parser/GrammarParser.beaver" />
 		</java>
-		<!--java
-			classname="Main"
-			fork="true">
-			<classpath>
-				<pathelement path="tools/beaver.jar"/>
-			</classpath>
-			<arg line = "parser/GrammarParser.jastadd parser/GrammarParser.beaver" />
-		</java-->
-		
+
     	<beaver 
     		file          = "parser/GrammarParser.beaver"
     		destdir		  = "src/parser"
@@ -65,7 +57,7 @@
     		useSwitch     = "yes"
     		terminalNames = "yes" />
 		
-	<mkdir  dir       = "bin" />
+		<mkdir  dir       = "bin" />
 	    
     	<javac 
     		debug     = "true" 
