@@ -306,9 +306,15 @@ public class TestRunner {
 	 * @return 
 	 */
 	public static Collection<Object[]> getTests(File rootDir) {
+		System.out.println(rootDir);
 		Collection<Object[]> tests = new ArrayList<Object[]>();
 		boolean addedThis = false;
+		System.out.println(rootDir.listFiles());
+		File here = new File(".");
+		System.out.println(here.listFiles()[0]);
 		for (File f : rootDir.listFiles()) {
+			System.out.println("came here");
+			System.out.println(' '+f.toString());
 			if (f.isDirectory()) {
 				tests.addAll(getTests(f));
 			} else if (!addedThis && f.getName().endsWith(".parser")) {

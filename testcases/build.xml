@@ -18,11 +18,8 @@
 	<taskdef name="jastadd" classname="jastadd.JastAddTask"
 		classpath="${tools.dir}/jastadd2.jar"/>
 
-	<target name="build" description="generate test files">
+	<target name="build" description="build test classes">
 		<mkdir dir="${gen.dir}"/>
-		<input message="Test name"
-			addproperty="testname"
-			defaultvalue="small"/>
 		
 		<!--jastadd
 			package="${testname}.ast"
@@ -71,7 +68,7 @@
 	</target>
 	
 	<target name="test" depends="build" description="run test">
-		<java classname="TestRunner" fork="true">
+		<!--java classname="TestRunner" fork="true">
 			<classpath>
 				<pathelement path="${gen.dir}"/>
 				<pathelement path="${bin.dir}"/>
@@ -80,7 +77,15 @@
 			<arg value="${test.dir}"/>
 			<arg value="${testname}"/>
 			<arg value="${gen.dir}"/>
-		</java>
+		</java-->
+		<junit fork="yes" printsummary="yes" dir="${basedir}">
+			<classpath>
+				<pathelement location="${bin.dir}"/>
+				<pathelement location="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
+			</classpath>
+			<test name="TestJastAddParser"/>
+			<formatter type="xml"/>
+		</junit>
 	</target>
 
 	<target name="clean" description="remove generated source and class files">

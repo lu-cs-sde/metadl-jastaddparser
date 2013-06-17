@@ -4,6 +4,7 @@
 /src/parser
 /JastAddParser.jar
 *.beaver
+TEST*.xml
 
 *#
 *~
