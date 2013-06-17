@@ -4,10 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Scanner;
 
 //import beaver.Parser.Exception;
@@ -15,22 +15,22 @@ import java.util.Scanner;
 public class TestRunner {
 
 	/**
-	 * Build needed source files, compile and run test
+	 * Build necessary source files, compile and run test
 	 * 
 	 * @param testRoot common path to test input files
 	 * @param testName directory name of this test
-	 * @param genPath path for generated code
+	 * @param tmpRoot path for generated code
 	 */
-	public static void runTest(String testRoot, String testName, String genPath) {
-		File testGenDir = new File(genPath + '/' + testName);
-		testGenDir.mkdirs();
+	public static void runTest(String testRoot, String testName, String tmpRoot) {
+		File testTmpDir = new File(tmpRoot, testName);
+		testTmpDir.mkdirs();
 		
-		invokeJastAdd(testRoot, testName, genPath);
-		boolean hasParser = invokeJFlex(testRoot, testName, genPath);
-		invokeJastAddParser(testRoot, testName, genPath);
+		invokeJastAdd(testRoot, testName, tmpRoot);
+		boolean hasParser = invokeJFlex(testRoot, testName, tmpRoot);
+		invokeJastAddParser(testRoot, testName, tmpRoot);
 		if (hasParser) {
-			invokeBeaver(testRoot, testName, genPath);
-			compileSourceFiles(testRoot, testName, genPath);
+			invokeBeaver(testRoot, testName, tmpRoot);
+			compileSourceFiles(testRoot, testName, tmpRoot);
 			runParser(testRoot, testName);
 		}
 	}
@@ -40,11 +40,11 @@ public class TestRunner {
 	 * 
 	 * @param testRoot
 	 * @param testName
-	 * @param genPath
+	 * @param tmpRoot
 	 * @return true if JastAdd was invoked, false if no relevant files were found
 	 */
-	private static boolean invokeJastAdd(String testRoot, String testName, String genPath) {
-		File testDir = new File(testRoot + '/' + testName);
+	private static boolean invokeJastAdd(String testRoot, String testName, String tmpRoot) {
+		File testDir = new File(testRoot, testName);
 		File[] files = testDir.listFiles();
 		StringBuffer fileArgs = new StringBuffer();
 		for (File f : files) {
@@ -59,7 +59,7 @@ public class TestRunner {
 		
 		StringBuffer command = new StringBuffer("java -jar tools/jastadd2.jar");
 		command.append(" --package=").append(testName).append(".ast");
-		command.append(" --o=").append(genPath);
+		command.append(" --o=").append(tmpRoot);
 		command.append(" --beaver").append(fileArgs);
 		
 		executeCommand(command.toString(), "JastAdd invocation failed", false);
@@ -71,10 +71,10 @@ public class TestRunner {
 	 * 
 	 * @param testRoot
 	 * @param testName
-	 * @param genPath
+	 * @param tmpRoot
 	 * @return true if JFlex was invoked, false otherwise
 	 */
-	private static boolean invokeJFlex(String testRoot, String testName, String genPath) {
+	private static boolean invokeJFlex(String testRoot, String testName, String tmpRoot) {
 		StringBuffer fileName = new StringBuffer(testRoot);
 		fileName.append('/').append(testName).append('/').append(testName).append(".flex");
 		File file = new File(fileName.toString());
@@ -83,7 +83,7 @@ public class TestRunner {
 		}
 		
 		StringBuffer command = new StringBuffer("java -jar tools/JFlex.jar");
-		command.append(" -d ").append(genPath).append('/').append(testName).append("/scanner");
+		command.append(" -d ").append(tmpRoot).append('/').append(testName).append("/scanner");
 		command.append(" -nobak ").append(fileName);
 		executeCommand(command.toString(), "Scanner generation failed", false);
 		return true;
@@ -95,9 +95,9 @@ public class TestRunner {
 	 * 
 	 * @param testRoot
 	 * @param testName
-	 * @param genPath
+	 * @param tmpRoot
 	 */
-	private static void invokeJastAddParser(String testRoot, String testName, String genPath) {
+	private static void invokeJastAddParser(String testRoot, String testName, String tmpRoot) {
 		//TODO concatenate several .parser files before invocation
 		StringBuffer fileNameBuf = new StringBuffer(testRoot);
 		fileNameBuf.append('/').append(testName).append('/').append(testName).append(".parser");
@@ -108,7 +108,7 @@ public class TestRunner {
 		
 		StringBuffer command = new StringBuffer("java -jar tools/JastAddParser.jar");
 		command.append(' ').append(fileNameBuf).append(' ');
-		command.append(genPath).append('/').append(testName).append('/').append("TestParser.beaver");
+		command.append(tmpRoot).append('/').append(testName).append('/').append("TestParser.beaver");
 		executeCommand(command.toString(), "JastAddParser invocation failed", false);
 	}
 	
@@ -117,10 +117,10 @@ public class TestRunner {
 	 * 
 	 * @param testRoot
 	 * @param testName
-	 * @param genPath
+	 * @param tmpRoot
 	 */
-	private static void invokeBeaver(String testRoot, String testName, String genPath) {
-		StringBuffer fileNameBuf = new StringBuffer(genPath);
+	private static void invokeBeaver(String testRoot, String testName, String tmpRoot) {
+		StringBuffer fileNameBuf = new StringBuffer(tmpRoot);
 		fileNameBuf.append('/').append(testName);
 		String testDir = fileNameBuf.toString();
 		fileNameBuf.append('/').append("TestParser.beaver");
@@ -195,11 +195,11 @@ public class TestRunner {
 	 * 
 	 * @param testRoot
 	 * @param testName
-	 * @param genPath
+	 * @param tmpRoot
 	 */
 	private static void compileSourceFiles(String testRoot, String testName,
-			String genPath) {
-		StringBuffer pathBuf = new StringBuffer(genPath);
+			String tmpRoot) {
+		StringBuffer pathBuf = new StringBuffer(tmpRoot);
 		pathBuf.append('/').append(testName);
 		File path = new File(pathBuf.toString());
 		
@@ -296,6 +296,27 @@ public class TestRunner {
 	public static void main(String[] args) {
 		TestRunner.runTest(args[0], args[1], args[2]);
 		System.out.println("Test successful");
+	}
+
+	/**
+	 * Find all valid test directories (directories containing one or more
+	 * *.parser files) and return their names as Object arrays in a Collection 
+	 * 
+	 * @param rootDir The directory to search
+	 * @return 
+	 */
+	public static Collection<Object[]> getTests(File rootDir) {
+		Collection<Object[]> tests = new ArrayList<Object[]>();
+		boolean addedThis = false;
+		for (File f : rootDir.listFiles()) {
+			if (f.isDirectory()) {
+				tests.addAll(getTests(f));
+			} else if (!addedThis && f.getName().endsWith(".parser")) {
+				addedThis = true;
+				tests.add(new Object[] { rootDir.getName() });
+			}
+		}
+		return tests;
 	}
 
 }
