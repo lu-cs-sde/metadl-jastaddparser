@@ -157,7 +157,7 @@ public class TestRunner {
 	 *            will also fail on a non-empty error stream.
 	 */
 	private static void executeCommand(String command, String errorMsg, boolean failOnErrOut) {
-		System.out.println(command);
+		//System.out.println(command);
 		StringBuffer errors = new StringBuffer();
 		try {
 			Process p = Runtime.getRuntime().exec(command);
@@ -306,20 +306,15 @@ public class TestRunner {
 	 * @return 
 	 */
 	public static Collection<Object[]> getTests(File rootDir) {
-		System.out.println(rootDir);
 		Collection<Object[]> tests = new ArrayList<Object[]>();
 		boolean addedThis = false;
-		System.out.println(rootDir.listFiles());
-		File here = new File(".");
-		System.out.println(here.listFiles()[0]);
 		for (File f : rootDir.listFiles()) {
-			System.out.println("came here");
-			System.out.println(' '+f.toString());
 			if (f.isDirectory()) {
 				tests.addAll(getTests(f));
 			} else if (!addedThis && f.getName().endsWith(".parser")) {
-				addedThis = true;
+				//TODO no support for deeper test directory structures
 				tests.add(new Object[] { rootDir.getName() });
+				addedThis = true;
 			}
 		}
 		return tests;
