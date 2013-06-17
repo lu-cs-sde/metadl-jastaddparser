@@ -1,0 +1,4 @@
+className0 non_terminal1 = TERMINAL2
+						 | Non_terminal
+						 ;
+Non_terminal = terminal; //will fail

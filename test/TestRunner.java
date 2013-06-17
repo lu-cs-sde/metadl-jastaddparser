@@ -170,9 +170,11 @@ public class TestRunner {
 			int exitValue = p.waitFor();
 			boolean fail = false;
 			StringBuffer fullErrorMsg = new StringBuffer(errorMsg).append(':');
-			if (errors.length() > 0 && failOnErrOut) {
+			if (errors.length() > 0) {
 				fullErrorMsg.append('\n').append(errors);
-				fail = true;
+				if (failOnErrOut) {
+					fail = true;
+				}
 			}
 			if (exitValue != 0) {
 				fullErrorMsg.append("\nProcess exited with value ").append(exitValue);

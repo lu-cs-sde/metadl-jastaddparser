@@ -1,0 +1,2 @@
+A production rule can omit the node type (i.e. class name).
+The node type will then be set to ASTNode.

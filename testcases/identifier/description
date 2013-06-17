@@ -1,0 +1,5 @@
+Identifiers, i.e. names of parser productions and AST classes,
+must start with a letter followed by zero or more letters (A-Za-z),
+digits (0-9) or underscores (_). Non-terminals must start with a
+non-capital letter (and terminals must start with a capital one to
+be recognized as such).
