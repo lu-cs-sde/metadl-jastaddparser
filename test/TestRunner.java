@@ -30,10 +30,7 @@ public class TestRunner {
 		invokeJastAddParser(testRoot, testName, genPath);
 		if (hasParser) {
 			invokeBeaver(testRoot, testName, genPath);
-		}
-		compileSourceFiles(testRoot, testName, genPath);
-		
-		if (hasParser) {
+			compileSourceFiles(testRoot, testName, genPath);
 			runParser(testRoot, testName);
 		}
 	}
@@ -65,7 +62,7 @@ public class TestRunner {
 		command.append(" --o=").append(genPath);
 		command.append(" --beaver").append(fileArgs);
 		
-		executeCommand(command.toString(), "JastAdd invocation failed");
+		executeCommand(command.toString(), "JastAdd invocation failed", false);
 		return true;
 	}
 	
@@ -88,7 +85,7 @@ public class TestRunner {
 		StringBuffer command = new StringBuffer("java -jar tools/JFlex.jar");
 		command.append(" -d ").append(genPath).append('/').append(testName).append("/scanner");
 		command.append(" -nobak ").append(fileName);
-		executeCommand(command.toString(), "Scanner generation failed");
+		executeCommand(command.toString(), "Scanner generation failed", false);
 		return true;
 	}
 	
@@ -104,8 +101,7 @@ public class TestRunner {
 		//TODO concatenate several .parser files before invocation
 		StringBuffer fileNameBuf = new StringBuffer(testRoot);
 		fileNameBuf.append('/').append(testName).append('/').append(testName).append(".parser");
-		String fileName = fileNameBuf.toString();
-		File file = new File(fileName);
+		File file = new File(fileNameBuf.toString());
 		if (!file.exists()) {
 			fail("Could not find JastAddParser input specification");
 		}
@@ -113,7 +109,7 @@ public class TestRunner {
 		StringBuffer command = new StringBuffer("java -jar tools/JastAddParser.jar");
 		command.append(' ').append(fileNameBuf).append(' ');
 		command.append(genPath).append('/').append(testName).append('/').append("TestParser.beaver");
-		executeCommand(command.toString(), "JastAddParser invocation failed");
+		executeCommand(command.toString(), "JastAddParser invocation failed", false);
 	}
 	
 	/**
@@ -125,32 +121,42 @@ public class TestRunner {
 	 */
 	private static void invokeBeaver(String testRoot, String testName, String genPath) {
 		StringBuffer fileNameBuf = new StringBuffer(genPath);
-		fileNameBuf.append('/').append(testName).append('/').append("TestParser.beaver");
-		String fileName = fileNameBuf.toString();
-		File file = new File(fileName);
+		fileNameBuf.append('/').append(testName);
+		String testDir = fileNameBuf.toString();
+		fileNameBuf.append('/').append("TestParser.beaver");
+		File file = new File(fileNameBuf.toString());
 		if (!file.exists()) {
 			return;
 		}
 		
-		StringBuffer parserDirBuf = new StringBuffer(genPath);
-		parserDirBuf.append('/').append(testName).append("/parser");
-		File parserDir = new File(parserDirBuf.toString());
+		StringBuffer parserDirBuf = new StringBuffer(testDir);
+		parserDirBuf.append("/parser");
+		String parserPath = parserDirBuf.toString();
+		File parserDir = new File(parserPath);
 		parserDir.mkdirs();
 		
 		StringBuffer command = new StringBuffer("java -jar tools/beaver.jar");
-		command.append(" -d ").append(genPath).append('/').append(testName).append("/parser");
+		command.append(" -d ").append(parserPath);
 		command.append(" -t -w -c ").append(fileNameBuf);
-		executeCommand(command.toString(), "Parser generation failed");
+		
+		// Beaver always exits with 0 on errors, so check the error output
+		executeCommand(command.toString(), "Parser generation failed", true);
 	}
-	
+
 	/**
-	 * Fork a process using the specified command. The test
-	 * will fail if the process does not exit normally.
+	 * Fork a process using the specified command. The test will fail if the
+	 * process does not exit normally.
 	 * 
-	 * @param command The command to execute
-	 * @param errorMsg Error message for JUnit
+	 * @param command
+	 *            The command to execute
+	 * @param errorMsg
+	 *            Error message for JUnit
+	 * @param failOnErrOut
+	 *            If set to false, the test will only fail if the process
+	 *            terminates with a non-zero exit code. If set to true, the test
+	 *            will also fail on a non-empty error stream.
 	 */
-	private static void executeCommand(String command, String errorMsg) {
+	private static void executeCommand(String command, String errorMsg, boolean failOnErrOut) {
 		System.out.println(command);
 		StringBuffer errors = new StringBuffer();
 		try {
@@ -162,12 +168,17 @@ public class TestRunner {
 			}
 			err.close();
 			int exitValue = p.waitFor();
-			if (errors.length() > 0) {
-				StringBuffer fullErrorMsg = new StringBuffer(errorMsg);
-				fullErrorMsg.append(":\n").append(errors);
-				if (exitValue != 0) {
-					fullErrorMsg.append("\nProcess exited with value ").append(exitValue);
-				}
+			boolean fail = false;
+			StringBuffer fullErrorMsg = new StringBuffer(errorMsg).append(':');
+			if (errors.length() > 0 && failOnErrOut) {
+				fullErrorMsg.append('\n').append(errors);
+				fail = true;
+			}
+			if (exitValue != 0) {
+				fullErrorMsg.append("\nProcess exited with value ").append(exitValue);
+				fail = true;
+			}
+			if (fail) {
 				fail(fullErrorMsg.toString());
 			}
 		} catch (IOException e) {
@@ -186,7 +197,6 @@ public class TestRunner {
 	 */
 	private static void compileSourceFiles(String testRoot, String testName,
 			String genPath) {
-		// TODO Auto-generated method stub
 		StringBuffer pathBuf = new StringBuffer(genPath);
 		pathBuf.append('/').append(testName);
 		File path = new File(pathBuf.toString());
@@ -197,10 +207,17 @@ public class TestRunner {
 		if (fileArgs.length() > 0) {
 			StringBuffer command = new StringBuffer("javac -cp tools/beaver-rt.jar -g");
 			command.append(fileArgs);
-			executeCommand(command.toString(), "Compilation of generated source files failed");
+			executeCommand(command.toString(), "Compilation of generated source files failed", false);
 		}
 	}
-		
+	
+	/**
+	 * Collect absolute paths to all Java source files in the specified directory
+	 * and append them to the specified StringBuffer.
+	 * 
+	 * @param path The directory to search
+	 * @param fileArgs The StringBuffer for storing the result
+	 */
 	private static void collectFileArgs(File path, StringBuffer fileArgs) {
 		for (File f : path.listFiles()) {
 			String filePath = f.getAbsolutePath();
