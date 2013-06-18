@@ -2,7 +2,7 @@
 	
 	<property name="test.dir" location="testcases"/>
 	<property name="testsrc.dir" location="test"/>
-	<property name="gen.dir" location="gen"/>
+	<property name="tmp.dir" location="gen"/>
 	<property name="bin.dir" location="bin"/>
 	<property name="tools.dir" location="tools"/>
 	
@@ -19,11 +19,11 @@
 		classpath="${tools.dir}/jastadd2.jar"/>
 
 	<target name="build" description="build test classes">
-		<mkdir dir="${gen.dir}"/>
+		<mkdir dir="${tmp.dir}"/>
 		
 		<!--jastadd
 			package="${testname}.ast"
-			outdir="${gen.dir}"
+			outdir="${tmp.dir}"
 			beaver="true">
 			<fileset dir="${test.dir}/${testname}">
 				<include name="*.ast"/>
@@ -34,10 +34,10 @@
 		
 		<jflex
 			file="${test.dir}/${testname}/${testname}.flex"
-			outdir="${gen.dir}/${testname}/scanner"
+			outdir="${tmp.dir}/${testname}/scanner"
 			nobak="yes"/>
 		
-		<concat destfile="${gen.dir}/${testname}/TestParser.all">
+		<concat destfile="${tmp.dir}/${testname}/TestParser.all">
 			<!- NOTE The order may be important; this needs fix ->
 			<fileset dir="${test.dir}/${testname}"
 				includes="*.parser" />
@@ -47,12 +47,12 @@
 			fork="true"
 			classpath="${tools.dir}/JastAddParser.jar"
 			classname="Main">
-			<arg line="${gen.dir}/${testname}/TestParser.all ${gen.dir}/${testname}/TestParser.beaver"/>
+			<arg line="${tmp.dir}/${testname}/TestParser.all ${tmp.dir}/${testname}/TestParser.beaver"/>
 		</java>
 		
-		<mkdir dir="${gen.dir}/${testname}/parser"/>
-		<beaver file="${gen.dir}/${testname}/TestParser.beaver"
-					destdir="${gen.dir}/${testname}/parser"
+		<mkdir dir="${tmp.dir}/${testname}/parser"/>
+		<beaver file="${tmp.dir}/${testname}/TestParser.beaver"
+					destdir="${tmp.dir}/${testname}/parser"
 					terminalNames="yes"
 					compress="no"
 					useSwitch="yes"/-->
@@ -70,17 +70,18 @@
 	<target name="test" depends="build" description="run test">
 		<!--java classname="TestRunner" fork="true">
 			<classpath>
-				<pathelement path="${gen.dir}"/>
+				<pathelement path="${tmp.dir}"/>
 				<pathelement path="${bin.dir}"/>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 			</classpath>
 			<arg value="${test.dir}"/>
 			<arg value="${testname}"/>
-			<arg value="${gen.dir}"/>
+			<arg value="${tmp.dir}"/>
 		</java-->
 		<junit fork="yes" printsummary="yes" dir="${basedir}">
 			<classpath>
 				<pathelement location="${bin.dir}"/>
+				<pathelement location="${tmp.dir}"/>
 				<pathelement location="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 			</classpath>
 			<test name="TestJastAddParser"/>
@@ -90,7 +91,7 @@
 
 	<target name="clean" description="remove generated source and class files">
 		<delete includeemptydirs="true">
-			<fileset dir="${gen.dir}" includes="**/*"/>
+			<fileset dir="${tmp.dir}" includes="**/*"/>
 		</delete>
 	</target>
 

@@ -3,11 +3,14 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Scanner;
 
 //import beaver.Parser.Exception;
@@ -75,12 +78,18 @@ public class TestRunner {
 	 * @return true if JFlex was invoked, false otherwise
 	 */
 	private static boolean invokeJFlex(String testRoot, String testName, String tmpRoot) {
-		StringBuffer fileName = new StringBuffer(testRoot);
-		fileName.append('/').append(testName).append('/').append(testName).append(".flex");
-		File file = new File(fileName.toString());
-		if (!file.exists()) {
+		List<String> fList = collectFilesWithSuffix(testRoot + '/' + testName, ".flex", false);
+		if (fList.isEmpty()) {
 			return false;
 		}
+		String fileName = fList.get(0);
+		
+//		StringBuffer fileName = new StringBuffer(testRoot);
+//		fileName.append('/').append(testName).append('/').append(testName).append(".flex");
+//		File file = new File(fileName.toString());
+//		if (!file.exists()) {
+//			return false;
+//		}
 		
 		StringBuffer command = new StringBuffer("java -jar tools/JFlex.jar");
 		command.append(" -d ").append(tmpRoot).append('/').append(testName).append("/scanner");
@@ -98,24 +107,54 @@ public class TestRunner {
 	 * @param tmpRoot
 	 */
 	private static void invokeJastAddParser(String testRoot, String testName, String tmpRoot) {
-		buildJastAddParserInput(testRoot, testName, tmpRoot);
-		StringBuffer fileNameBuf = new StringBuffer(testRoot);
-		fileNameBuf.append('/').append(testName).append('/').append(testName).append(".parser");
-		File file = new File(fileNameBuf.toString());
-		if (!file.exists()) {
-			fail("Could not find JastAddParser input specification");
-		}
+		String fileName = buildJastAddParserInput(testRoot, testName, tmpRoot);
+				
+//		StringBuffer fileName = new StringBuffer(testRoot);
+//		fileName.append('/').append(testName).append('/').append(testName).append(".parser");
+//		File file = new File(fileName.toString());
+//		if (!file.exists()) {
+//			fail("Could not find JastAddParser input specification");
+//		}
 		
 		StringBuffer command = new StringBuffer("java -jar tools/JastAddParser.jar");
-		command.append(' ').append(fileNameBuf).append(' ');
+		command.append(' ').append(fileName).append(' ');
 		command.append(tmpRoot).append('/').append(testName).append('/').append("TestParser.beaver");
 		executeCommand(command.toString(), "JastAddParser invocation failed", false);
 	}
 	
-	private static void buildJastAddParserInput(String testRoot,
+	private static String buildJastAddParserInput(String testRoot,
 			String testName, String tmpRoot) {
 		// TODO Auto-generated method stub
+		List<String> files = collectFilesWithSuffix(testRoot + '/' + testName, ".parser", false);
+		if (files.isEmpty()) {
+			fail("Could not find JastAddParser input specification");
+		}
+		if (files.size() == 1) {
+			return files.get(0);
+		}
 		
+		//sort file names lexicographically
+		Collections.sort(files);
+		File concatFile = new File(tmpRoot + '/' + testName, "TestParser.all");
+
+		try {
+			FileWriter out = new FileWriter(concatFile);
+			for (String s : files) {
+				FileReader file = new FileReader(s);
+				char[] buf = new char[1024];
+				int read = file.read(buf);
+				while (read != -1) {
+					out.write(buf, 0, read);
+					read = file.read(buf);
+				}
+				file.close();
+			}
+			out.close();
+		} catch (IOException e) {
+			fail("Unable to access temporary folder: " + e);
+		}
+		
+		return concatFile.getPath();
 	}
 
 	/**
@@ -163,7 +202,7 @@ public class TestRunner {
 	 *            will also fail on a non-empty error stream.
 	 */
 	private static void executeCommand(String command, String errorMsg, boolean failOnErrOut) {
-		//System.out.println(command);
+//		System.out.println(command);
 		StringBuffer errors = new StringBuffer();
 		try {
 			Process p = Runtime.getRuntime().exec(command);
@@ -205,13 +244,14 @@ public class TestRunner {
 	 */
 	private static void compileSourceFiles(String testRoot, String testName,
 			String tmpRoot) {
-		StringBuffer pathBuf = new StringBuffer(tmpRoot);
-		pathBuf.append('/').append(testName);
-		File path = new File(pathBuf.toString());
+		File path = new File(tmpRoot, testName);
 		
+		List<String> sourceFiles = collectFilesWithSuffix(path.getPath(), ".java", true);
 		StringBuffer fileArgs = new StringBuffer();
-		collectFileArgs(path, fileArgs);
-
+		for (String s : sourceFiles) {
+			fileArgs.append(' ').append(s);
+		}
+		
 		if (fileArgs.length() > 0) {
 			StringBuffer command = new StringBuffer("javac -cp tools/beaver-rt.jar -g");
 			command.append(fileArgs);
@@ -244,23 +284,27 @@ public class TestRunner {
 	 * @param testName
 	 */
 	private static <T extends beaver.Scanner, U extends beaver.Parser> void runParser(String testRoot, String testName) {
-		File inputFile = new File(testRoot + '/' + testName + "/testinput");
+		File inputFile = new File(testRoot + '/' + testName, "testinput");
 		if (!inputFile.exists()) {
 			return;
 		}
 		T scanner;
 		U parser;
 		try {
-			Class<T> scannerClass = (Class<T>) Class.forName(testName + ".scanner.TestScanner");
+			String testPackage = testName.replace('/', '.');
+			Class<T> scannerClass = (Class<T>) Class.forName(testPackage + ".scanner.TestScanner");
 			
 			Constructor<T> scannerCon = scannerClass.getConstructor(java.io.Reader.class);
 			scanner = scannerCon.newInstance(new FileReader(inputFile));
 			
-			Class<U> parserClass = (Class<U>) Class.forName(testName + ".parser.TestParser");
+			Class<U> parserClass = (Class<U>) Class.forName(testPackage + ".parser.TestParser");
 			Constructor<U> parserCon = parserClass.getConstructor();
 			parser = parserCon.newInstance();
 			parser.parse(scanner);
-		} catch (ClassNotFoundException e) {
+		} catch (java.lang.Exception e) {
+			fail("Parser execution failed: " + e);
+		}
+		/*catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (NoSuchMethodException e) {
 			e.printStackTrace();
@@ -280,11 +324,23 @@ public class TestRunner {
 			e.printStackTrace();
 		} catch (beaver.Parser.Exception e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 
-//	private static String getFileNameFromSuffix(String dirPath, String suffix) {
-//		File dir = new File(dirPath);
+	private static List<String> collectFilesWithSuffix(String dirPath, String suffix, boolean recursive) {
+		ArrayList<String> ans = new ArrayList<String>();
+		File dir = new File(dirPath);
+		
+		for (File f : dir.listFiles()) {
+			if (f.isFile() && f.getName().endsWith(suffix)) {
+				ans.add(f.getAbsolutePath());
+			} else if (recursive && f.isDirectory()) {
+				ans.addAll(collectFilesWithSuffix(f.getAbsolutePath(), suffix, recursive));
+			}
+		}
+		
+		return ans;
+		
 //		File[] files = dir.listFiles();
 //		String fileName = null;
 //		int i = 0;
@@ -297,7 +353,7 @@ public class TestRunner {
 //			f = files[++i];
 //		}
 //		return fileName;
-//	}
+	}
 
 	public static void main(String[] args) {
 		TestRunner.runTest(args[0], args[1], args[2]);
