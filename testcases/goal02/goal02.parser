@@ -1,6 +1,6 @@
 %header {:
-package declaration.parser;
+package goal02.parser;
 :};
 
-implicit_goal_production = TERMINAL;
+implicit_goal_production = other_production;
 other_production = TERMINAL;
