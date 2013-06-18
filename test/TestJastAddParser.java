@@ -24,7 +24,8 @@ public class TestJastAddParser {
 	
 	@Parameters(name = "{0}")
 	public static Collection<Object[]> getTests() {
-		return TestRunner.getTests(new File(TEST_ROOT));
+		File root = new File(TEST_ROOT);
+		return TestRunner.getTests(root, root);
 	}
 	
 }

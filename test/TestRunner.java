@@ -98,7 +98,7 @@ public class TestRunner {
 	 * @param tmpRoot
 	 */
 	private static void invokeJastAddParser(String testRoot, String testName, String tmpRoot) {
-		//TODO concatenate several .parser files before invocation
+		buildJastAddParserInput(testRoot, testName, tmpRoot);
 		StringBuffer fileNameBuf = new StringBuffer(testRoot);
 		fileNameBuf.append('/').append(testName).append('/').append(testName).append(".parser");
 		File file = new File(fileNameBuf.toString());
@@ -112,6 +112,12 @@ public class TestRunner {
 		executeCommand(command.toString(), "JastAddParser invocation failed", false);
 	}
 	
+	private static void buildJastAddParserInput(String testRoot,
+			String testName, String tmpRoot) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	/**
 	 * Invoke Beaver if a .beaver file has been generated earlier
 	 * 
@@ -300,21 +306,26 @@ public class TestRunner {
 
 	/**
 	 * Find all valid test directories (directories containing one or more
-	 * *.parser files) and return their names as Object arrays in a Collection 
+	 * *.parser files) in the directory tree below the specified root directory 
 	 * 
-	 * @param rootDir The directory to search
-	 * @return 
+	 * @param rootDir The root of the tree to search
+	 * @param currentDir The current directory to search
+	 * @return Path names relative to rootDir, represented as Object arrays in a collection
 	 */
-	public static Collection<Object[]> getTests(File rootDir) {
+	public static Collection<Object[]> getTests(File currentDir, File rootDir) {
 		Collection<Object[]> tests = new ArrayList<Object[]>();
-		boolean addedThis = false;
-		for (File f : rootDir.listFiles()) {
+		boolean addedCurrent = false;
+		for (File f : currentDir.listFiles()) {
 			if (f.isDirectory()) {
-				tests.addAll(getTests(f));
-			} else if (!addedThis && f.getName().endsWith(".parser")) {
-				//TODO no support for deeper test directory structures
-				tests.add(new Object[] { rootDir.getName() });
-				addedThis = true;
+				tests.addAll(getTests(f, rootDir));
+			} else if (!addedCurrent && f.getName().endsWith(".parser")) {
+				String rootPath = rootDir.getPath();
+				String testPath = currentDir.getPath();
+				if (testPath.startsWith(rootPath + '/')) {
+					testPath = testPath.substring(rootPath.length() + 1);
+				}
+				tests.add(new Object[] { testPath });
+				addedCurrent = true;
 			}
 		}
 		return tests;
