@@ -1,10 +1,15 @@
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
-//import beaver.Parser.Exception;
 
 public class TestRunner {
 
@@ -27,14 +31,14 @@ public class TestRunner {
 	 *            path for generated code
 	 */
 	public static void runTest(String testRoot, String testName, String tmpRoot) {
-		TestResult.Result expected = getResult(testRoot + '/' + testName);
+		TestResult expected = getResult(testRoot + '/' + testName);
 
 		File testTmpDir = new File(tmpRoot, testName);
 		testTmpDir.mkdirs();
 
 		invokeJastAddParser(testRoot, testName, tmpRoot, expected);
 		
-		if (expected != TestResult.Result.EXEC_PASS && expected != TestResult.Result.EXEC_OUTPUT_PASS) {
+		if (expected != TestResult.EXEC_PASS && expected != TestResult.EXEC_OUTPUT_PASS) {
 			return;
 		}
 
@@ -42,7 +46,7 @@ public class TestRunner {
 		invokeJastAdd(testRoot, testName, tmpRoot);
 		invokeBeaver(testRoot, testName, tmpRoot);
 		compileSourceFiles(testRoot, testName, tmpRoot);
-		runParser(testRoot, testName);
+		runParser(testRoot, testName, expected);
 	}
 
 	/**
@@ -53,7 +57,7 @@ public class TestRunner {
 	 *            the path to the test directory
 	 * @return the expected result
 	 */
-	private static TestResult.Result getResult(String testPath) {
+	private static TestResult getResult(String testPath) {
 		String result = null;
 		try {
 			Scanner scan = new Scanner(new File(testPath, "result.test"));
@@ -63,18 +67,18 @@ public class TestRunner {
 			fail("Could not find result file in " + testPath);
 		}
 		if (result.equals("JAP_PASS")) {
-			return TestResult.Result.JAP_PASS;
+			return TestResult.JAP_PASS;
 		} else if (result.equals("JAP_ERR_OUTPUT")) {
-			return TestResult.Result.JAP_ERR_OUTPUT;
+			return TestResult.JAP_ERR_OUTPUT;
 		} else if (result.equals("JAP_OUTPUT_PASS")) {
-			return TestResult.Result.JAP_OUTPUT_PASS;
+			return TestResult.JAP_OUTPUT_PASS;
 		} else if (result.equals("EXEC_PASS")) {
-			return TestResult.Result.EXEC_PASS;
+			return TestResult.EXEC_PASS;
 		} else if (result.equals("EXEC_OUTPUT_PASS")) {
-			return TestResult.Result.EXEC_OUTPUT_PASS;
+			return TestResult.EXEC_OUTPUT_PASS;
 		} else {
 			fail("Invalid test result option: " + result);
-			return TestResult.Result.JAP_PASS;
+			return TestResult.JAP_PASS;
 		}
 	}
 
@@ -94,8 +98,7 @@ public class TestRunner {
 		StringBuffer fileArgs = new StringBuffer();
 		for (File f : files) {
 			String name = f.getAbsolutePath();
-			if (name.endsWith("ast") | name.endsWith("jadd")
-					| name.endsWith("jrag")) {
+			if (name.endsWith(".ast") | name.endsWith(".jadd") | name.endsWith(".jrag")) {
 				fileArgs.append(' ').append(name);
 			}
 		}
@@ -109,7 +112,7 @@ public class TestRunner {
 		command.append(" --beaver").append(fileArgs);
 
 		executeCommand(command.toString(), "JastAdd invocation failed",
-				TestResult.Result.STEP_PASS);
+				TestResult.STEP_PASS);
 		return true;
 	}
 
@@ -130,23 +133,16 @@ public class TestRunner {
 		}
 		String fileName = fList.get(0);
 
-		// StringBuffer fileName = new StringBuffer(testRoot);
-		// fileName.append('/').append(testName).append('/').append(testName).append(".flex");
-		// File file = new File(fileName.toString());
-		// if (!file.exists()) {
-		// return false;
-		// }
-
 		StringBuffer command = new StringBuffer("java -jar tools/JFlex.jar");
 		command.append(" -d ").append(tmpRoot).append('/').append(testName).append("/scanner");
 		command.append(" -nobak ").append(fileName);
-		executeCommand(command.toString(), "Scanner generation failed", TestResult.Result.STEP_PASS);
+		executeCommand(command.toString(), "Scanner generation failed", TestResult.STEP_PASS);
 		return true;
 	}
 
 	/**
-	 * Invoke JastAddParser with the .parser file in the test directory. The
-	 * test will fail is no such file is present or if the expected result was
+	 * Invoke JastAddParser with the .parser file(s) in the test directory. The
+	 * test will fail is no such files are present or if the expected result was
 	 * not obtained.
 	 * 
 	 * @param testRoot
@@ -155,14 +151,25 @@ public class TestRunner {
 	 * @param expected the expected result
 	 */
 	private static void invokeJastAddParser(String testRoot, String testName,
-			String tmpRoot, TestResult.Result expected) {
+			String tmpRoot, TestResult expected) {
+		
 		String fileName = buildJastAddParserInput(testRoot, testName, tmpRoot);
 
 		StringBuffer command = new StringBuffer("java -jar tools/JastAddParser.jar");
 		command.append(' ').append(fileName).append(' ');
-		command.append(tmpRoot).append('/').append(testName).append('/').append("TestParser.beaver");
-		executeCommand(command.toString(), "JastAddParser invocation failed",
-				expected);
+		command.append(tmpRoot).append('/').append(testName).append('/');
+		command.append("TestParser.beaver");
+		
+		StringBuffer testDir = new StringBuffer();
+		if (expected == TestResult.JAP_OUTPUT_PASS) {
+			testDir.append(tmpRoot);
+		} else {
+			testDir.append(testRoot);
+		}
+		testDir.append('/').append(testName);
+		
+		executeCommand(testRoot, testName, tmpRoot,
+				command.toString(), "JastAddParser invocation failed", expected);
 	}
 
 	/**
@@ -238,80 +245,133 @@ public class TestRunner {
 		command.append(" -t -w -c ").append(fileNameBuf);
 
 		executeCommand(command.toString(), "Parser generation failed",
-				TestResult.Result.STEP_PASS);
+				TestResult.STEP_PASS);
 	}
 	
 	private static void executeCommand(String command, String errorMsg,
-			TestResult.Result expected) {
-		executeCommand(command, errorMsg, expected, "");
+			TestResult expected) {
+		executeCommand("", "", "", command, errorMsg, expected);
 	}
 
 	/**
 	 * Fork a process using the specified command.
 	 * 
-	 * @param command
-	 *            the command to execute
-	 * @param errorMsg
-	 *            error message for JUnit in case of test failure
-	 * @param expected
-	 *            the expected result from the process
-	 * @param testDir
-	 * 			  path to the current test directory
+	 * @param testRoot
+	 * @param testName
+	 * @param tmpRoot
+	 * @param command the command to execute
+	 * @param errorMsg error message for JUnit in case of test failure
+	 * @param expected the expected result from the process
 	 */
-	private static void executeCommand(String command, String errorMsg,
-			TestResult.Result expected, String testDir) {
+	private static void executeCommand(String testRoot, String testName, String tmpRoot, String command, String errorMsg,
+			TestResult expected) {
 		// System.out.println(command);
-		StringBuffer errors = new StringBuffer();
+		List<String> output = new ArrayList<String>();
+		List<String> errors = new ArrayList<String>();
 		try {
 			Process p = Runtime.getRuntime().exec(command);
+			
+			Scanner outputScan = new Scanner(p.getInputStream());
+			while (outputScan.hasNextLine()) {
+				output.add(outputScan.nextLine());
+			}
+			outputScan.close();
+			
 			Scanner err = new Scanner(p.getErrorStream());
 			while (err.hasNextLine()) {
-				errors.append(err.nextLine());
-				errors.append("\n");
+				errors.add(err.nextLine());
 			}
 			err.close();
+			
 			int exitValue = p.waitFor();
-
 			if (exitValue == 0) {
-				if (expected == TestResult.Result.JAP_ERR_OUTPUT) {
-					// TODO implement using commented code below
-					fail(errorMsg);
-				} else if (expected == TestResult.Result.JAP_OUTPUT_PASS) {
-					// TODO compare file output
-					fail("JAP_OUTPUT_PASS not implemented");
-				} else if (expected == TestResult.Result.EXEC_OUTPUT_PASS) {
-					// TODO compare stream output
-					fail("EXEC_OUTPUT_PASS not implemented");
+				if (expected == TestResult.JAP_ERR_OUTPUT) {
+					fail("JastAddParser succeeded when expected to fail");
+				} else if (expected == TestResult.JAP_OUTPUT_PASS) {
+					File parserSpec = new File(tmpRoot + '/' + testName, "TestParser.beaver");
+					List<String> lines = readFileLineByLine(parserSpec);
+					compareOutput(testRoot + '/' + testName, lines);
 				}
 			} else {
-				if (expected == TestResult.Result.JAP_ERR_OUTPUT) {
-					// TODO compare errorstream output
-					fail("JAP_ERR_OUTPUT not implemented");
+				if (expected == TestResult.JAP_ERR_OUTPUT) {
+					compareOutput(testRoot + '/' + testName, errors);
 				} else {
-					// TODO implement using commented code below
-					fail(errorMsg);
+					StringBuffer fullErrorMsg = new StringBuffer(errorMsg).append(':');
+					for (String line : errors) {
+						fullErrorMsg.append('\n').append(line);
+					}
+					fullErrorMsg.append("\nProcess exited with value ").append(exitValue);
+					fail(fullErrorMsg.toString());
 				}
 			}
-
-//				StringBuffer fullErrorMsg = new StringBuffer(errorMsg).append(':');
-//				if (errors.length() > 0) {
-//					fullErrorMsg.append('\n').append(errors);
-//					if (failOnError) {
-//						fail = true;
-//					}
-//				}
-//				if (exitValue != 0) {
-//					fullErrorMsg.append("\nProcess exited with value ").append(exitValue);
-//					fail = true;
-//				}
-//				if (fail) {
-//					fail(fullErrorMsg.toString());
-//				}
 		} catch (IOException e) {
 			fail(errorMsg + ":\n" + e);
 		} catch (InterruptedException e) {
 			fail(errorMsg + ":\n" + e);
 		}
+	}
+
+	private static void compareOutput(String testDir, List<String> output) {
+		List<String> lines = readFileLineByLine(new File(testDir, "output.test"));
+		StringBuffer expected = new StringBuffer();
+		for (String line : lines) {
+			expected.append(line).append('\n');
+		}
+		StringBuffer actual = new StringBuffer();
+		for (String line : output) {
+			String strippedLine = clean(line);
+			if (!strippedLine.isEmpty()) {
+				actual.append(strippedLine).append('\n');
+			}
+		}
+		assertEquals("Output did not match expected", expected.toString(), actual.toString());
+	}
+
+	/**
+	 * Remove unwanted components of an output line.
+	 * 
+	 * @param line
+	 * @return
+	 */
+	private static String clean(String line) {
+		if (line.startsWith("There were errors in")) {
+			return "";
+		}
+		String noEOLComments = line.split("\\s*//")[0];
+		return noEOLComments.trim();
+	}
+	
+	
+	private static List<String> readFileLineByLine(File file) {
+		ArrayList<String> ans = new ArrayList<String>();
+		try {
+			Scanner scan = new Scanner(new FileReader(file));
+			scan.useDelimiter("\\n");
+			while (scan.hasNext()) {
+				ans.add(scan.next());
+			}
+			scan.close();
+		} catch (IOException e) {
+			fail("Could not access test result file: " + e);
+		}
+		return ans;
+	}
+	
+	/**
+	 * Read a source into a list of strings
+	 * 
+	 * @param reader the reader to read from
+	 * @return a List containing all the lines of the file as separate String entries
+	 */
+	private static List<String> readLineByLine(Reader reader) {
+		ArrayList<String> ans = new ArrayList<String>();
+		Scanner scan = new Scanner(reader);
+		scan.useDelimiter("\\n");
+		while (scan.hasNext()) {
+			ans.add(scan.next());
+		}
+		scan.close();
+		return ans;
 	}
 
 	/**
@@ -333,31 +393,10 @@ public class TestRunner {
 		}
 
 		if (fileArgs.length() > 0) {
-			StringBuffer command = new StringBuffer(
-					"javac -cp tools/beaver-rt.jar -g");
+			StringBuffer command = new StringBuffer("javac -cp tools/beaver-rt.jar -g");
 			command.append(fileArgs);
 			executeCommand(command.toString(),
-					"Compilation of generated source files failed", TestResult.Result.STEP_PASS);
-		}
-	}
-
-	/**
-	 * Collect absolute paths to all Java source files in the specified
-	 * directory and append them to the specified StringBuffer.
-	 * 
-	 * @param path
-	 *            The directory to search
-	 * @param fileArgs
-	 *            The StringBuffer for storing the result
-	 */
-	private static void collectFileArgs(File path, StringBuffer fileArgs) {
-		for (File f : path.listFiles()) {
-			String filePath = f.getAbsolutePath();
-			if (f.isDirectory()) {
-				collectFileArgs(f, fileArgs);
-			} else if (filePath.endsWith("java")) {
-				fileArgs.append(' ').append(filePath);
-			}
+					"Compilation of generated source files failed", TestResult.STEP_PASS);
 		}
 	}
 
@@ -369,42 +408,45 @@ public class TestRunner {
 	 * @param testName
 	 */
 	private static <T extends beaver.Scanner, U extends beaver.Parser> void runParser(
-			String testRoot, String testName) {
-		File inputFile = new File(testRoot + '/' + testName, "input.test");
+			String testRoot, String testName, TestResult expected) {
+		String testPath = testRoot + '/' + testName;
+		File inputFile = new File(testPath, "input.test");
 		if (!inputFile.exists()) {
 			return;
 		}
+		
+		PrintStream oldOut = null;
+		ByteArrayOutputStream baos = null;
+		if (expected == TestResult.EXEC_OUTPUT_PASS) {
+			oldOut = System.out;
+			baos = new ByteArrayOutputStream(1024);
+			PrintStream newOut = new PrintStream(baos);
+			System.setOut(newOut);
+		}
+		
 		T scanner;
 		U parser;
 		try {
 			String testPackage = testName.replace('/', '.');
-			Class<T> scannerClass = (Class<T>) Class.forName(testPackage
-					+ ".scanner.TestScanner");
+			Class<T> scannerClass = (Class<T>) Class.forName(testPackage + ".scanner.TestScanner");
 
-			Constructor<T> scannerCon = scannerClass
-					.getConstructor(java.io.Reader.class);
+			Constructor<T> scannerCon = scannerClass.getConstructor(java.io.Reader.class);
 			scanner = scannerCon.newInstance(new FileReader(inputFile));
 
-			Class<U> parserClass = (Class<U>) Class.forName(testPackage
-					+ ".parser.TestParser");
+			Class<U> parserClass = (Class<U>) Class.forName(testPackage	+ ".parser.TestParser");
 			Constructor<U> parserCon = parserClass.getConstructor();
 			parser = parserCon.newInstance();
 			parser.parse(scanner);
 		} catch (java.lang.Exception e) {
 			fail("Parser execution failed: " + e);
 		}
-		/*
-		 * catch (ClassNotFoundException e) { e.printStackTrace(); } catch
-		 * (NoSuchMethodException e) { e.printStackTrace(); } catch
-		 * (SecurityException e) { e.printStackTrace(); } catch
-		 * (InstantiationException e) { e.printStackTrace(); } catch
-		 * (IllegalAccessException e) { e.printStackTrace(); } catch
-		 * (IllegalArgumentException e) { e.printStackTrace(); } catch
-		 * (InvocationTargetException e) { e.printStackTrace(); } catch
-		 * (FileNotFoundException e) { e.printStackTrace(); } catch (IOException
-		 * e) { e.printStackTrace(); } catch (beaver.Parser.Exception e) {
-		 * e.printStackTrace(); }
-		 */
+		
+		if (expected == TestResult.EXEC_OUTPUT_PASS) {
+			System.setOut(oldOut);
+			StringReader output = new StringReader(baos.toString());
+			List<String> actual = readLineByLine(output);
+			compareOutput(testPath, actual);
+		}
 	}
 
 	/**
@@ -435,19 +477,6 @@ public class TestRunner {
 		}
 
 		return ans;
-
-		// File[] files = dir.listFiles();
-		// String fileName = null;
-		// int i = 0;
-		// File f = files[i];
-		// while (i < files.length && fileName == null) {
-		// String name = f.getAbsolutePath();
-		// if (name.endsWith(suffix)) {
-		// fileName = name;
-		// }
-		// f = files[++i];
-		// }
-		// return fileName;
 	}
 
 	public static void main(String[] args) {

@@ -1,0 +1,5 @@
+%terminals TERMINAL;
+%typeof non_terminal = "ASTNode";
+%goal non_terminal;
+non_terminal =
+TERMINAL.TERMINAL   ;

@@ -1,7 +1,16 @@
 %header {:
-	package small.parser;
+package small.parser;
 	
-	import small.ast.*;
+import small.ast.*;
+import java.io.IOException;
+:};
+
+%embed {:
+	public Object parse(Scanner source) throws IOException, Parser.Exception {
+		Object tree = super.parse(source);
+		((ExprTree) tree).print(System.out, 0);
+		return tree;
+	}
 :};
 
 ExprTree tree

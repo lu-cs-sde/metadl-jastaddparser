@@ -1,0 +1,2 @@
+Semantic Error at line 4 column 1: Non-terminals must start with a lower case letter: Non_terminal
+Semantic Error at line 4 column 16: Non-terminal terminal is not defined
