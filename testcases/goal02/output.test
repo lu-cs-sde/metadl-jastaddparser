@@ -1,5 +1,3 @@
-%header {:
-package goal02.parser;:};
 %terminals TERMINAL;
 %typeof other_production = "ASTNode";
 %typeof implicit_goal_production = "ASTNode";

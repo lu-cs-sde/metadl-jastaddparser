@@ -1,0 +1,5 @@
+TypeName non_terminal = non_terminal2 TERMINAL
+	      			  | TERMINAL
+				      ;
+
+TypeName non_terminal2 = TERMINAL2;

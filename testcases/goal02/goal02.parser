@@ -1,6 +1,2 @@
-%header {:
-package goal02.parser;
-:};
-
 implicit_goal_production = other_production;
 other_production = TERMINAL;

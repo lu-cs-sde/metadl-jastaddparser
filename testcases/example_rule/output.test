@@ -1,0 +1,10 @@
+%terminals TERMINAL;
+%terminals TERMINAL2;
+%typeof non_terminal = "TypeName";
+%typeof non_terminal2 = "TypeName";
+%goal non_terminal;
+non_terminal =
+non_terminal2.non_terminal2 TERMINAL.TERMINAL
+| TERMINAL.TERMINAL   ;
+non_terminal2 =
+TERMINAL2.TERMINAL2   ;
