@@ -88,10 +88,8 @@ public class TestRunner {
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
-	 * @return true if JastAdd was invoked, false if no relevant files were
-	 *         found
 	 */
-	private static boolean invokeJastAdd(String testRoot, String testName,
+	private static void invokeJastAdd(String testRoot, String testName,
 			String tmpRoot) {
 		File testDir = new File(testRoot, testName);
 		File[] files = testDir.listFiles();
@@ -102,9 +100,6 @@ public class TestRunner {
 				fileArgs.append(' ').append(name);
 			}
 		}
-		if (fileArgs.length() == 0) {
-			return false;
-		}
 
 		StringBuffer command = new StringBuffer("java -jar tools/jastadd2.jar");
 		command.append(" --package=").append(testName).append(".ast");
@@ -113,36 +108,30 @@ public class TestRunner {
 
 		executeCommand(command.toString(), "JastAdd invocation failed",
 				TestResult.STEP_PASS);
-		return true;
 	}
 
 	/**
-	 * Invoke JFlex if a .flex file is present in the test directory
+	 * Invoke JFlex on a .flex file assumed to be present in the test directory
 	 * 
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
-	 * @return true if JFlex was invoked, false otherwise
 	 */
-	private static boolean invokeJFlex(String testRoot, String testName,
+	private static void invokeJFlex(String testRoot, String testName,
 			String tmpRoot) {
 		List<String> fList = collectFilesWithSuffix(testRoot + '/' + testName,
 				".flex", false);
-		if (fList.isEmpty()) {
-			return false;
-		}
 		String fileName = fList.get(0);
 
 		StringBuffer command = new StringBuffer("java -jar tools/JFlex.jar");
 		command.append(" -d ").append(tmpRoot).append('/').append(testName).append("/scanner");
 		command.append(" -nobak ").append(fileName);
 		executeCommand(command.toString(), "Scanner generation failed", TestResult.STEP_PASS);
-		return true;
 	}
 
 	/**
 	 * Invoke JastAddParser with the .parser file(s) in the test directory. The
-	 * test will fail is no such files are present or if the expected result was
+	 * test will fail if no such files are present or if the expected result was
 	 * not obtained.
 	 * 
 	 * @param testRoot
@@ -160,20 +149,12 @@ public class TestRunner {
 		command.append(tmpRoot).append('/').append(testName).append('/');
 		command.append("TestParser.beaver");
 		
-		StringBuffer testDir = new StringBuffer();
-		if (expected == TestResult.JAP_OUTPUT_PASS) {
-			testDir.append(tmpRoot);
-		} else {
-			testDir.append(testRoot);
-		}
-		testDir.append('/').append(testName);
-		
 		executeCommand(testRoot, testName, tmpRoot,
 				command.toString(), "JastAddParser invocation failed", expected);
 	}
 
 	/**
-	 * Concatenate any .parser files in the test directory and write the result
+	 * Concatenate all .parser files in the test directory and write the result
 	 * to the temporary directory.
 	 * 
 	 * @param testRoot
@@ -217,7 +198,7 @@ public class TestRunner {
 	}
 
 	/**
-	 * Invoke Beaver if a .beaver file has been generated earlier
+	 * Invoke Beaver with the previously generated .beaver file.
 	 * 
 	 * @param testRoot
 	 * @param testName
@@ -225,21 +206,18 @@ public class TestRunner {
 	 */
 	private static void invokeBeaver(String testRoot, String testName,
 			String tmpRoot) {
+		//TODO later versions of beaver seem to change exit status on failure and will report it
 		StringBuffer fileNameBuf = new StringBuffer(tmpRoot);
 		fileNameBuf.append('/').append(testName);
 		String testDir = fileNameBuf.toString();
 		fileNameBuf.append('/').append("TestParser.beaver");
-		File file = new File(fileNameBuf.toString());
-		if (!file.exists()) {
-			return;
-		}
-
+		
 		StringBuffer parserDirBuf = new StringBuffer(testDir);
 		parserDirBuf.append("/parser");
 		String parserPath = parserDirBuf.toString();
 		File parserDir = new File(parserPath);
 		parserDir.mkdirs();
-
+		
 		StringBuffer command = new StringBuffer("java -jar tools/beaver.jar");
 		command.append(" -d ").append(parserPath);
 		command.append(" -t -w -c ").append(fileNameBuf);
@@ -311,6 +289,13 @@ public class TestRunner {
 		}
 	}
 
+	/**
+	 * Compare the contents of the output file in the test directory with the
+	 * received output from a process. Fail the test if it does not match.
+	 * 
+	 * @param testDir the test directory containing the expected output
+	 * @param output the received output lines in the form of a list of strings
+	 */
 	private static void compareOutput(String testDir, List<String> output) {
 		List<String> lines = readFileLineByLine(new File(testDir, "output.test"));
 		StringBuffer expected = new StringBuffer();
@@ -341,17 +326,18 @@ public class TestRunner {
 		return noEOLComments.trim();
 	}
 	
-	
+	/**
+	 * Read a file into a list of strings
+	 * @param file the reader to read from
+	 * @return a List containing all the lines of the file as separate String entries
+	 */
 	private static List<String> readFileLineByLine(File file) {
-		ArrayList<String> ans = new ArrayList<String>();
+		List<String> ans = new ArrayList<String>();
+		Reader reader = null;
 		try {
-			Scanner scan = new Scanner(new FileReader(file));
-			scan.useDelimiter("\\n");
-			while (scan.hasNext()) {
-				ans.add(scan.next());
-			}
-			scan.close();
-		} catch (IOException e) {
+			reader = new FileReader(file);
+			ans = readLineByLine(reader);
+		} catch (FileNotFoundException e) {
 			fail("Could not access test result file: " + e);
 		}
 		return ans;
@@ -392,17 +378,15 @@ public class TestRunner {
 			fileArgs.append(' ').append(s);
 		}
 
-		if (fileArgs.length() > 0) {
-			StringBuffer command = new StringBuffer("javac -cp tools/beaver-rt.jar -g");
-			command.append(fileArgs);
-			executeCommand(command.toString(),
-					"Compilation of generated source files failed", TestResult.STEP_PASS);
-		}
+		StringBuffer command = new StringBuffer("javac -cp tools/beaver-rt.jar -g");
+		command.append(fileArgs);
+		executeCommand(command.toString(),
+				"Compilation of generated source files failed", TestResult.STEP_PASS);
 	}
 
 	/**
 	 * Invoke the generated parser with the generated scanner on the test input
-	 * file if it exists.
+	 * file.
 	 * 
 	 * @param testRoot
 	 * @param testName
@@ -411,9 +395,6 @@ public class TestRunner {
 			String testRoot, String testName, TestResult expected) {
 		String testPath = testRoot + '/' + testName;
 		File inputFile = new File(testPath, "input.test");
-		if (!inputFile.exists()) {
-			return;
-		}
 		
 		PrintStream oldOut = null;
 		ByteArrayOutputStream baos = null;

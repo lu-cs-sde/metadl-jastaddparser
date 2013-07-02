@@ -61,7 +61,7 @@
 	    
     	<javac 
     		debug     = "true" 
-    		srcdir    = "src:test" 
+    		srcdir    = "src" 
     		destdir   = "bin"
     		includes  = "**/*.java" />
 		

@@ -36,9 +36,9 @@
 	</target>
 
 	<target name="clean" description="remove generated source and class files">
-		<delete includeemptydirs="true">
+		<delete includeemptydirs="true" failonerror="false">
 			<fileset dir="${tmp.dir}" includes="**/*"/>
-			<fileset dir="${bin.dir}" includes="Test*.class"/>
+			<fileset dir="${bin.dir}" excludes="Main.class AST/* beaver/* parser/*"/>
 		</delete>
 	</target>
 	
