@@ -1,0 +1,2 @@
+A non-terminal that is not a goal production must
+be used in at least one other production.
