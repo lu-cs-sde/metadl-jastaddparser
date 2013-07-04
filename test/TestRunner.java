@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
-
 public class TestRunner {
 
 	/**
@@ -99,6 +98,10 @@ public class TestRunner {
 			if (name.endsWith(".ast") | name.endsWith(".jadd") | name.endsWith(".jrag")) {
 				fileArgs.append(' ').append(name);
 			}
+		}
+		
+		if (fileArgs.length() == 0) {
+			return;
 		}
 
 		StringBuffer command = new StringBuffer("java -jar tools/jastadd2.jar");
@@ -466,8 +469,8 @@ public class TestRunner {
 	}
 
 	/**
-	 * Find all valid test directories (directories containing one or more
-	 * *.parser files) in the directory tree below the specified root directory
+	 * Find all valid test directories (directories containing a file with the
+	 * name result.test) in the directory tree below the specified root directory
 	 * 
 	 * @param rootDir
 	 *            the root of the tree to search
