@@ -21,7 +21,8 @@ public enum TestResult {
 	JAP_OUTPUT_PASS,
 
 	/**
-	 * The generated parser successfully processes the parser input
+	 * The generated parser successfully processes the parser input and outputs
+	 * nothing
 	 */
 	EXEC_PASS,
 

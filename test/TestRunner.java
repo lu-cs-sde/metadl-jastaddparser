@@ -402,14 +402,12 @@ public class TestRunner {
 		PrintStream oldOut = null;
 		PrintStream oldErr = null;
 		ByteArrayOutputStream baos = null;
-		if (expected == TestResult.EXEC_OUTPUT_PASS) {
-			oldOut = System.out;
-			oldErr = System.err;
-			baos = new ByteArrayOutputStream(1024);
-			PrintStream newOut = new PrintStream(baos);
-			System.setOut(newOut);
-			System.setErr(newOut);
-		}
+		oldOut = System.out;
+		oldErr = System.err;
+		baos = new ByteArrayOutputStream(1024);
+		PrintStream newOut = new PrintStream(baos);
+		System.setOut(newOut);
+		System.setErr(newOut);
 		
 		T scanner;
 		U parser;
@@ -428,12 +426,15 @@ public class TestRunner {
 			fail("Parser execution failed: " + e);
 		}
 		
+		System.setOut(oldOut);
+		System.setErr(oldErr);
+		String output = baos.toString();
 		if (expected == TestResult.EXEC_OUTPUT_PASS) {
-			System.setOut(oldOut);
-			System.setErr(oldErr);
-			StringReader output = new StringReader(baos.toString());
-			List<String> actual = readLineByLine(output);
+			List<String> actual = readLineByLine(new StringReader(output));
 			compareOutput(testPath, actual);
+		} else if (!output.isEmpty()) {
+			//expected == TestResult.EXEC_PASS
+			fail("Process output not empty:\n" + output);
 		}
 	}
 
