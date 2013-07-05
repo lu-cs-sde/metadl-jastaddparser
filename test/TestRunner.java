@@ -400,12 +400,15 @@ public class TestRunner {
 		File inputFile = new File(testPath, "input.test");
 		
 		PrintStream oldOut = null;
+		PrintStream oldErr = null;
 		ByteArrayOutputStream baos = null;
 		if (expected == TestResult.EXEC_OUTPUT_PASS) {
 			oldOut = System.out;
+			oldErr = System.err;
 			baos = new ByteArrayOutputStream(1024);
 			PrintStream newOut = new PrintStream(baos);
 			System.setOut(newOut);
+			System.setErr(newOut);
 		}
 		
 		T scanner;
@@ -427,6 +430,7 @@ public class TestRunner {
 		
 		if (expected == TestResult.EXEC_OUTPUT_PASS) {
 			System.setOut(oldOut);
+			System.setErr(oldErr);
 			StringReader output = new StringReader(baos.toString());
 			List<String> actual = readLineByLine(output);
 			compareOutput(testPath, actual);
