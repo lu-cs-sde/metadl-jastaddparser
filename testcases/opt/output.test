@@ -1,0 +1,13 @@
+%terminals T1;
+%terminals T2;
+%typeof b = "B";
+%typeof c = "C";
+%typeof a = "A";
+%goal a;
+a =
+c.c
+| b.b c.c   ;
+b =
+T1.T1   ;
+c =
+T2.T2   ;

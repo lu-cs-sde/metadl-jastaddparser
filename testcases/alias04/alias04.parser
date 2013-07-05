@@ -1,0 +1,1 @@
+A p1 = TOKEN TOKEN TOKEN {: return new A(TOKEN, TOKEN, TOKEN); :} ;

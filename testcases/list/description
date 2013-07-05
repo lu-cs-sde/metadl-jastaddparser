@@ -1,0 +1,3 @@
+Definitions can contain list elements, denoted by
+a plus sign. The parser will then accept one or
+more symbols of the same type.

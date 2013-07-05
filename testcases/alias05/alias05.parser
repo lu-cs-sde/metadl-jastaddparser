@@ -1,0 +1,3 @@
+A a = b.a c.a;
+B b = TOKEN1;
+C c = TOKEN2;
