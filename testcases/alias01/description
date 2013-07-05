@@ -1,0 +1,2 @@
+Definition elements (terminals and non-terminals) in production rules
+can have aliases, that are used to access them in action routines.

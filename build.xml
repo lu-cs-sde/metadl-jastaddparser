@@ -77,7 +77,7 @@
 			destfile = "JastAddParser.jar" 
 			basedir  = "bin" 
 			includes = "**/*.class" 
-			excludes = "TestRunner.class"
+			excludes = "Test*.class"
 			
 			compress = "false">
 	 		

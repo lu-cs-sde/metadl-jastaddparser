@@ -20,28 +20,27 @@ Building
 An Apache Ant script is provided in the root directory; build.xml.
 
 * Ordinary build (generate and compile)
-
-	> ant
+		> ant
 
 * Create jar file (JastAddParser.jar)
 
-	> ant jar
+		> ant jar
 
 * Bootstrap JastAddParser (replace the jar file used to build JastAddParser with the newly generated one)
 
-	> ant bootstrap
+		> ant bootstrap
 
 * Create source jar file (JastAddParser-src.jar)
 
-	> ant source
+		> ant source
 
 * Build and test JastAddParser
 
-	> ant test
+		> ant test
 
 * Remove generated files
 
-	> ant clean
+		> ant clean
 
 Test running
 ------------
