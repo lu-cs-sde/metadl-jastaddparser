@@ -1,0 +1,4 @@
+Since the first rule in the input is implicitly considered to be the
+start symbol of the grammar, the order of file concatentation can make
+a difference if the start symbol is not explicitly declared (i.e. using
+the %goal tag).

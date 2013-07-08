@@ -1,0 +1,2 @@
+The order of file concatentation can make a difference if
+rule definitions are replaced using the := operator.

@@ -1,0 +1,5 @@
+%header {: /* Does not work :} */ :};
+
+%embed {: String s = "Does not :} work" :};
+
+A a = T {: return "Does not work :}"; :};

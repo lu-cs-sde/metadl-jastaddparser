@@ -1,0 +1,3 @@
+A a = b c;
+B b = T;
+C c = U | V b;

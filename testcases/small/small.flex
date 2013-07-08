@@ -32,7 +32,7 @@ import small.parser.TestParser.Terminals;
   }
 
   private void error(String msg) throws Scanner.Exception {
-    throw new Scanner.Exception(yyline + 1, yycolumn + 1, yytext());
+    throw new Scanner.Exception(yyline + 1, yycolumn + 1, msg);
   }
 %}
 

@@ -1,0 +1,10 @@
+%header {:
+/* Does not work:};
+%embed {:
+String s = "Does not:};
+%terminals T;
+%typeof a = "A";
+%goal a;
+a =
+T.T {: return "Does not work:}
+;
