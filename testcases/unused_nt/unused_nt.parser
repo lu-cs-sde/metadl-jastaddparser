@@ -1,0 +1,4 @@
+%goal Production1;
+
+production1 = A;
+production2 = B;

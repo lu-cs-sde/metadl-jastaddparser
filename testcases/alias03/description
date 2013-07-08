@@ -1,0 +1,2 @@
+A definition is allowed to contain several identical (unnamed) elements,
+as long as they are not used in the corresponding action routine.  

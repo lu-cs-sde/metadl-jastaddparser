@@ -1,0 +1,4 @@
+A rule can be replaced by using the ":=" operator
+instead of the equals sign. This will shadow all
+definitions of the rule earlier in the input file,
+but not any later definitions. 

@@ -1,0 +1,2 @@
+If a definition contains several unnamed elements of the same type,
+those elements can not be used in an action routine.

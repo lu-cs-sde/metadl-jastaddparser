@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
-
 public class TestRunner {
 
 	/**
@@ -99,6 +98,10 @@ public class TestRunner {
 			if (name.endsWith(".ast") | name.endsWith(".jadd") | name.endsWith(".jrag")) {
 				fileArgs.append(' ').append(name);
 			}
+		}
+		
+		if (fileArgs.length() == 0) {
+			return;
 		}
 
 		StringBuffer command = new StringBuffer("java -jar tools/jastadd2.jar");
@@ -397,13 +400,14 @@ public class TestRunner {
 		File inputFile = new File(testPath, "input.test");
 		
 		PrintStream oldOut = null;
+		PrintStream oldErr = null;
 		ByteArrayOutputStream baos = null;
-		if (expected == TestResult.EXEC_OUTPUT_PASS) {
-			oldOut = System.out;
-			baos = new ByteArrayOutputStream(1024);
-			PrintStream newOut = new PrintStream(baos);
-			System.setOut(newOut);
-		}
+		oldOut = System.out;
+		oldErr = System.err;
+		baos = new ByteArrayOutputStream(1024);
+		PrintStream newOut = new PrintStream(baos);
+		System.setOut(newOut);
+		System.setErr(newOut);
 		
 		T scanner;
 		U parser;
@@ -422,11 +426,15 @@ public class TestRunner {
 			fail("Parser execution failed: " + e);
 		}
 		
+		System.setOut(oldOut);
+		System.setErr(oldErr);
+		String output = baos.toString();
 		if (expected == TestResult.EXEC_OUTPUT_PASS) {
-			System.setOut(oldOut);
-			StringReader output = new StringReader(baos.toString());
-			List<String> actual = readLineByLine(output);
+			List<String> actual = readLineByLine(new StringReader(output));
 			compareOutput(testPath, actual);
+		} else if (!output.isEmpty()) {
+			//expected == TestResult.EXEC_PASS
+			fail("Process output not empty:\n" + output);
 		}
 	}
 
@@ -466,8 +474,8 @@ public class TestRunner {
 	}
 
 	/**
-	 * Find all valid test directories (directories containing one or more
-	 * *.parser files) in the directory tree below the specified root directory
+	 * Find all valid test directories (directories containing a file with the
+	 * name result.test) in the directory tree below the specified root directory
 	 * 
 	 * @param rootDir
 	 *            the root of the tree to search

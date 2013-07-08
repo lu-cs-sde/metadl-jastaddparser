@@ -1,0 +1,7 @@
+A a = a b c;
+A a := a b;
+A a = d;
+
+B b = T1;
+C c = T2;
+D d = T3;

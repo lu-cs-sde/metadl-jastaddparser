@@ -1,0 +1,16 @@
+%header {:
+package alias03.parser;
+	
+import alias03.ast.*;
+import java.io.IOException;
+:};
+
+%embed {:
+	public Object parse(Scanner source) throws IOException, Parser.Exception {
+		Object a = super.parse(source);
+		System.out.println(a.getClass().getName());
+		return a;
+	}
+:};
+
+A p1 = TOKEN TOKEN TOKEN {: return new A(); :} ;

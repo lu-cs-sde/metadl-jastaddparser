@@ -23,11 +23,6 @@ import small.parser.TestParser.Terminals;
 %line %column
 
 %{
-  StringBuffer strbuf = new StringBuffer(128);
-  int sub_line;
-  int sub_column;
-  int strlit_start_line, strlit_start_column;
-
   private Symbol sym(short id) {
     return new Symbol(id, yyline + 1, yycolumn + 1, yylength(), yytext());
   }
