@@ -1,2 +1,3 @@
 Definition elements (terminals and non-terminals) in production rules
-can have aliases, that are used to access them in action routines.
+can have aliases. These are used to access the elements in action
+routines.

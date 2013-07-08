@@ -1,6 +1,5 @@
 <project name="JastAddParser tests" default="test" basedir="..">
 	
-	<property name="test.dir" location="testcases"/>
 	<property name="testsrc.dir" location="test"/>
 	<property name="tmp.dir" location="gen"/>
 	<property name="bin.dir" location="bin"/>

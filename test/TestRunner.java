@@ -254,13 +254,19 @@ public class TestRunner {
 			
 			Scanner outputScan = new Scanner(p.getInputStream());
 			while (outputScan.hasNextLine()) {
-				output.add(outputScan.nextLine());
+				String strippedLine = clean(outputScan.nextLine());
+				if (!strippedLine.isEmpty()) {
+					output.add(strippedLine);
+				}
 			}
 			outputScan.close();
 			
 			Scanner err = new Scanner(p.getErrorStream());
 			while (err.hasNextLine()) {
-				errors.add(err.nextLine());
+				String strippedLine = clean(err.nextLine());
+				if (!strippedLine.isEmpty()) {
+					errors.add(strippedLine);
+				}
 			}
 			err.close();
 			
@@ -272,6 +278,17 @@ public class TestRunner {
 					File parserSpec = new File(tmpRoot + '/' + testName, "TestParser.beaver");
 					List<String> lines = readFileLineByLine(parserSpec);
 					compareOutput(testRoot + '/' + testName, lines);
+				} else if (expected != TestResult.STEP_PASS) {
+					if (!output.isEmpty() || !errors.isEmpty()) {
+						StringBuffer msg = new StringBuffer("Process output not empty:\n");
+						for (String s : output) {
+							msg.append(s).append('\n');
+						}
+						for (String s : errors) {
+							msg.append(s).append('\n');
+						}
+						fail(msg.toString());
+					}
 				}
 			} else {
 				if (expected == TestResult.JAP_ERR_OUTPUT) {
@@ -323,6 +340,8 @@ public class TestRunner {
 	 */
 	private static String clean(String line) {
 		if (line.startsWith("There were errors in")) {
+			return "";
+		} else if (line.contains("Parser specification") && line.contains("generated from")) {
 			return "";
 		}
 		String noEOLComments = line.split("\\s*//")[0];
@@ -425,17 +444,15 @@ public class TestRunner {
 		} catch (java.lang.Exception e) {
 			fail("Parser execution failed: " + e);
 		}
-		
 		System.setOut(oldOut);
 		System.setErr(oldErr);
 		String output = baos.toString();
 		if (expected == TestResult.EXEC_OUTPUT_PASS) {
 			List<String> actual = readLineByLine(new StringReader(output));
 			compareOutput(testPath, actual);
-		} else if (!output.isEmpty()) {
-			//expected == TestResult.EXEC_PASS
+		} else if(!output.isEmpty()) {
 			fail("Process output not empty:\n" + output);
-		}
+		} 
 	}
 
 	/**
