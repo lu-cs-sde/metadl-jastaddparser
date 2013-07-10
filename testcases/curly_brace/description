@@ -1,1 +1,1 @@
-Header comments, embed code and action routines can not contain the substring ":}".
+If header comments, embed code or action routines contain the substring ":}", JastAddParser may produce an erroneous output file. 
