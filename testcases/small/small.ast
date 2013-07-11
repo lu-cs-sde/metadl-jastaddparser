@@ -1,6 +1,10 @@
-ExprTree ::= Expr;
+Calculation ::= Stmt*;
 
-abstract Expr;
+abstract Stmt;
+
+Assign: Stmt ::= IdUse Expr;
+
+abstract Expr: Stmt;
 abstract BinExpr : Expr ::= Left:Expr Right:Expr;
 AddExpr: BinExpr;
 SubExpr: BinExpr;

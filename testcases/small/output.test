@@ -1,3 +1,6 @@
+Assign
+i
+4
 Add
 Mul
 Par
@@ -6,3 +9,8 @@ Add
 i
 3
 1
+Assign
+j
+Add
+i
+3

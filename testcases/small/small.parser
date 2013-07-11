@@ -7,14 +7,23 @@ import java.io.IOException;
 
 %embed {:
 	public Object parse(Scanner source) throws IOException, Parser.Exception {
-		Object tree = super.parse(source);
-		((ExprTree) tree).print(System.out, 0);
-		return tree;
+		Object calc = super.parse(source);
+		((Calculation) calc).print(System.out, 0);
+		return calc;
 	}
 :};
 
-ExprTree tree
-	= expr.e						{: return new ExprTree(e); :}
+Calculation calc
+	= stmt.stmts*				{: return new Calculation(stmts); :}
+	;
+	
+Stmt stmt
+	= assign.a SEMI				{: return a; :}
+	| expr.e SEMI				{: return e; :}
+	;
+
+Assign assign
+	= id_use.id EQUALS expr.e		{: return new Assign(id, e); :}
 	;
 
 Expr expr

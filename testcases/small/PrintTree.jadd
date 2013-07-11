@@ -8,7 +8,7 @@ aspect PrintTree {
 		}
 	}
 	
-	public void Expr.print(PrintStream ps, int indent) {
+	public void Stmt.print(PrintStream ps, int indent) {
 		for (int i = 0; i < indent; i++) {
 			ps.print(' ');
 		}
@@ -17,7 +17,10 @@ aspect PrintTree {
 		printChildren(ps, indent + 1);
 	}
 	
+	public abstract String Stmt.name();
 	public abstract String Expr.name();
+	
+	public String Assign.name() { return "Assign"; }
 	
 	public String AddExpr.name() { return "Add"; }
 	public String SubExpr.name() { return "Sub"; }
@@ -29,7 +32,13 @@ aspect PrintTree {
 	
 	public String ParExpr.name() { return "Par"; }
 	
+	public abstract void Stmt.printChildren(PrintStream ps, int indent);
 	public abstract void Expr.printChildren(PrintStream ps, int indent);
+	
+	public void Assign.printChildren(PrintStream ps, int indent) {
+		getIdUse().print(ps, indent);
+		getExpr().print(ps, indent);
+	}
 	
 	public void BinExpr.printChildren(PrintStream ps, int indent) {
 		getLeft().print(ps, indent);

@@ -49,6 +49,7 @@ Identifier = [A-Za-z] [A-Za-z0-9]*
 
 <YYINITIAL> {
 	     {WhiteSpace}	{}
+	     "="	     { return sym(Terminals.EQUALS); }
 	     "+"	     { return sym(Terminals.PLUS); }
 	     "-"	     { return sym(Terminals.MINUS); }
 	     "*"	     { return sym(Terminals.MULT); }
@@ -56,6 +57,7 @@ Identifier = [A-Za-z] [A-Za-z0-9]*
 	     "-"	     { return sym(Terminals.MINUS); }
 	     "("	     { return sym(Terminals.LPAREN); }
 	     ")"	     { return sym(Terminals.RPAREN); }
+	     ";"	     { return sym(Terminals.SEMI); }
 	     {DecimalNumber} { return sym(Terminals.NUMBER); }
 	     {Identifier}    { return sym(Terminals.IDENTIFIER); }
 	     .			{ error("Error: " + yytext()); }
