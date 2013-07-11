@@ -1,0 +1,4 @@
+The "error" symbol is used by Beaver's error recovery mechanisms.
+If present in a rule definition, it will be treated as a terminal
+by JastAddParser (i.e. it does not require a definition despite
+not starting with an upper-case letter).

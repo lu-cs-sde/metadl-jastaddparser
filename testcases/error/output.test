@@ -1,0 +1,7 @@
+%terminals B;
+%terminals error;
+%terminals C;
+%typeof a = "A";
+%goal a;
+a =
+B.B error.error C.C   ;
