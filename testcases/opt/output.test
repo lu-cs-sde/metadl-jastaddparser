@@ -5,8 +5,9 @@
 %typeof a = "A";
 %goal a;
 a =
-c.c
-| b.b c.c   ;
+c.c {: return new A(new Opt(), c);:}
+| b.b c.c {: return new A(new Opt(b), c);:}
+;
 b =
 T1.T1   ;
 c =
