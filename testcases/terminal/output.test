@@ -1,0 +1,6 @@
+%terminals TOKEN;
+%typeof a = "A";
+%goal a;
+a =
+TOKEN.T TOKEN.t {: return new A(T, ((String)t.value));:}
+;

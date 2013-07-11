@@ -1,0 +1,7 @@
+Terminals can be constructed using either its Symbol object or its
+value String. If the terminal's alias starts with an upper-case
+letter, the former is used, otherwise, the latter is used.
+
+Note that if JastAdd is used to generate AST classes, it must be
+invoked with the --beaver switch to enable the use of Symbols to 
+construct AST objects. 
