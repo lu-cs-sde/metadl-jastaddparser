@@ -1,8 +1,0 @@
-%header {:
-	package tiny.parser;
-
-	import tiny.ast.*;
-:};
-
-Terminal single_production = TERMINAL	{: return new Terminal(TERMINAL); :}
-	 ;

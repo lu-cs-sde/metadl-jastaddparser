@@ -1,4 +1,0 @@
-Definitions can contain optional elements, denoted by
-a question mark. If these are referenced in the corresponding
-action routine, JastAddParser will ensure the creation of an
-Opt node.

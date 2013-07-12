@@ -1,4 +1,0 @@
-A a = b? c {: return new A(b, c); :};
-
-B b = T1;
-C c = T2;
