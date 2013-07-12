@@ -1,0 +1,2 @@
+Minimalistic example: A language with one type of token
+and the single production accepts at most one such token.

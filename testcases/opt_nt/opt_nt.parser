@@ -1,0 +1,6 @@
+A a = b? c     {: return new A(b, c); :}
+    | T3 b? T4 {: return new A(b); :}
+    | T3 b c?  {: return new A(b, c); :}
+    ;
+B b = T1;
+C c = T2;

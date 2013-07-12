@@ -1,0 +1,9 @@
+%terminals T1;
+%terminals T2;
+%terminals T3;
+%typeof a = "A";
+%goal a;
+a =
+T1.T1 T2.T2? T3.T3 {: return new A(T1, T2, T3);:}
+| T2.T2 T3.T3 T1.T1? {: return new A(T2, T3, T1);:}
+;

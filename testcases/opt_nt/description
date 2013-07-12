@@ -1,0 +1,15 @@
+Definitions can contain optional non-terminals, denoted by
+a question mark. If these are referenced in the corresponding
+action routine, JastAddParser will ensure the creation of an
+Opt node.
+
+The generated parser specification differs depending on where
+in the rule the optional element is located:
+
+- If the element is the first one in the rule, or if at least
+one of its neighbors is not a mandatory terminal symbol, the
+rule definition will contain two branches; one with the
+element and one without.
+
+- If the above is not the case, an additional rule will be
+created that handles the creation of the Opt node.

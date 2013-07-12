@@ -1,0 +1,10 @@
+Definitions can contain optional terminals, denoted by
+a question mark.
+
+If the element is not the first one in the rule and all of its
+neighbors are non-optional terminal symbols, the non-terminal
+will be supplied with a question mark in the generated file as
+well.
+
+Note: Beaver returns null in place of this symbol if it is
+not present during parsing.

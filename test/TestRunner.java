@@ -320,7 +320,10 @@ public class TestRunner {
 		List<String> lines = readFileLineByLine(new File(testDir, "output.test"));
 		StringBuffer expected = new StringBuffer();
 		for (String line : lines) {
-			expected.append(line).append('\n');
+			String strippedLine = clean(line);
+			if (!strippedLine.isEmpty()) {
+				expected.append(strippedLine).append('\n');
+			}
 		}
 		StringBuffer actual = new StringBuffer();
 		for (String line : output) {

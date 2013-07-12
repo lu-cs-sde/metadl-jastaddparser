@@ -1,0 +1,53 @@
+import java.io.PrintStream;
+
+aspect PrintTree {
+
+	public void ASTNode.print(PrintStream ps, int indent) {
+		for (int i = 0; i < getNumChild(); i++) {
+			getChild(i).print(ps, indent + 1);
+		}
+	}
+	
+	public void Stmt.print(PrintStream ps, int indent) {
+		for (int i = 0; i < indent; i++) {
+			ps.print(' ');
+		}
+		ps.print(name());
+		ps.print('\n');
+		printChildren(ps, indent + 1);
+	}
+	
+	public abstract String Stmt.name();
+	public abstract String Expr.name();
+	
+	public String Assign.name() { return "Assign"; }
+	
+	public String AddExpr.name() { return "Add"; }
+	public String SubExpr.name() { return "Sub"; }
+	public String MulExpr.name() { return "Mul"; }
+	public String DivExpr.name() { return "Div"; }
+	
+	public String Num.name() { return getNUMBER(); }
+	public String IdUse.name() { return getIDENTIFIER(); }
+	
+	public String ParExpr.name() { return "Par"; }
+	
+	public abstract void Stmt.printChildren(PrintStream ps, int indent);
+	public abstract void Expr.printChildren(PrintStream ps, int indent);
+	
+	public void Assign.printChildren(PrintStream ps, int indent) {
+		getIdUse().print(ps, indent);
+		getExpr().print(ps, indent);
+	}
+	
+	public void BinExpr.printChildren(PrintStream ps, int indent) {
+		getLeft().print(ps, indent);
+		getRight().print(ps, indent);
+	}
+	
+	public void UnExpr.printChildren(PrintStream ps, int indent) {}
+	public void ParExpr.printChildren(PrintStream ps, int indent) {
+		getExpr().print(ps, indent);
+	}
+
+}

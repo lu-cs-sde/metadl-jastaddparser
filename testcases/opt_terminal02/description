@@ -1,0 +1,10 @@
+Definitions can contain optional terminals, denoted by
+a question mark.
+
+If the element is the first one in the rule, or if at least
+one of its neighbors is not a mandatory terminal symbol, the
+rule definition will contain two branches; one with the
+element and one without.
+
+Note: If such an optional symbol is used in an action routine,
+the generated parser will not compile.

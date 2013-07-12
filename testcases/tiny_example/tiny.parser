@@ -1,0 +1,8 @@
+%header {:
+	package tiny_example.parser;
+
+	import tiny_example.ast.*;
+:};
+
+Terminal single_production = TERMINAL	{: return new Terminal(TERMINAL); :}
+	 ;
