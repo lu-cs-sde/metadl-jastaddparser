@@ -1,4 +1,4 @@
-A a = b* c;
+A a = b* c T1*;
 
 B b = T1;
 C c = T2;

@@ -1,0 +1,3 @@
+If an optional non-terminal has the specified type List, it
+will not be wrapped in an Opt node by the parser; a List node
+will be used instead.

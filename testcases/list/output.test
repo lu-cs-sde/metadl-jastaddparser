@@ -6,7 +6,7 @@
 %typeof a = "A";
 %goal a;
 a =
-b_list.b c.c   ;
+b_list.b c.c T1.T1+   ;
 b =
 T1.T1   ;
 c =

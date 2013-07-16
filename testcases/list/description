@@ -1,3 +1,7 @@
 Definitions can contain list elements, denoted by
 a plus sign. The parser will then accept one or
 more symbols of the same type.
+
+If the list element is a non-terminal symbol,
+JastAddParser will make sure that it is
+represented by a List node.

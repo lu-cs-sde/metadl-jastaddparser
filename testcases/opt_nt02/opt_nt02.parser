@@ -1,0 +1,6 @@
+A a = b? c     {: return new A(b, c); //first :}
+    | T3 b? T4 {: return new A(b);    //second :}
+    | T3 b c?  {: return new A(b, c); //third :}
+    ;
+Opt b = T1;
+Opt c = T2;

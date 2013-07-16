@@ -1,7 +1,7 @@
 JastAddParser
 =============
 
-JastAddParser is a preprocessor to the LR parser generator *Beaver*. It facilitates modularization of a parser specification into several files.
+JastAddParser is a preprocessor to the LR parser generator [Beaver](http://beaver.sourceforge.net). It facilitates modularization of a parser specification into several files. It also works as a bridge between the APIs of Beaver and [JastAdd](jastadd.org)'s predefined AST classes.
 
 JastAddParser can be run using the command `$ java -jar JastAddParser.jar input-file output-file`. The resulting file will, assuming the input file is well formed, be a parser specification that Beaver can process. Note that if the input consists of separate files, these must be concatenated before JastAddParser is invoked. In most cases, the order of concatenation is not relevant.
 
@@ -10,7 +10,7 @@ Specification syntax
 
 JastAddParser input files use a syntax similar to Beaver's, with some slight differences. Beaver supports a number of options to be specified at the start of a parser specification. Of these options, JastAddParser recognizes `%header`, `%embed` and `%goal`. `%typeof` and `%terminals` are generated automatically from the JastAddParser input file.
 
-Production rules are augmented by an (optional) Java class name at the start of the production, which JastAddParser uses to generate a corresponding `%typeof` option. JastAddParser also attempts to automatically generate variable aliases for all symbols in a production rule, in order to make them available in action routines.
+Production rules are augmented by an (optional) Java class name at the start of the production, which JastAddParser uses to generate a corresponding `%typeof` option. In productions containing optional symbols or lists, JastAddParser will automatically introduce subclasses to JastAdd's `ASTNode`. JastAddParser also attempts to automatically generate variable aliases for all symbols in a production rule, in order to make them available in action routines.
 
 For more details, see the unit tests in the `testcases` directory.
 

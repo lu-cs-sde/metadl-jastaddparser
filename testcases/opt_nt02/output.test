@@ -1,0 +1,24 @@
+%terminals T3;
+%terminals T4;
+%terminals T1;
+%terminals T2;
+%typeof b = "Opt";
+%typeof b_opt = "Opt";
+%typeof c = "Opt";
+%typeof a = "A";
+%goal a;
+a =
+c.c {: return new A(new Opt(), c); //first:}
+| b.b c.c {: return new A(b, c); //first:}
+| T3.T3 b_opt.b T4.T4 {: return new A(b); //second:}
+| T3.T3 b.b {: return new A(b, new Opt()); //third:}
+| T3.T3 b.b c.c {: return new A(b, c); //third:}
+;
+b =
+T1.T1   ;
+c =
+T2.T2   ;
+b_opt =
+{: return new Opt(); :}
+| b.n {: return n; :}
+;

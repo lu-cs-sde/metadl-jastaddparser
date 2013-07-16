@@ -1,0 +1,2 @@
+If an optional non-terminal has the specified type Opt, it
+will not be "double-wrapped" in an Opt node by the parser.
