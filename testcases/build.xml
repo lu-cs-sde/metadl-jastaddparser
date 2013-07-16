@@ -1,6 +1,6 @@
 <project name="JastAddParser tests" default="test" basedir="..">
 	
-	<property name="testsrc.dir" location="test"/>
+	<property name="testsrc.dir" location="src"/>
 	<property name="tmp.dir" location="gen"/>
 	<property name="bin.dir" location="bin"/>
 	<property name="tools.dir" location="tools"/>
@@ -11,7 +11,8 @@
 		<javac
 			debug="true"
 			srcdir="${testsrc.dir}"
-			destdir="${bin.dir}">
+			destdir="${bin.dir}"
+			includes="test/**/*.java">
 			<classpath>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 				<pathelement path="${tools.dir}/beaver-rt.jar"/>
@@ -29,7 +30,7 @@
 				<pathelement path="${tmp.dir}"/>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 			</classpath>
-			<test name="TestJastAddParser"/>
+			<test name="test.TestJastAddParser"/>
 			<formatter type="xml"/>
 		</junit>
 	</target>

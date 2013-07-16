@@ -1,3 +1,4 @@
+package test;
 /**
  * Possible results from a JastAddParser test.
  */

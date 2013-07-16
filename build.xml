@@ -63,7 +63,8 @@
     		debug     = "true" 
     		srcdir    = "src" 
     		destdir   = "bin"
-    		includes  = "**/*.java" />
+    		includes  = "**/*.java"
+    		excludes  = "test/**/*.java" />
 		
 	</target>
 	
@@ -77,7 +78,7 @@
 			destfile = "JastAddParser.jar" 
 			basedir  = "bin" 
 			includes = "**/*.class" 
-			excludes = "Test*.class"
+			excludes = "test/**/*.class"
 			
 			compress = "false">
 	 		
@@ -92,35 +93,20 @@
 	
 	<target 
 		name    = "source" 
-		depends = "build"
-		 description = "Create source jar" >
+        description = "Create source jar" >
 		
    		<jar destfile = "JastAddParser-src.jar" >
-   			<fileset dir = "." >
-   				<include name = "src/Main.java"/>
-   				  <include name = "src/beaver/**/*.java"/>
-   				<include name = "licenses/**/*" />
+			<fileset dir = ".">
+				<include name = "src/Main.java"/>
+   		        <include name = "src/beaver/**/*.java"/>
+				<include name = "licenses/**/*" />
    				<include name = "parser/**/*"/>
    				<include name = "tools/**/*.jar"/>
    				<include name = "build.xml"/>
+				
+				<exclude name = "parser/*.beaver"/>
    			</fileset>
-			<!--fileset dir = ".." >
-				<include name = "JastAddParser/Main.java" />
-				<include name = "JastAddParser/NameBinding.jrag" />
-				<include name = "JastAddParser/Grammar.ast" />
-				<include name = "JastAddParser/PrettyPrint.jrag" />
-				<include name = "JastAddParser/ErrorCheck.jrag" />
-				<include name = "JastAddParser/parser/GrammarParser.jastadd" />
-				<include name = "JastAddParser/parser/Grammar.flex" />
-				<include name = "JastAddParser/beaver/**/*.java" />
-				<include name = "JastAddParser/tools/*.jar" />
-				<include name = "JastAddParser/build.xml" />
-				<include name = "JastAddParser/licences/BSD" />
-				<include name = "JastAddParser/licences/CPL" />
-				<include name = "JastAddParser/licences/GPL" />
-				<include name = "JastAddParser/licences/LICENSE" />
-      		</fileset-->
-      		<manifest></manifest>
+			<manifest></manifest>
     	</jar>
 		
 	</target>
@@ -146,7 +132,11 @@
 	    <delete dir = "src/parser" />
 	    <delete dir = "src/${ASTPackage}" />
 	    <delete file = "JastAddParser.jar" />
-    	<delete dir = "bin"/>
+		<delete file = "JastAddParser-src.jar" />
+		<delete includeemptydirs="true">
+			<fileset dir="bin" includes="**/*" excludes="test/*"/>
+		</delete>
+    	<!--delete dir = "bin"/-->
     	<ant antfile="testcases/build.xml" inheritAll="false" target="clean"/>
 	</target>
 	
