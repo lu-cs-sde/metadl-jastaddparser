@@ -44,7 +44,6 @@ public abstract class Parser
 		}
 		public void syntaxError(Symbol token)
 		{
-			System.err.print(':');
 			System.err.print(Symbol.getLine(token.start));
 			System.err.print(',');
 			System.err.print(Symbol.getColumn(token.start));
@@ -67,7 +66,6 @@ public abstract class Parser
 		}
 		public void unexpectedTokenRemoved(Symbol token)
 		{
-			System.err.print(':');
 			System.err.print(Symbol.getLine(token.start));
 			System.err.print(',');
 			System.err.print(Symbol.getColumn(token.start));
@@ -90,7 +88,6 @@ public abstract class Parser
 		}
 		public void missingTokenInserted(Symbol token)
 		{
-			System.err.print(':');
 			System.err.print(Symbol.getLine(token.start));
 			System.err.print(',');
 			System.err.print(Symbol.getColumn(token.start));
@@ -113,7 +110,6 @@ public abstract class Parser
 		}
 		public void misspelledTokenReplaced(Symbol token)
 		{
-			System.err.print(':');
 			System.err.print(Symbol.getLine(token.start));
 			System.err.print(',');
 			System.err.print(Symbol.getColumn(token.start));
@@ -136,7 +132,6 @@ public abstract class Parser
 		}
 		public void errorPhraseRemoved(Symbol error)
 		{
-			System.err.print(':');
 			System.err.print(Symbol.getLine(error.start));
 			System.err.print(',');
 			System.err.print(Symbol.getColumn(error.start));
@@ -150,117 +145,143 @@ public abstract class Parser
 	
 	/**
 	 * This class wrapps a Scanner and provides a token "accumulator" for a parsing simulation.
-	 * <p>If a source we parse does not have syntax errors the only way this warpper affects a 
-	 * parser is via an extra indirection when it delivers next token. When though parser needs
-	 * to recover from a syntax error this wrapper accumulates tokens shifted by a forward parsing
-	 * simulation and later feeds them to a recovered parser</p>
+	 * <p>If a source that is being parsed does not have syntax errors this wrapper only adds 
+	 * one indirection while it delivers the next token. However when parser needs to recover
+	 * from a syntax error this wrapper accumulates tokens shifted by a forward parsing simulation
+	 * and later feeds them to the recovered parser.
 	 */
-	private class TokenStream
+	public class TokenStream
 	{
+		public static final boolean BUFFER = true;
+		public static final boolean FLUSH = false;
+		
+		private static final int BUF_SIZE = 4;
+		private static final int IDX_MASK = BUF_SIZE - 1;
+		
 		private Scanner  scanner;
 		private Symbol[] buffer;
-		private int      n_marked;
-		private int      n_read;
-		private int      n_written;
+		private int      idx_add;
+		private int      idx_get;
+		private int      ix_mark;
 		
-		TokenStream(Scanner scanner)
+		public TokenStream(Scanner scanner)
 		{
 			this.scanner = scanner;
-		}
-
-        TokenStream(Scanner scanner, Symbol first_symbol)
-        {
-            this(scanner);
-            mark(1);
-            buffer[0] = first_symbol;
-            n_written++;
-        }
-        
-		Symbol nextToken() throws IOException
-		{
-			if (buffer != null)
-			{				
-				if (n_read < n_written)
-					return buffer[n_read++];
-				
-				if (n_written < n_marked)
-				{
-					n_read++;
-					return buffer[n_written++] = readToken();
-				}
-				buffer = null;
-			}
-			return readToken();
-		}
-
-		/**
-		 * Prepare a stream to accumulate tokens.
-		 * 
-		 * @param size number of shifted tokens to accumulate
-		 */
-		void mark(int size)
-		{
-			buffer = new Symbol[(n_marked = size) + 1];
-			n_read = n_written = 0;
+			this.buffer  = new Symbol[BUF_SIZE];
+			this.ix_mark = -1;
 		}
 		
+		public void setMode(boolean buffering)
+		{
+			ix_mark = (buffering ? idx_get : -1);
+		}
+		
+		public boolean isBuffering()
+		{
+			return ix_mark >= 0;
+		}
+		
+		public boolean isEmpty()
+		{
+			return idx_get == idx_add;
+		}
+		
+		public boolean isFull()
+		{
+			return ((idx_add + 1) & IDX_MASK) == (isBuffering() ? ix_mark : idx_get);
+		}
+		
+		public int size()
+		{
+			return (idx_add - idx_get + BUF_SIZE) & IDX_MASK;
+		}
+		
+		public void enque(Symbol symbol)
+		{
+			if (isFull())
+				throw new IllegalStateException ("buffer is full");
+			buffer[idx_add++] = symbol;
+			idx_add &= IDX_MASK;
+		}
+		
+		public Symbol peek()
+		{
+			if (isEmpty())
+				throw new IllegalStateException ("buffer is empty");
+			return buffer[idx_get];
+		}
+		
+		public Symbol deque()
+		{
+			if (isEmpty())
+				throw new IllegalStateException ("buffer is empty");
+			Symbol symbol = buffer[idx_get++];
+			idx_get &= IDX_MASK;
+			return symbol;
+		}
+		
+		public TokenStream(Scanner scanner, Symbol first_symbol)
+		{
+			this(scanner);
+			enque(first_symbol);
+		}
+		
+		public Symbol nextToken() throws IOException
+		{
+			if (isBuffering())
+			{
+				if (isEmpty())
+				{
+					enque(readToken());
+				}
+				return deque();
+			} 
+			else 
+			{
+				return (isEmpty() ? readToken() : deque());
+			}
+		}
+
 		/**
 		 * Prepare accumulated tokens to be reread by a next simulation run
 		 * or by a recovered parser.
 		 */
-		void reset()
+		public void rewind()
 		{
-			n_read = 0;
+			if (!isBuffering())
+				throw new IllegalStateException ("stream is not buffering");
+			idx_get = ix_mark;
 		}
-
+		
 		/**
-		 * Checks whether a simulation filled the token accumulator. 
-		 * 
-		 * @return true if accumulator is full
+		 * Removes a symbol from the buffer.
 		 */
-		boolean isFull()
+		public void remove(int offset)
 		{
-			return n_read == n_marked;
+			if (!isBuffering())
+				throw new IllegalStateException ("stream is not buffering");
+			switch (offset)
+			{
+				case 0: 
+					deque();
+					ix_mark = idx_get;
+					break;
+				case 1: 
+					Symbol s0 = deque();
+					buffer[idx_get] = s0;
+					ix_mark = idx_get;
+					break;
+				default:
+					throw new IllegalStateException ("unsupported offset"); 
+			}
 		}
         
-		/**
-		 * Insert two tokens at the beginning of a stream 
-		 * 
-		 * @param token to be inserted
-		 */
-		void insert(Symbol t0, Symbol t1)
-		{
-			System.arraycopy(buffer, 0, buffer, 2, n_written);
-			buffer[0] = t0;
-			buffer[1] = t1;
-			n_written += 2;
-		}
-		
-		/**
-		 * Removes a token from the accumulator.
-		 * 
-		 * @param i index of a token in the accumulator.
-		 * @return removed token
-		 */
-		Symbol remove(int i)
-		{
-			Symbol token = buffer[i];
-			int last = n_written - 1;
-			while (i < last)
-			{
-				buffer[i] = buffer[++i];
-			}
-			n_written = last;
-			return token;
-		}
-		
 		/**
 		 * Reads next recognized token from the scanner. If scanner fails to recognize a token and
 		 * throws an exception it will be reported via Parser.scannerError().
 		 * <p>It is expected that scanner is capable of returning at least an EOF token after the
 		 * exception.</p>
 		 * 
-		 * @param src scanner
 		 * @return next recognized token
 		 * @throws IOException
 		 *             as thrown by a scanner
@@ -293,12 +314,12 @@ public abstract class Parser
 	 * the parser from a syntax error.
 	 * </p>
 	 */
-	private class Simulator
+	public class Simulator
 	{
 		private short[] states;
 		private int top, min_top;
 
-		boolean parse(TokenStream in) throws IOException
+		public boolean parse(TokenStream in) throws IOException
 		{
 			initStack();
 			do {
@@ -370,16 +391,16 @@ public abstract class Parser
 	}
 
 	/** The automaton tables. */
-	private final ParsingTables tables;
+	protected final ParsingTables tables;
 
 	/** Cached ID of the ACCEPT action. */
-	private final short accept_action_id;
+	protected final short accept_action_id;
 
 	/** The parser's stack. */
-	private short[] states;
+	protected short[] states;
 
 	/** Index of the stack's top element, i.e. it's = -1 when the stack is empty; */
-	private int top;
+	protected int top;
 
 	/** The stack of shifted symbols. */
 	protected Symbol[] _symbols;
@@ -395,80 +416,80 @@ public abstract class Parser
 		this.states = new short[256];
 	}
 
-    /**
-     * Parses a source and returns a semantic value of the accepted nonterminal
-     * 
-     * @param source of tokens - a Scanner
-     * @return semantic value of the accepted nonterminal
-     */
+	/**
+	* Parses a source and returns a semantic value of the accepted nonterminal
+	* 
+	* @param source of tokens - a Scanner
+	* @return semantic value of the accepted nonterminal
+	*/
 	public Object parse(Scanner source) throws IOException, Parser.Exception
 	{
 		init();
 		return parse(new TokenStream(source));
 	}
-    
-    /**
-     * Parses a source and returns a semantic value of the accepted nonterminal.
-     * Before parsing starts injects alternative goal marker into the source to
-     * indicate that an alternative goal should be matched.
-     * 
-     * @param source of tokens - a Scanner
-     * @param alt_goal_marker_id ID of a token like symbol that will be used as a marker
-     * @return semantic value of the accepted nonterminal
-     */
-    public Object parse(Scanner source, short alt_goal_marker_id) throws IOException, Parser.Exception
-    {
-        init();
-        TokenStream in = new TokenStream(source, new Symbol(alt_goal_marker_id));
-        return parse(in);
-    }
-    
-    private Object parse(TokenStream in) throws IOException, Parser.Exception
-    {
-        while (true)
-        {
-            Symbol token = in.nextToken();
-            while (true)
-            {
-                short act = tables.findParserAction(states[top], token.id);
-                if (act > 0)
-                {
-                    shift(token, act);
-                    break;
-                }
-                else if (act == accept_action_id)
-                {
-                    Symbol goal = _symbols[top];
-                    _symbols = null; // drop this stack to prevent loitering
-                    return goal.value;
-                }
-                else if (act < 0)
-                {
-                    Symbol nt = reduce(~act);
-                    act = tables.findNextState(states[top], nt.id);
-                    if (act > 0)
-                    {
-                        shift(nt, act);
-                    }
-                    else if (act == accept_action_id)
-                    {
-                        _symbols = null; // no loitering
-                        return nt.value;
-                    }
-                    else
-                    {
-                        throw new IllegalStateException("Cannot shift a nonterminal");
-                    }
-                }
-                else // act == 0, i.e. this is an error
-                {
-                    report.syntaxError(token);
-                    recoverFromError(token, in);
-                    break; // because error recovery altered token stream - parser needs to refetch the next token
-                }
-            }
-        }
-    }
+
+	/**
+	* Parses a source and returns a semantic value of the accepted nonterminal.
+	* Before parsing starts injects alternative goal marker into the source to
+	* indicate that an alternative goal should be matched.
+	* 
+	* @param source of tokens - a Scanner
+	* @param alt_goal_marker_id ID of a token like symbol that will be used as a marker
+	* @return semantic value of the accepted nonterminal
+	*/
+	public Object parse(Scanner source, short alt_goal_marker_id) throws IOException, Parser.Exception
+	{
+		init();
+		TokenStream in = new TokenStream(source, new Symbol(alt_goal_marker_id));
+		return parse(in);
+	}
+
+	private Object parse(TokenStream in) throws IOException, Parser.Exception
+	{
+		while (true)
+		{
+			Symbol token = in.nextToken();
+			while (true)
+			{
+				short act = tables.findParserAction(states[top], token.id);
+				if (act > 0)
+				{
+					shift(token, act);
+					break;
+				}
+				else if (act == accept_action_id)
+				{
+					Symbol goal = _symbols[top];
+					_symbols = null; // drop this stack to prevent loitering
+					return goal.value;
+				}
+				else if (act < 0)
+				{
+					Symbol nt = reduce(~act);
+					act = tables.findNextState(states[top], nt.id);
+					if (act > 0)
+					{
+						shift(nt, act);
+					}
+					else if (act == accept_action_id)
+					{
+						_symbols = null; // no loitering
+						return nt.value;
+					}
+					else
+					{
+						throw new IllegalStateException("Cannot shift a nonterminal");
+					}
+				}
+				else // act == 0, i.e. this is an error
+				{
+					report.syntaxError(token);
+					recoverFromError(token, in);
+					break; // because error recovery altered token stream - parser needs to refetch the next token
+				}
+			}
+		}
+	}
 
 	/**
 	 * Invoke actual reduce action routine.
@@ -485,7 +506,8 @@ public abstract class Parser
 	 */
 	private void init()
 	{
-		if (report == null) report = new Events();
+		if (report == null) 
+			report = new Events();
 		
 		_symbols = new Symbol[states.length];
 		top = 0; // i.e. it's not empty
@@ -550,47 +572,44 @@ public abstract class Parser
 		return lhs_sym;
 	}
 
-    /**
-     * Implements parsing error recovery. Tries several simple approches first, like deleting "bad" token
-     * or replacing the latter with one of the expected in his state (if possible). If simple methods did
-     * not work tries to do error phrase recovery.
-     * 
-     * It is expected that normally descendand parsers do not need to alter this method. In same cases though
-     * they may want to override it if they need a different error recovery strategy. 
-     * 
-     * @param token a lookahead terminal symbol that messed parsing 
-     * @param in token stream
-     * @throws IOException propagated from a scanner if it has issues with the source
-     * @throws Parser.Exception if Parser cannot recover
-     */
+	/**
+	 * Implements parsing error recovery. Tries several simple approches first, like deleting "bad" token
+	 * or replacing the latter with one of the expected (if possible). If simple methods have not worked
+	 * out, tries to do error phrase recovery.
+	 * 
+	 * It is expected that normally descendand parsers do not need to alter this method. In same cases though
+	 * they may want to override it if they need a different error recovery strategy. 
+	 * 
+	 * @param token a lookahead terminal symbol that messed parsing 
+	 * @param in token stream
+	 * @throws IOException propagated from a scanner if it has issues with the source
+	 * @throws Parser.Exception if Parser cannot recover
+	 */
 	protected void recoverFromError(Symbol token, TokenStream in) throws IOException, Parser.Exception
 	{
 		if (token.id == 0) // end of input
 			throw new Parser.Exception("Cannot recover from the syntax error");
 		
+		in.setMode(TokenStream.BUFFER);
+		
 		Simulator sim = new Simulator();
-		in.mark(3);
-		if (sim.parse(in)) // just delete "token" from the stream
-		{
-			in.reset();
-			report.unexpectedTokenRemoved(token);
-			return;
-		}
 		short current_state = states[top];
-		if (!tables.compressed) // then try other simple recoveries
+		if (!tables.compressed) // then we can try "insert missing" and "replace unexpected" recoveries
 		{
 			short first_term_id = tables.findFirstTerminal(current_state);
 			if (first_term_id >= 0)
 			{
 				Symbol term = new Symbol(first_term_id, _symbols[top].end, token.start);
-				in.insert(term, token); // insert expected terminal before unexpected one
-				in.reset();
+				in.enque(term); // insert expected terminal before the unexpected one
+				in.enque(token);
 				if (sim.parse(in))
 				{
-					in.reset();
+					in.rewind();
+					in.setMode(TokenStream.FLUSH);
 					report.missingTokenInserted(term);
 					return;
 				}
+				in.rewind();
 				
 				int offset = tables.actn_offsets[current_state];
 				
@@ -602,17 +621,18 @@ public abstract class Parser
 					if (tables.lookaheads[index] == term_id)
 					{
 						term.id = term_id;
-						in.reset();
 						if (sim.parse(in))
 						{
-							in.reset();
+							in.rewind();
+							in.setMode(TokenStream.FLUSH);
 							report.missingTokenInserted(term);
 							return;
 						}
+						in.rewind();
 					}
 				}
-				in.remove(1); // unexpected token, i.e. alter stream as if we replaced 
-				              // an unexpected token to an expected terminal
+				in.remove(1); // alter stream as if an expected terminal replaced the unexpected one
+				
 				term.start = token.start;
 				term.end = token.end;
 				
@@ -624,18 +644,29 @@ public abstract class Parser
 					if (tables.lookaheads[index] == term_id)
 					{
 						term.id = term_id;
-						in.reset();
 						if (sim.parse(in))
 						{
-							in.reset();
+							in.rewind();
+							in.setMode(TokenStream.FLUSH);
 							report.misspelledTokenReplaced(term);
 							return;
 						}
+						in.rewind();
 					}
 				}
 				in.remove(0); // simple recoveries failed - remove all stream changes 
 			}
 		}
+		// finally try parsing without the unexpected token (as if it was "deleted")
+		if (sim.parse(in)) 
+		{
+			in.rewind();
+			in.setMode(TokenStream.FLUSH);
+			report.unexpectedTokenRemoved(token);
+			return;
+		}
+		in.rewind();
+		
 		// Simple recoveries failed or are not applicable. Next step is an error phrase recovery.
 		/*
 		 * Find a state where parser can shift "error" symbol. Discard already reduced (and shifted)
@@ -657,16 +688,16 @@ public abstract class Parser
 		Symbol error = new Symbol(tables.error_symbol_id, first_sym.start, last_sym.end); // the end is temporary
 		shift(error, goto_state);
 
-		in.reset();
 		while (!sim.parse(in))
 		{
-			last_sym = in.remove(0);
-			if (last_sym.id == 0) // EOF
+			in.rewind();
+			if (in.peek().id == 0) // EOF
 				throw new Parser.Exception("Cannot recover from the syntax error");
-			in.reset();
+			in.remove(0);
 		}
-		error.end = last_sym.end;
-		in.reset();
+		in.rewind();
+		error.end = in.peek().end;
+		in.setMode(TokenStream.FLUSH);
 		report.errorPhraseRemoved(error);
 	}
 }

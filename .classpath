@@ -4,8 +4,8 @@
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="tools/beaver-rt.jar"/>
 	<classpathentry kind="lib" path="tools/jastadd2.jar"/>
 	<classpathentry kind="lib" path="tools/junit-4.11-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="tools/beaver-cc.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

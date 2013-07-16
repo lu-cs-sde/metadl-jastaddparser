@@ -221,7 +221,7 @@ public class TestRunner {
 		File parserDir = new File(parserPath);
 		parserDir.mkdirs();
 		
-		StringBuffer command = new StringBuffer("java -jar tools/beaver.jar");
+		StringBuffer command = new StringBuffer("java -jar tools/beaver-cc.jar");
 		command.append(" -d ").append(parserPath);
 		command.append(" -t -w -c ").append(fileNameBuf);
 

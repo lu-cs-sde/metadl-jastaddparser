@@ -25,9 +25,9 @@
 
 		<junit fork="yes" printsummary="yes" dir="${basedir}">
 			<classpath>
-				<pathelement location="${bin.dir}"/>
-				<pathelement location="${tmp.dir}"/>
-				<pathelement location="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
+				<pathelement path="${bin.dir}"/>
+				<pathelement path="${tmp.dir}"/>
+				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 			</classpath>
 			<test name="TestJastAddParser"/>
 			<formatter type="xml"/>
