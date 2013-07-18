@@ -249,7 +249,7 @@ public class TestRunner {
 			TestResult expected) {
 		// System.out.println(command);
 		List<String> output = new ArrayList<String>();
-		List<String> errors = new ArrayList<String>();
+//		List<String> errors = new ArrayList<String>();
 		try {
 			Process p = Runtime.getRuntime().exec(command);
 			
@@ -266,7 +266,7 @@ public class TestRunner {
 			while (err.hasNextLine()) {
 				String strippedLine = clean(err.nextLine());
 				if (!strippedLine.isEmpty()) {
-					errors.add(strippedLine);
+					output.add(strippedLine);
 				}
 			}
 			err.close();
@@ -280,12 +280,9 @@ public class TestRunner {
 					List<String> lines = readFileLineByLine(parserSpec);
 					compareOutput(testRoot + '/' + testName, lines);
 				} else if (expected != TestResult.STEP_PASS) {
-					if (!output.isEmpty() || !errors.isEmpty()) {
+					if (!output.isEmpty()) {
 						StringBuffer msg = new StringBuffer("Process output not empty:\n");
 						for (String s : output) {
-							msg.append(s).append('\n');
-						}
-						for (String s : errors) {
 							msg.append(s).append('\n');
 						}
 						fail(msg.toString());
@@ -293,10 +290,10 @@ public class TestRunner {
 				}
 			} else {
 				if (expected == TestResult.JAP_ERR_OUTPUT) {
-					compareOutput(testRoot + '/' + testName, errors);
+					compareOutput(testRoot + '/' + testName, output);
 				} else {
 					StringBuffer fullErrorMsg = new StringBuffer(errorMsg).append(':');
-					for (String line : errors) {
+					for (String line : output) {
 						fullErrorMsg.append('\n').append(line);
 					}
 					fullErrorMsg.append("\nProcess exited with value ").append(exitValue);

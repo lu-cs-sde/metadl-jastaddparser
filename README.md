@@ -49,8 +49,8 @@ Each test case has one of the following expected results:
 
 * `JAP_PASS`         = JastAddParser successfully processes the input file(s)
 * `JAP_ERR_OUTPUT`   = JastAddParser fails to process the input and terminates with specific error output
-* `JAP_OUTPUT_PASS`  = JastAddParser successfully processes the input and the resulting file matches the expected file
-* `EXEC_PASS`        = The generated parser successfully processes the parser input
+* `JAP_OUTPUT_PASS`  = JastAddParser successfully processes the input and the resulting file matches the expected file. Standard output is ignored.
+* `EXEC_PASS`        = The generated parser successfully processes the parser input and outputs nothing
 * `EXEC_OUTPUT_PASS` = The generated parser successfully processes the parser input and produces the expected output
 
 Test suite structure

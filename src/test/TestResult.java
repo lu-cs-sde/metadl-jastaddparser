@@ -17,7 +17,7 @@ public enum TestResult {
 
 	/**
 	 * JastAddParser successfully processes the input and the resulting file
-	 * matches the expected file
+	 * matches the expected file. Standard output is ignored.
 	 */
 	JAP_OUTPUT_PASS,
 
