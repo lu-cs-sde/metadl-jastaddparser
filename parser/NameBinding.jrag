@@ -20,7 +20,7 @@ aspect NameChecking {
 		  ArrayList rules = rule(firstGoal());
 		  if (!rules.isEmpty()) {
 			  Rule r = (Rule) rule(firstGoal()).get(0);
-			  r.warning("No explicit goals in grammar; will use " + firstGoal());
+			  r.warning("No explicit goals in grammar; will use \"" + firstGoal() + "\"");
 		  }
 	  }
 	  for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
