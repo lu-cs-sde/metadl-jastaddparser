@@ -30,13 +30,17 @@ public class Main {
 				GrammarParser parser = new GrammarParser();
 				Object o = parser.parse(scanner);
 				Grammar root = (Grammar)o;
-        Collection c = root.errorCheck();
-        if(!c.isEmpty()) {
+		ArrayList<String> errors = new ArrayList<String>();
+		ArrayList<String> warnings = new ArrayList<String>();
+        root.errorCheck(errors, warnings);
+        if(!errors.isEmpty()) {
           System.err.println("There were errors in " + args[0] + ":");
-          for(Iterator iter = c.iterator(); iter.hasNext(); )
+          for(Iterator iter = errors.iterator(); iter.hasNext(); )
             System.err.println(iter.next());
           System.exit(1);
         }
+        for(Iterator iter = warnings.iterator(); iter.hasNext(); )
+            System.err.println(iter.next());
 				FileOutputStream os = new FileOutputStream(args[1]);
 				PrintStream out = new PrintStream(os);
 				root.pp(out);

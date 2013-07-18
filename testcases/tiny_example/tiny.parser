@@ -4,5 +4,7 @@
 	import tiny_example.ast.*;
 :};
 
+%goal single_production;
+
 Terminal single_production = TERMINAL	{: return new Terminal(TERMINAL); :}
 	 ;

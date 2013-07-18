@@ -1,0 +1,1 @@
+If the grammar provides no definition for a non-terminal that is declared as a goal, JastAddParser aborts with an error message.

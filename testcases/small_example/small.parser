@@ -13,6 +13,8 @@ import java.io.IOException;
 	}
 :};
 
+%goal calc;
+
 Calculation calc
 	= stmt.stmts*				{: return new Calculation(stmts); :}
 	;

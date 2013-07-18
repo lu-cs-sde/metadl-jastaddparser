@@ -1,6 +1,4 @@
 %goal goal_production;
-%goal goal_production;
 %goal goal_production2;
 
 goal_production = TOKEN;
-goal_production2 = TOKEN2;

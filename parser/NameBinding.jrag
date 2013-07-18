@@ -15,6 +15,20 @@ import java.util.Set;
 aspect NameChecking {
   protected void ASTNode.nameCheck() {
   }
+  protected void Grammar.nameCheck() {
+	  if (explicitGoals().isEmpty()) {
+		  ArrayList rules = rule(firstGoal());
+		  if (!rules.isEmpty()) {
+			  Rule r = (Rule) rule(firstGoal()).get(0);
+			  r.warning("No explicit goals in grammar; will use " + firstGoal());
+		  }
+	  }
+	  for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
+		  Goal goal = (Goal) iter.next();
+		  if (rule(goal.getName()).isEmpty())
+			  goal.error("Goal " + goal.getName() + " is not defined");
+	  }
+  }
   protected void Rule.nameCheck() {
     if(uses().isEmpty() && !isGoal())
       error("Non terminal production " + name() + " is not used");
@@ -37,7 +51,7 @@ aspect NameBinding {
     if(!(getClause(index) instanceof Rule))
       return false;
     Rule r  = (Rule)getClause(index);
-    return explicitGoals().contains(r.name()) || r.name().equals(firstGoal());
+    return goal(r.name()) != null || r.name().equals(firstGoal());
   }
   syn lazy String Grammar.firstGoal() {
     for(int i = 0; i < getNumClause(); i++)
@@ -51,10 +65,21 @@ aspect NameBinding {
     for(int i = 0; i < getNumClause(); i++) {
       if(getClause(i) instanceof Goal) {
         Goal g = (Goal)getClause(i);
-        set.add(g.getName());
+//        set.add(g.getName());
+        set.add(g);
       }
     }
     return set;
+  }
+  
+  syn lazy Goal Grammar.goal(String name) {
+	  for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
+		  Goal g = (Goal) iter.next();
+		  if (g.getName().equals(name)) {
+			  return g;
+		  }
+	  }
+	  return null;
   }
   
   syn lazy String Element.name() = getIdUse().getID();
