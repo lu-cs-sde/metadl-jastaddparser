@@ -17,7 +17,7 @@ For more details, see the unit tests in the `testcases` directory.
 Building
 --------
 
-An Apache Ant script is provided in the root directory; build.xml.
+An Apache Ant script, `build.xml`, is provided in the root directory.
 
 * Ordinary build (generate and compile)
 		> ant
@@ -34,7 +34,7 @@ An Apache Ant script is provided in the root directory; build.xml.
 
 		> ant source
 
-* Build and test JastAddParser
+* Build JastAddParser and test the resulting jar file
 
 		> ant test
 
