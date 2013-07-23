@@ -9,6 +9,7 @@ aspect PrintTree {
 	}
 	
 	public void Stmt.print(PrintStream ps, int indent) {
+		ps.print("(" + getLine(getStart()) + ":" + getColumn(getStart()) + ")");
 		for (int i = 0; i < indent; i++) {
 			ps.print(' ');
 		}
