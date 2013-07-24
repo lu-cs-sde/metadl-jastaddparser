@@ -4,6 +4,7 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
 
 public class TestRunner {
@@ -33,7 +35,8 @@ public class TestRunner {
 	 *            path for generated code
 	 */
 	public static void runTest(String testRoot, String testName, String tmpRoot) {
-		TestResult expected = getResult(testRoot + SYS_FILE_SEP + testName);
+		Properties properties = getProperties(testRoot + SYS_FILE_SEP + testName);
+		TestResult expected = getResult(properties);
 
 		File testTmpDir = new File(tmpRoot, testName);
 		testTmpDir.mkdirs();
@@ -51,6 +54,20 @@ public class TestRunner {
 		runParser(testRoot, testName, expected);
 	}
 
+	private static Properties getProperties(String testPath) {
+		Properties props = new Properties();
+		try {
+			FileInputStream in = new FileInputStream(new File(testPath, "test.properties"));
+			props.load(in);
+			in.close();
+		} catch (FileNotFoundException e) {
+			fail("Could not find result file in " + testPath);
+		} catch (IOException e) {
+			fail("Could not read result file in " + testPath);
+		}
+		return props;
+	}
+
 	/**
 	 * Reads the expected test result from the result file in the test
 	 * directory.
@@ -59,15 +76,9 @@ public class TestRunner {
 	 *            the path to the test directory
 	 * @return the expected result
 	 */
-	private static TestResult getResult(String testPath) {
-		String result = null;
-		try {
-			Scanner scan = new Scanner(new File(testPath, "result.test"));
-			result = scan.next();
-			scan.close();
-		} catch (FileNotFoundException e) {
-			fail("Could not find result file in " + testPath);
-		}
+	private static TestResult getResult(Properties properties) {
+		String result = properties.getProperty("result");
+
 		if (result.equals("JAP_PASS")) {
 			return TestResult.JAP_PASS;
 		} else if (result.equals("JAP_ERR_OUTPUT")) {
