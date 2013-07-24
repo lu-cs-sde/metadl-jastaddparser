@@ -41,14 +41,14 @@ public class TestRunner {
 		File testTmpDir = new File(tmpRoot, testName);
 		testTmpDir.mkdirs();
 
-		invokeJastAddParser(testRoot, testName, tmpRoot, expected);
+		invokeJastAddParser(testRoot, testName, tmpRoot, properties, expected);
 		
 		if (expected != TestResult.EXEC_PASS && expected != TestResult.EXEC_OUTPUT_PASS) {
 			return;
 		}
 
 		invokeJFlex(testRoot, testName, tmpRoot);
-		invokeJastAdd(testRoot, testName, tmpRoot);
+		invokeJastAdd(testRoot, testName, tmpRoot, properties);
 		invokeBeaver(testRoot, testName, tmpRoot);
 		compileSourceFiles(testRoot, testName, tmpRoot);
 		runParser(testRoot, testName, expected);
@@ -61,9 +61,9 @@ public class TestRunner {
 			props.load(in);
 			in.close();
 		} catch (FileNotFoundException e) {
-			fail("Could not find result file in " + testPath);
+			fail("Could not find properties file in " + testPath);
 		} catch (IOException e) {
-			fail("Could not read result file in " + testPath);
+			fail("Could not read properties file in " + testPath);
 		}
 		return props;
 	}
@@ -101,9 +101,10 @@ public class TestRunner {
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
+	 * @param properties 
 	 */
 	private static void invokeJastAdd(String testRoot, String testName,
-			String tmpRoot) {
+			String tmpRoot, Properties properties) {
 		File testDir = new File(testRoot, testName);
 		File[] files = testDir.listFiles();
 		StringBuffer fileArgs = new StringBuffer();
@@ -117,11 +118,17 @@ public class TestRunner {
 		if (fileArgs.length() == 0) {
 			return;
 		}
-
+		testName = testName.replace(SYS_FILE_SEP, ".");
 		StringBuffer command = new StringBuffer("java -jar tools/jastadd2.jar");
 		command.append(" --package=").append(testName).append(".ast");
 		command.append(" --o=").append(tmpRoot);
-		command.append(" --beaver").append(fileArgs);
+		
+		String options = properties.getProperty("JastAddOptions"); 
+		if (options != null) {
+			command.append(' ').append(options).append(' ');
+		}
+		
+		command.append(fileArgs);
 
 		executeCommand(command.toString(), "JastAdd invocation failed",
 				TestResult.STEP_PASS);
@@ -154,10 +161,13 @@ public class TestRunner {
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
+	 * @param properties 
 	 * @param expected the expected result
 	 */
 	private static void invokeJastAddParser(String testRoot, String testName,
-			String tmpRoot, TestResult expected) {
+			String tmpRoot, Properties properties, TestResult expected) {
+		
+		String options = properties.getProperty("JAPOptions");
 		
 		String fileName = buildJastAddParserInput(testRoot, testName, tmpRoot);
 
@@ -165,6 +175,9 @@ public class TestRunner {
 		command.append(' ').append(fileName).append(' ');
 		command.append(tmpRoot).append(SYS_FILE_SEP).append(testName).append(SYS_FILE_SEP);
 		command.append("TestParser.beaver");
+		if (options != null) {
+			command.append(' ').append(options);
+		}
 		
 		executeCommand(testRoot, testName, tmpRoot,
 				command.toString(), "JastAddParser invocation failed", expected);
@@ -223,7 +236,6 @@ public class TestRunner {
 	 */
 	private static void invokeBeaver(String testRoot, String testName,
 			String tmpRoot) {
-		//TODO later versions of beaver seem to change exit status on failure and will report it
 		StringBuffer fileNameBuf = new StringBuffer(tmpRoot);
 		fileNameBuf.append(SYS_FILE_SEP).append(testName);
 		String testDir = fileNameBuf.toString();
@@ -260,7 +272,7 @@ public class TestRunner {
 	 */
 	private static void executeCommand(String testRoot, String testName, String tmpRoot, String command, String errorMsg,
 			TestResult expected) {
-		// System.out.println(command);
+//		 System.out.println(command);
 		List<String> output = new ArrayList<String>();
 //		List<String> errors = new ArrayList<String>();
 		try {
@@ -520,7 +532,7 @@ public class TestRunner {
 		for (File f : currentDir.listFiles()) {
 			if (f.isDirectory()) {
 				tests.addAll(getTests(f, rootDir));
-			} else if (f.getName().equals("result.test")) {
+			} else if (f.getName().equals("test.properties")) {
 				String rootPath = rootDir.getPath();
 				String testPath = currentDir.getPath();
 				if (testPath.startsWith(rootPath + SYS_FILE_SEP)) {

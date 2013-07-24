@@ -56,7 +56,7 @@ Each test case has one of the following expected results:
 Test suite structure
 --------------------
 
-Each test is contained in its own folder. The bare minimum for a test is a file `result.test` (specifying the type of result that implies a successful test) and one or more `.parser` files (used as input to JastAddParser). The presence of `result.test` is what causes the test system to recognize the folder as a test.
+Each test is contained in its own folder. The bare minimum for a test is a file `test.properties` (specifying among other things the type of result that implies a successful test) and one or more `.parser` files (used as input to JastAddParser). The presence of `test.properties` is what causes the test system to recognize the folder as a test.
 
 Optionally, test folders may contain a short `description` file, a `.flex` file (JFlex scanner specification) and any number of `.ast`, `.jrag` and `.jadd` files (input files for JastAdd). The scanner specification is mandatory if the expected result is `EXEC_PASS` or `EXEC_OUTPUT_PASS`.
 
