@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class TestRunner {
+	
+	private static String SYS_FILE_SEP = System.getProperty("file.separator");
 
 	/**
 	 * Build necessary source files, compile and run test
@@ -31,7 +33,7 @@ public class TestRunner {
 	 *            path for generated code
 	 */
 	public static void runTest(String testRoot, String testName, String tmpRoot) {
-		TestResult expected = getResult(testRoot + '/' + testName);
+		TestResult expected = getResult(testRoot + SYS_FILE_SEP + testName);
 
 		File testTmpDir = new File(tmpRoot, testName);
 		testTmpDir.mkdirs();
@@ -123,12 +125,12 @@ public class TestRunner {
 	 */
 	private static void invokeJFlex(String testRoot, String testName,
 			String tmpRoot) {
-		List<String> fList = collectFilesWithSuffix(testRoot + '/' + testName,
+		List<String> fList = collectFilesWithSuffix(testRoot + SYS_FILE_SEP + testName,
 				".flex", false);
 		String fileName = fList.get(0);
 
 		StringBuffer command = new StringBuffer("java -jar tools/JFlex.jar");
-		command.append(" -d ").append(tmpRoot).append('/').append(testName).append("/scanner");
+		command.append(" -d ").append(tmpRoot).append(SYS_FILE_SEP).append(testName).append("/scanner");
 		command.append(" -nobak ").append(fileName);
 		executeCommand(command.toString(), "Scanner generation failed", TestResult.STEP_PASS);
 	}
@@ -150,7 +152,7 @@ public class TestRunner {
 
 		StringBuffer command = new StringBuffer("java -jar tools/JastAddParser.jar");
 		command.append(' ').append(fileName).append(' ');
-		command.append(tmpRoot).append('/').append(testName).append('/');
+		command.append(tmpRoot).append(SYS_FILE_SEP).append(testName).append(SYS_FILE_SEP);
 		command.append("TestParser.beaver");
 		
 		executeCommand(testRoot, testName, tmpRoot,
@@ -169,7 +171,7 @@ public class TestRunner {
 	 */
 	private static String buildJastAddParserInput(String testRoot,
 			String testName, String tmpRoot) {
-		List<String> files = collectFilesWithSuffix(testRoot + '/' + testName, ".parser", false);
+		List<String> files = collectFilesWithSuffix(testRoot + SYS_FILE_SEP + testName, ".parser", false);
 		if (files.isEmpty()) {
 			fail("Could not find JastAddParser input specification");
 		}
@@ -179,7 +181,7 @@ public class TestRunner {
 
 		// sort file names lexicographically
 		Collections.sort(files);
-		File concatFile = new File(tmpRoot + '/' + testName, "TestParser.all");
+		File concatFile = new File(tmpRoot + SYS_FILE_SEP + testName, "TestParser.all");
 
 		try {
 			FileWriter out = new FileWriter(concatFile);
@@ -212,9 +214,9 @@ public class TestRunner {
 			String tmpRoot) {
 		//TODO later versions of beaver seem to change exit status on failure and will report it
 		StringBuffer fileNameBuf = new StringBuffer(tmpRoot);
-		fileNameBuf.append('/').append(testName);
+		fileNameBuf.append(SYS_FILE_SEP).append(testName);
 		String testDir = fileNameBuf.toString();
-		fileNameBuf.append('/').append("TestParser.beaver");
+		fileNameBuf.append(SYS_FILE_SEP).append("TestParser.beaver");
 		
 		StringBuffer parserDirBuf = new StringBuffer(testDir);
 		parserDirBuf.append("/parser");
@@ -276,9 +278,9 @@ public class TestRunner {
 				if (expected == TestResult.JAP_ERR_OUTPUT) {
 					fail("JastAddParser succeeded when expected to fail");
 				} else if (expected == TestResult.JAP_OUTPUT_PASS) {
-					File parserSpec = new File(tmpRoot + '/' + testName, "TestParser.beaver");
+					File parserSpec = new File(tmpRoot + SYS_FILE_SEP + testName, "TestParser.beaver");
 					List<String> lines = readFileLineByLine(parserSpec);
-					compareOutput(testRoot + '/' + testName, lines);
+					compareOutput(testRoot + SYS_FILE_SEP + testName, lines);
 				} else if (expected != TestResult.STEP_PASS) {
 					if (!output.isEmpty()) {
 						StringBuffer msg = new StringBuffer("Process output not empty:\n");
@@ -290,7 +292,7 @@ public class TestRunner {
 				}
 			} else {
 				if (expected == TestResult.JAP_ERR_OUTPUT) {
-					compareOutput(testRoot + '/' + testName, output);
+					compareOutput(testRoot + SYS_FILE_SEP + testName, output);
 				} else {
 					StringBuffer fullErrorMsg = new StringBuffer(errorMsg).append(':');
 					for (String line : output) {
@@ -416,7 +418,7 @@ public class TestRunner {
 	 */
 	private static <T extends beaver.Scanner, U extends beaver.Parser> void runParser(
 			String testRoot, String testName, TestResult expected) {
-		String testPath = testRoot + '/' + testName;
+		String testPath = testRoot + SYS_FILE_SEP + testName;
 		File inputFile = new File(testPath, "input.test");
 		
 		PrintStream oldOut = null;
@@ -432,7 +434,7 @@ public class TestRunner {
 		T scanner;
 		U parser;
 		try {
-			String testPackage = testName.replace('/', '.');
+			String testPackage = testName.replace(SYS_FILE_SEP, ".");
 			Class<T> scannerClass = (Class<T>) Class.forName(testPackage + ".scanner.TestScanner");
 
 			Constructor<T> scannerCon = scannerClass.getConstructor(java.io.Reader.class);
@@ -510,7 +512,7 @@ public class TestRunner {
 			} else if (f.getName().equals("result.test")) {
 				String rootPath = rootDir.getPath();
 				String testPath = currentDir.getPath();
-				if (testPath.startsWith(rootPath + '/')) {
+				if (testPath.startsWith(rootPath + SYS_FILE_SEP)) {
 					testPath = testPath.substring(rootPath.length() + 1);
 				}
 				tests.add(new Object[] { testPath });

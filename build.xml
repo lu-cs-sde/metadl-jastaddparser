@@ -27,7 +27,7 @@
 			package = "${ASTPackage}" 
 			rewrite = "true" 
 			beaver  = "true"
-			outdir  = "src"
+			outdir  = "${basedir}/src"
 			>
 			
 			<fileset dir = "parser" >
