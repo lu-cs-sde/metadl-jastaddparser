@@ -23,7 +23,7 @@ aspect PrettyPrint {
 	
 	public void ASTNode.pp() {
 	}
-	public void Grammar.pp(PrintStream out) {
+	public void Grammar.pp(PrintStream out, boolean beaver) {
 		ASTNode.out = out;
 		for(int i = 0; i < getNumClause(); i++) {
       if(getClause(i) instanceof Declaration) {
@@ -139,10 +139,10 @@ aspect PrettyPrint {
   }
 	
 	public void Header.pp() {
-		println("%header {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + ":};");
+		println("%header {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + " :};");
 	}
 	public void ClassCode.pp() {
-		println("%embed {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + ":};");
+		println("%embed {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + " :};");
 	}
 	
 	public void Rule.pp() {
@@ -251,7 +251,7 @@ aspect PrettyPrint {
           if(getElement(i).inlineOptional())
             optIndex *= 2;
         }
-        println("{: " + code + ":}");
+        println("{: " + code + " :}");
       }
     }
   }

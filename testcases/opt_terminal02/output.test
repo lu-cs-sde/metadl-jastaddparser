@@ -6,10 +6,10 @@
 %typeof a = "A";
 %goal a;
 a =
-T2.T2 {: return new A(T1, T2);:} //will not compile
-| T1.T1 T2.T2 {: return new A(T1, T2);:}
-| T3.T3 b.b {: return new A(T3, T1, b);:} //will not compile
-| T3.T3 T1.T1 b.b {: return new A(T3, T1, b);:}
+T2.T2 {: return new A(T1, T2); :} //will not compile
+| T1.T1 T2.T2 {: return new A(T1, T2); :}
+| T3.T3 b.b {: return new A(T3, T1, b); :} //will not compile
+| T3.T3 T1.T1 b.b {: return new A(T3, T1, b); :}
 ;
 b =
 T4.T4   ;

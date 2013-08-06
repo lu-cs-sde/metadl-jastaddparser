@@ -1,7 +1,7 @@
 %header {:
 /* Typically, header and embedded code
 * can be put in its own file for clarity
-*/:};
+*/ :};
 %terminals T;
 %terminals U;
 %terminals V;

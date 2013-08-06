@@ -4,8 +4,8 @@
 %goal list;
 list =
 list.list list_item.list_item {: list.add(list_item);
-return list;:}
-| list_item.list_item {: return new SymbolList(list_item);:}
+return list; :}
+| list_item.list_item {: return new SymbolList(list_item); :}
 ;
 list_item =
 TOKEN.TOKEN   ;
