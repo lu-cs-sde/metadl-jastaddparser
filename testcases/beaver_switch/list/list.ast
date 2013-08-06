@@ -1,3 +1,0 @@
-A ::= First:B* C Second:B*;
-B ::= <T1>;
-C ::= <T2>;
