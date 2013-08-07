@@ -2,6 +2,7 @@ package test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,6 +20,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
+
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 
 public class TestRunner {
 	
@@ -278,6 +282,8 @@ public class TestRunner {
 		try {
 			Process p = Runtime.getRuntime().exec(command);
 			
+			int exitValue = p.waitFor();
+			
 			Scanner outputScan = new Scanner(p.getInputStream());
 			while (outputScan.hasNextLine()) {
 				String strippedLine = clean(outputScan.nextLine());
@@ -286,7 +292,6 @@ public class TestRunner {
 				}
 			}
 			outputScan.close();
-			
 			Scanner err = new Scanner(p.getErrorStream());
 			while (err.hasNextLine()) {
 				String strippedLine = clean(err.nextLine());
@@ -296,7 +301,6 @@ public class TestRunner {
 			}
 			err.close();
 			
-			int exitValue = p.waitFor();
 			if (exitValue == 0) {
 				if (expected == TestResult.JAP_ERR_OUTPUT) {
 					fail("JastAddParser succeeded when expected to fail");
@@ -421,15 +425,23 @@ public class TestRunner {
 
 		List<String> sourceFiles = collectFilesWithSuffix(path.getPath(),
 				".java", true);
-		StringBuffer fileArgs = new StringBuffer();
+		StringBuffer arguments = new StringBuffer("-cp tools/beaver-rt.jar -g");
 		for (String s : sourceFiles) {
-			fileArgs.append(' ').append(s);
+			arguments.append(' ').append(s);
 		}
 
-		StringBuffer command = new StringBuffer("javac -cp tools/beaver-rt.jar -g");
+		/*StringBuffer command = new StringBuffer("javac -cp tools/beaver-rt.jar -g");
 		command.append(fileArgs);
 		executeCommand(command.toString(),
-				"Compilation of generated source files failed", TestResult.STEP_PASS);
+				"Compilation of generated source files failed", TestResult.STEP_PASS);*/
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		ByteArrayInputStream in = new ByteArrayInputStream(new byte[0]);
+		ByteArrayOutputStream err = new ByteArrayOutputStream();
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		int exitValue = compiler.run(in, out, err, arguments.toString().split(" "));
+		if (exitValue != 0) {
+			fail("Compilation of generated source files failed:\n" + err.toString());
+		}
 	}
 
 	/**
