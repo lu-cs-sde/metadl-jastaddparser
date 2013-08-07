@@ -1,0 +1,22 @@
+%header {:
+package beaver_switch.list.parser;
+	
+import beaver_switch.list.ast.*;
+import java.io.IOException;
+:};
+
+%embed {:
+	/*public Object parse(Scanner source) throws IOException, Parser.Exception {
+		Object a = super.parse(source);
+		System.out.print(a);
+		return a;
+	}
+	*/
+:};
+
+%goal a;
+
+A a = b+ c T1+;
+
+B b = T1;
+C c = T2;

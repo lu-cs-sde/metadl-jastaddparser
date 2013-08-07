@@ -1,0 +1,1 @@
+With the --beaver switch, line and column numbering still works when list nodes are used.
