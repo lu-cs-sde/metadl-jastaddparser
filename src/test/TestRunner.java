@@ -435,6 +435,9 @@ public class TestRunner {
 		executeCommand(command.toString(),
 				"Compilation of generated source files failed", TestResult.STEP_PASS);*/
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		if (compiler == null) {
+			fail("No Java compiler found");
+		}
 		ByteArrayInputStream in = new ByteArrayInputStream(new byte[0]);
 		ByteArrayOutputStream err = new ByteArrayOutputStream();
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
