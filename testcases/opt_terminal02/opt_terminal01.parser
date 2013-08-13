@@ -1,4 +1,0 @@
-A a = T1? T2   {: return new A(T1, T2); :}
-    | T3 T1? b {: return new A(T3, T1, b); :}
-    ;
-B b = T4;
