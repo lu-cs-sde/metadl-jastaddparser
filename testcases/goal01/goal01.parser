@@ -3,4 +3,4 @@
 %goal goal_production2;
 
 A goal_production = TOKEN			{: return new A(TOKEN); :};
-B String goal_production2 = TOKEN2	{: return new B(TOKEN2); :};
+B goal_production2 = TOKEN2	{: return new B(TOKEN2); :};
