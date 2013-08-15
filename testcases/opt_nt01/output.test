@@ -20,5 +20,6 @@ c =
 T2.T2   ;
 b_opt =
 {: return new Opt(); :}
-| b.n {: return new Opt(n); :}
+| b.n
+{: return new Opt(n); :}
 ;

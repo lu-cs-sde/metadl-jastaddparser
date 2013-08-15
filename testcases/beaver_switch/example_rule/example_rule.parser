@@ -1,0 +1,6 @@
+TypeName non_terminal = non_terminal2 TERMINAL	{: return new TypeName(non_terminal2); :}
+	      			  | TERMINAL				{: return new TypeName(); :} 
+				      ;
+
+TypeName non_terminal2 = TERMINAL2				{: return new TypeName(TERMINAL2); :}
+					   ;

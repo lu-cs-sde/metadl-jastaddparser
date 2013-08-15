@@ -1,0 +1,21 @@
+%header {:
+package beaver_switch.alias03.parser;
+	
+import beaver_switch.alias03.ast.*;
+import java.io.IOException;
+:};
+
+%embed {:
+	public Object parse(Scanner source) throws IOException, Parser.Exception {
+		A a = (A) super.parse(source);
+		StringBuffer sb = new StringBuffer(a.getClass().getName());
+		sb.append(" (").append(a.getLine(a.getStart())).append(':').append(a.getColumn(a.getStart()));
+		sb.append(")-(").append(a.getLine(a.getEnd())).append(':').append(a.getColumn(a.getEnd()));
+		sb.append(')');
+		System.out.println(sb.toString());
+		return a;
+	}
+:};
+
+%goal p1;
+A p1 = TOKEN TOKEN TOKEN {: return new A(); :} ;

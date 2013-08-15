@@ -1,7 +1,7 @@
 %header {:
-package opt_list.parser;
+package beaver_switch.opt_list.parser;
 	
-import opt_list.ast.*;
+import beaver_switch.opt_list.ast.*;
 import java.io.IOException;
 :};
 

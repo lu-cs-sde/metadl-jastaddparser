@@ -13,8 +13,10 @@ import java.io.PrintStream;
 aspect PrettyPrint {
   public static String ASTNode.sourceName = "";
 
-	protected static PrintStream ASTNode.out;
-	protected static void ASTNode.print(String s) {
+  protected static PrintStream ASTNode.out;
+  protected static boolean ASTNode.beaver;
+  
+  	protected static void ASTNode.print(String s) {
 		out.print(s);
 	}
 	protected static void ASTNode.println(String s) {
@@ -25,6 +27,7 @@ aspect PrettyPrint {
 	}
 	public void Grammar.pp(PrintStream out, boolean beaver) {
 		ASTNode.out = out;
+		ASTNode.beaver = beaver;
 		for(int i = 0; i < getNumClause(); i++) {
       if(getClause(i) instanceof Declaration) {
         getClause(i).pp();
@@ -105,38 +108,66 @@ aspect PrettyPrint {
         Rule r = (Rule)list.iterator().next();
         if(r.type().equals("List")) {
           println(name + "_opt =");
-          println("    {: return new List(); :}");
-          println("  | " + name + ".n {: return n; :}");
+          printReturn("new List()");
+	      println("  | " + name + ".n");
+	      printReturn("n", "n", "n");
           println("  ;");
         }
         else if(r.type().equals("Opt")) {
           println(name + "_opt =");
-          println("    {: return new Opt(); :}");
-          println("  | " + name + ".n {: return n; :}");
+          printReturn("new Opt()");
+          println("  | " + name + ".n");
+          printReturn("n", "n", "n");
           println("  ;");
         }
         else {
           println(name + "_opt =");
-          println("    {: return new Opt(); :}");
-          println("  | " + name + ".n {: return new Opt(n); :}");
+          printReturn("new Opt()");
+          println("  | " + name + ".n");
+          printReturn("new Opt(n)", "n", "n");
           println("  ;");
         }
       }
       if(genOptList) {
         println(name + "_opt_list =");
-        println("    {: return new List(); :}");
-        println("  | " + name + "_list.n {: return n; :}");
+        printReturn("new List()");
+        println("  | " + name + "_list.n");
+        printReturn("n", "n", "n");
         println("  ;");
       }
       if(genList) {
         println(name + "_list =");
-        println("    " + name + ".n {: return new List().add(n); :}");
-        println("  | " + name + "_list.l " + name + ".n {: return l.add(n); :}");
+        println("    " + name + ".n");
+        printReturn("new List().add(n)", "n", "n");
+        println("  | " + name + "_list.l " + name + ".n");
+        printReturn("l.add(n)", "l", "n");
         println("  ;");
       }
       print("\n");
     }
   }
+	
+	private void Grammar.printReturn(String returnVal, String alias1, String alias2) {
+		if (!beaver) {
+			println("    {: return " + returnVal + "; :}");
+		} else {
+		    println("    {: ASTNode _node_ = " + returnVal + ";");
+		    println("       _node_.start = _symbol_" + alias1 + ".getStart();");
+		    println("       _node_.end = _symbol_" + alias2 + ".getEnd();");
+		    println("       return new Symbol(_node_); :}");
+		}
+	}
+	
+	private void Grammar.printReturn(String returnVal) {
+		if (!beaver) {
+			println("    {: return " + returnVal + "; :}");
+		} else { 
+	      println("    {: ASTNode _node_ = " + returnVal + ";");
+	      println("       _node_.start = 0;");
+	      println("       _node_.end = 0;");
+	      println("       return new Symbol(_node_); :}");
+		}
+	}
 	
 	public void Header.pp() {
 		println("%header {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + " :};");
@@ -183,77 +214,109 @@ aspect PrettyPrint {
   }
 
   public void Definition.pp() {
-    for(int j = 0; j < permutations(); j++) {
-      int optIndex = 1;
-      if(j != 0)
-        print("\n  | ");
-      for(int i = 0; i < getNumElement(); i++) {
-        if(getElement(i).inlineOptional()) {
-          if((j & optIndex) != 0) {
-            getElement(i).pp();
-            print(" ");
-          }
-          optIndex *= 2;
-        }
-        else {
-          getElement(i).pp();
-          print(" ");
-        }
-      }
-      if(getCODE() != null && !getCODE().equals("")) {
-        String code = getCODE();
-        optIndex = 1;
-        for(int i = 0; i < getNumElement(); i++) {
-          if(getElement(i).inlineOptional() && getElement(i).isNonTerminal()) {
-            String name = getElement(i).alias();
-            // the char before must be one of " ", "(", ")", ","
-            // the char after must be one of " ", "," ")", "."
-            String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
-            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
-            java.util.regex.Matcher m = p.matcher(code);
-            StringBuffer sb = new StringBuffer();
-            while (m.find()) {
-              String type = getElement(i).rule().type();
-              if((j & optIndex) != 0) {
-                if(type.equals("Opt") || type.equals("List"))
-                  m.appendReplacement(sb, "$1$2$3");
-                else
-                  m.appendReplacement(sb, "$1new Opt($2)$3");
-              }
-              else {
-                if(type.equals("List"))
-                  m.appendReplacement(sb, "$1new List()$3");
-                else 
-                  m.appendReplacement(sb, "$1new Opt()$3");
-              }
-            }
-            m.appendTail(sb);
-            code = sb.toString();
-          }
-          else if(!getElement(i).isNonTerminal()) {
-            String name = getElement(i).alias();
-            // the char before must be one of " ", "(", ")", ","
-            // the char after must be one of " ", "," ")", "."
-            String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
-            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
-            java.util.regex.Matcher m = p.matcher(code);
-            StringBuffer sb = new StringBuffer();
-            while (m.find()) {
-              if(Character.isUpperCase(name.charAt(0)))
-                m.appendReplacement(sb, "$1$2$3");
-              else
-                m.appendReplacement(sb, "$1((String)$2.value)$3");
-            }
-            m.appendTail(sb);
-            code = sb.toString();
-            //code = code.replaceAll(pattern, "((String)" + name + ".value)");
-          }
-          if(getElement(i).inlineOptional())
-            optIndex *= 2;
-        }
-        println("{: " + code + " :}");
-      }
-    }
+		for (int j = 0; j < permutations(); j++) {
+			int optIndex = 1;
+			int firstElementIndex = 0;
+			int lastElementIndex = 0;
+			if (j != 0)
+				print("\n  | ");
+			for (int i = 0; i < getNumElement(); i++) {
+				if (getElement(i).inlineOptional()) {
+					if ((j & optIndex) != 0) {
+						getElement(i).pp();
+						print(" ");
+						lastElementIndex = i;
+					} else if (i == firstElementIndex) {
+						firstElementIndex++;
+					}
+					optIndex *= 2;
+				} else {
+					getElement(i).pp();
+					print(" ");
+					lastElementIndex = i;
+				}
+			}
+			if (getCODE() != null && !getCODE().equals("")) {
+				String code = getCODE();
+				optIndex = 1;
+				for (int i = 0; i < getNumElement(); i++) {
+					if (getElement(i).inlineOptional() && getElement(i).isNonTerminal()) {
+						String name = getElement(i).alias();
+						// the char before must be one of " ", "(", ")", ","
+						// the char after must be one of " ", "," ")", "."
+						String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
+						java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+						java.util.regex.Matcher m = p.matcher(code);
+						StringBuffer sb = new StringBuffer();
+						while (m.find()) {
+							String type = getElement(i).rule().type();
+							if ((j & optIndex) != 0) {
+								if (type.equals("Opt") || type.equals("List"))
+									m.appendReplacement(sb, "$1$2$3");
+								else
+									m.appendReplacement(sb, "$1new Opt($2)$3");
+							} else {
+								if (type.equals("List"))
+									m.appendReplacement(sb, "$1new List()$3");
+								else
+									m.appendReplacement(sb, "$1new Opt()$3");
+							}
+						}
+						m.appendTail(sb);
+						code = sb.toString();
+					} else if (!getElement(i).isNonTerminal()) {
+						String name = getElement(i).alias();
+						// the char before must be one of " ", "(", ")", ","
+						// the char after must be one of " ", "," ")", "."
+						String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
+						java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+						java.util.regex.Matcher m = p.matcher(code);
+						StringBuffer sb = new StringBuffer();
+						while (m.find()) {
+							if (Character.isUpperCase(name.charAt(0)))
+								m.appendReplacement(sb, "$1$2$3");
+							else
+								m.appendReplacement(sb, "$1((String)$2.value)$3");
+						}
+						m.appendTail(sb);
+						code = sb.toString();
+						// code = code.replaceAll(pattern, "((String)" + name + ".value)");
+					}
+					if (getElement(i).inlineOptional())
+						optIndex *= 2;
+				}
+				
+				if (beaver) {
+					String returnPattern = "return ([^;]*?);";
+					java.util.regex.Pattern p = java.util.regex.Pattern.compile(returnPattern);
+					java.util.regex.Matcher m = p.matcher(code);
+					StringBuffer sb = new StringBuffer();
+					
+					String firstElemPos = "0";
+					String lastElemPos = "0";
+					if (firstElementIndex <= lastElementIndex) {
+						firstElemPos = getElement(firstElementIndex).alias() + ".getStart()";
+						lastElemPos = getElement(lastElementIndex).alias() + ".getEnd()";
+						if (getElement(firstElementIndex).isNonTerminal())
+							firstElemPos = "_symbol_" + firstElemPos; 
+						if (getElement(lastElementIndex).isNonTerminal())
+							lastElemPos  = "_symbol_" + lastElemPos;
+					}
+					
+					
+					while (m.find()) {
+						m.appendReplacement(sb, "ASTNode _node_ = $1;\n"
+								+ "        _node_.start = " + firstElemPos + ";\n"
+								+ "        _node_.end = " + lastElemPos + ";\n"
+								+ "        return new Symbol(_node_);");
+					}
+					m.appendTail(sb);
+					code = sb.toString();
+				}
+				
+				println("{: " + code + " :}");
+			}
+		}
   }
 	public void Element.pp() {
 		print(name());

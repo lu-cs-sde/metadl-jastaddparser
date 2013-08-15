@@ -12,6 +12,8 @@ T1.T1   ;
 c =
 T2.T2   ;
 b_list =
-b.n {: return new List().add(n); :}
-| b_list.l b.n {: return l.add(n); :}
+b.n
+{: return new List().add(n); :}
+| b_list.l b.n
+{: return l.add(n); :}
 ;

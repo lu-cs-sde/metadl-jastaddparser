@@ -1,8 +1,1 @@
-Definitions can contain optional list elements,
-denoted by an asterisk. The parser will then
-accept zero or more symbols of the same type.
-
-
-If the list element is a non-terminal symbol,
-JastAddParser will make sure that it is
-represented by a List node.
+Definitions can contain optional list elements, denoted by an asterisk. The parser will then accept zero or more symbols of the same type. If the list element is a non-terminal symbol, JastAddParser will make sure that it is represented by a List node.

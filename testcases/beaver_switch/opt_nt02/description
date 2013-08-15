@@ -1,0 +1,1 @@
+Row and column numbers are calculated correctly when JastAddParser is invoked with --beaver, optional non-terminals are present in the grammar and input matches a production where an optional element is not matched.

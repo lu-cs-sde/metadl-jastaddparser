@@ -1,0 +1,56 @@
+aspect ToString {
+    public String ASTNode.toString() {
+		StringBuffer sb = new StringBuffer();
+		toString(sb, 1);
+		return sb.toString();
+    }
+
+    public void ASTNode.toString(StringBuffer sb, int indent) {
+		appendString(sb, indent);
+		sb.append('\n');
+		appendChildren(sb, indent);
+    }
+   
+    public void Opt.toString(StringBuffer sb, int indent) {
+    	appendChildren(sb, indent - 1);
+    }
+    
+    public void ASTNode.appendString(StringBuffer sb, int indent) {}
+ 
+    public void A.appendString(StringBuffer sb, int indent) {
+    	appendRowCol(sb, indent, getLine(getStart()), getColumn(getStart()), getLine(getEnd()), getColumn(getEnd()));
+    	sb.append("A\n");
+    }
+
+    public void B.appendString(StringBuffer sb, int indent) {
+    	appendRowCol(sb, indent, getLine(getStart()), getColumn(getStart()), getLine(getEnd()), getColumn(getEnd()));
+		sb.append("B\n");
+		appendRowCol(sb, indent + 1, getLine(T1start), getColumn(T1start), getLine(T1end), getColumn(T1end));
+		sb.append("T1");
+    }
+
+    public void C.appendString(StringBuffer sb, int indent) {
+    	appendRowCol(sb, indent, getLine(getStart()), getColumn(getStart()), getLine(getEnd()), getColumn(getEnd()));
+		sb.append("C\n");
+		appendRowCol(sb, indent + 1, getLine(T2start), getColumn(T2start), getLine(T2end), getColumn(T2end));
+		sb.append("T2");
+    }
+    
+    public void ASTNode.appendRowCol(StringBuffer sb, int indent, int lStart, int lEnd, int cStart, int cEnd) {
+		sb.append('(').append(lStart).append(':');
+		sb.append(lEnd).append(")-(");
+		sb.append(cStart).append(':');
+		sb.append(cEnd).append(")");
+		appendIndent(sb, indent);
+    }
+
+    public void ASTNode.appendIndent(StringBuffer sb, int indent) {
+		for (int i = 0; i < indent; i++)
+		    sb.append(' ');
+    }
+    
+    public void ASTNode.appendChildren(StringBuffer sb, int indent) {
+	    for (int i = 0; i < getNumChild(); i++)
+	    	getChild(i).toString(sb, indent + 1);
+    }
+}

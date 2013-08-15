@@ -1,0 +1,22 @@
+aspect ToString {
+	
+	protected static StringBuffer ASTNode.sb = new StringBuffer();
+	
+	syn lazy String ASTNode.toString() {
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < getNumChild(); i++) {
+			sb.append(getChild(i).toString());
+		}
+		return sb.toString();
+	}
+	
+	syn lazy String A.toString() {
+		StringBuffer sb = new StringBuffer("A(");
+		sb.append(super.toString());
+		sb.append(")");
+		return sb.toString();
+	}
+	
+	syn lazy String B.toString() = "B(T1)";
+	syn lazy String C.toString() = "C(T2)";
+}

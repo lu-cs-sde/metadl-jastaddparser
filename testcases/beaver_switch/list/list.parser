@@ -1,0 +1,23 @@
+%header {:
+package beaver_switch.list.parser;
+	
+import beaver_switch.list.ast.*;
+import java.io.IOException;
+:};
+
+%embed {:
+	public Object parse(Scanner source) throws IOException, Parser.Exception {
+		Object a = super.parse(source);
+		System.out.println(a);
+		return a;
+	}
+	
+:};
+
+%goal a;
+
+//Removed the last token T1+ from this production since we cannot call getEnd() on a Symbol[]
+A a = b+ c {: return new A(b, c); :};
+
+B b = T1 {: return new B(T1); :};
+C c = T2 {: return new C(T2); :};
