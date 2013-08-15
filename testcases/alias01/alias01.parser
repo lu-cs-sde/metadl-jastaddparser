@@ -1,3 +1,3 @@
 SomeClass non_terminal = nt.a nt.b nt.c {: return new SomeClass(a, b, c); :}
                        ;
-nt = TOKEN;
+OtherClass nt = TOKEN						{: return new OtherClass(TOKEN); :};

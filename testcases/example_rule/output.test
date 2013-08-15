@@ -4,7 +4,9 @@
 %typeof non_terminal2 = "TypeName";
 %goal non_terminal;
 non_terminal =
-non_terminal2.non_terminal2 TERMINAL.TERMINAL
-| TERMINAL.TERMINAL   ;
+non_terminal2.non_terminal2 TERMINAL.TERMINAL {: return new TypeName(non_terminal2); :}
+| TERMINAL.TERMINAL {: return new TypeName(); :}
+;
 non_terminal2 =
-TERMINAL2.TERMINAL2   ;
+TERMINAL2.TERMINAL2 {: return new TypeName(TERMINAL2); :}
+;

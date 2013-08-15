@@ -4,4 +4,5 @@
 %typeof a = "A";
 %goal a;
 a =
-B.B error.error C.C   ;
+B.B error.error C.C {: return new A(); :}
+;

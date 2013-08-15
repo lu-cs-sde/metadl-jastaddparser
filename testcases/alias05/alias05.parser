@@ -1,3 +1,3 @@
-A a = b.a c.a;
-B b = TOKEN1;
-C c = TOKEN2;
+A a = b.a c.a	{: return new A(); :};
+B b = TOKEN1	{: return new B(TOKEN1); :};
+C c = TOKEN2	{: return new C(TOKEN2); :};

@@ -1,6 +1,7 @@
-SymbolList list = list list_item {: list.add(list_item);
-                                    return list;
-                                 :}
-                | list_item      {: return new SymbolList(list_item); :}
+TokenList list = list list_item	{:	list.add(list_item);
+                                    	return list;
+                                    :}
+                | list_item			{: return new TokenList(list_item); :}
                 ;
-list_item = TOKEN;
+ListItem list_item= TOKEN			{: return new ListItem(TOKEN); :}
+				;

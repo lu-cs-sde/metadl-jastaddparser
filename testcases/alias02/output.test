@@ -1,11 +1,12 @@
 %terminals TOKEN;
-%typeof list = "SymbolList";
-%typeof list_item = "ASTNode";
+%typeof list = "TokenList";
+%typeof list_item = "ListItem";
 %goal list;
 list =
 list.list list_item.list_item {: list.add(list_item);
 return list; :}
-| list_item.list_item {: return new SymbolList(list_item); :}
+| list_item.list_item {: return new TokenList(list_item); :}
 ;
 list_item =
-TOKEN.TOKEN   ;
+TOKEN.TOKEN {: return new ListItem(TOKEN); :}
+;

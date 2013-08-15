@@ -6,5 +6,5 @@ String s = "Does not :};
 %typeof a = "A";
 %goal a;
 a =
-T.T {: return "Does not work :}
+T.T {: return new A("Does not work :}
 ;
