@@ -11,22 +11,24 @@ public class Main {
 	public static void main(String[] args) {
 		try {
 			if (args.length < 2) {
-				System.err.println("Arguments: SourceFileName DestFileName [--beaver]");
+				System.err.println("Arguments: [--beaver] SourceFileName DestFileName");
 				System.exit(1);
 			}
-			String source = args[0];
-			String dest = args[1];
 			boolean beaver = false;
-			if (args.length == 3 && args[2].equals("--beaver"))
+			if (args.length == 3 && args[0].equals("--beaver"))
 				beaver = true;
+			int sourceIndex = args.length == 3 ? 1 : 0;
+			int destIndex = args.length == 3 ? 2 : 1;
+			String source = args[sourceIndex];
+			String dest = args[destIndex];
 			File sourceFile = new File(source);
 			File destFile = new File(dest);
 			if (sourceFile.exists() && destFile.exists()
 					&& sourceFile.lastModified() < destFile.lastModified()) {
 				System.out.println("Parser specification " + dest + " need not be regenerated");
 			} else {
-				ASTNode.sourceName = args[0];
-				GrammarScanner scanner = new GrammarScanner(new FileReader(args[0]));
+				ASTNode.sourceName = args[sourceIndex];
+				GrammarScanner scanner = new GrammarScanner(new FileReader(args[sourceIndex]));
 				GrammarParser parser = new GrammarParser();
 				Object o = parser.parse(scanner);
 				Grammar root = (Grammar) o;
@@ -34,14 +36,14 @@ public class Main {
 				ArrayList<String> warnings = new ArrayList<String>();
 				root.errorCheck(errors, warnings);
 				if (!errors.isEmpty()) {
-					System.err.println("There were errors in " + args[0] + ":");
+					System.err.println("There were errors in " + args[sourceIndex] + ":");
 					for (Iterator iter = errors.iterator(); iter.hasNext(); )
 						System.err.println(iter.next());
 					System.exit(1);
 				}
 				for (Iterator iter = warnings.iterator(); iter.hasNext(); )
 					System.err.println(iter.next());
-				FileOutputStream os = new FileOutputStream(args[1]);
+				FileOutputStream os = new FileOutputStream(args[destIndex]);
 				PrintStream out = new PrintStream(os);
 				root.pp(out, beaver);
 				out.close();

@@ -176,13 +176,12 @@ public class TestRunner {
 		String fileName = buildJastAddParserInput(testRoot, testName, tmpRoot);
 
 		StringBuffer command = new StringBuffer("java -jar tools/JastAddParser.jar");
-		command.append(' ').append(fileName).append(' ');
-		command.append(tmpRoot).append(SYS_FILE_SEP).append(testName).append(SYS_FILE_SEP);
-		command.append("TestParser.beaver");
 		if (options != null) {
 			command.append(' ').append(options);
 		}
-		
+		command.append(' ').append(fileName).append(' ');
+		command.append(tmpRoot).append(SYS_FILE_SEP).append(testName).append(SYS_FILE_SEP);
+		command.append("TestParser.beaver");
 		executeCommand(testRoot, testName, tmpRoot,
 				command.toString(), "JastAddParser invocation failed", expected);
 	}
