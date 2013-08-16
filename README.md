@@ -3,7 +3,9 @@ JastAddParser
 
 JastAddParser is a preprocessor to the LR parser generator [Beaver](http://beaver.sourceforge.net). It facilitates modularization of a parser specification into several files. It also works as a bridge between the APIs of Beaver and [JastAdd](http://jastadd.org)'s predefined AST classes.
 
-JastAddParser can be run using the command `$ java -jar JastAddParser.jar input-file output-file`. The resulting file will, assuming the input file is well formed, be a parser specification that Beaver can process. Note that if the input consists of separate files, these must be concatenated before JastAddParser is invoked. In most cases, the order of concatenation is not relevant.
+JastAddParser can be run using the command `$ java -jar JastAddParser.jar <options> <input file> <output file>`. The resulting file will, assuming the input file is well formed, be a parser specification that Beaver can process. Note that if the input consists of separate files, these must be concatenated before JastAddParser is invoked. In most cases, the order of concatenation is not relevant.
+
+If the option `--beaver` is specified, the generated parser will not assume that the classes of the AST are sub-classes of Beaver's `Symbol` class. (If these classes are generated using JastAdd, they will inherit from `beaver.Symbol` if the option `--beaver` is passed to JastAdd.) In other words, it is not necessary to use JastAdd's "beaver switch" if JastAddParser is invoked with `--beaver`.
 
 Specification syntax
 --------------------
