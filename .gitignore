@@ -2,8 +2,7 @@
 /gen
 /src/AST
 /src/parser
-/JastAddParser.jar
-/tools/JastAddParser.jar
+/JastAddParser*.jar
 *.beaver
 TEST*.xml
 
