@@ -11,6 +11,10 @@ aspect ToString {
 		appendChildren(sb, indent);
     }
    
+    public void List.toString(StringBuffer sb, int indent) {
+    	appendChildren(sb, indent - 1);
+    }
+   
     public void Opt.toString(StringBuffer sb, int indent) {
     	appendChildren(sb, indent - 1);
     }
@@ -19,7 +23,7 @@ aspect ToString {
  
     public void A.appendString(StringBuffer sb, int indent) {
     	appendRowCol(sb, indent, getLine(getStart()), getColumn(getStart()), getLine(getEnd()), getColumn(getEnd()));
-    	sb.append("A\n");
+    	sb.append("A");
     }
 
     public void B.appendString(StringBuffer sb, int indent) {

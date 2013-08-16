@@ -10,6 +10,10 @@ aspect ToString {
 		sb.append('\n');
 		appendChildren(sb, indent);
     }
+    
+    public void List.toString(StringBuffer sb, int indent) {
+    	appendChildren(sb, indent - 1);
+    }
    
     public void Opt.toString(StringBuffer sb, int indent) {
     	appendChildren(sb, indent - 1);

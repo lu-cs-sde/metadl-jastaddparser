@@ -192,7 +192,7 @@ aspect PrettyPrint {
 
   inh boolean Element.inlineOptional();
   eq Definition.getElement(int index).inlineOptional() =
-    getElement(index) instanceof OptionalElement && 
+    (getElement(index) instanceof OptionalElement || getElement(index) instanceof ListElement)&& 
     (index == 0 || getElement(index-1).isNonTerminal() || getElement(index-1) instanceof OptionalElement ||
     (index < getNumElement() - 1 && (getElement(index+1).isNonTerminal() || getElement(index+1) instanceof OptionalElement)));
     /*
@@ -204,6 +204,10 @@ aspect PrettyPrint {
     getElement(index) instanceof OptionalElement && (index == 0 || getElement(index-1) instanceof OptionalElement); //inlineLeft(index - 1));
   syn lazy boolean Definition.inlineRight(int index) =
     getElement(index) instanceof OptionalElement && (index == getNumElement() - 1 || getElement(index+1) instanceof OptionalElement); //inlineRight(index + 1));
+  
+  inh boolean Element.inlineOptList();
+  eq Definition.getElement(int index).inlineOptList() =
+    getElement(index) instanceof ListElement && index == 0;
 
   syn lazy int Definition.permutations() {
     int num = 1;
@@ -249,7 +253,7 @@ aspect PrettyPrint {
 						java.util.regex.Matcher m = p.matcher(code);
 						StringBuffer sb = new StringBuffer();
 						while (m.find()) {
-							String type = getElement(i).rule().type();
+							/*String type = getElement(i).rule().type();
 							if ((j & optIndex) != 0) {
 								if (type.equals("Opt") || type.equals("List"))
 									m.appendReplacement(sb, "$1$2$3");
@@ -260,6 +264,22 @@ aspect PrettyPrint {
 									m.appendReplacement(sb, "$1new List()$3");
 								else
 									m.appendReplacement(sb, "$1new Opt()$3");
+							}*/
+							//-------------------------------------------------
+							String returnType = getElement(i).rule().type();
+							String elementType = getElement(i) instanceof OptionalElement ? "Opt" : "List";
+							if ((j & optIndex) != 0) {
+								if (returnType.equals("Opt") || returnType.equals("List") || elementType.equals("List"))
+									m.appendReplacement(sb, "$1$2$3");
+								else
+									m.appendReplacement(sb, "$1new Opt($2)$3");
+							} else {
+								if (returnType.equals("List"))
+									m.appendReplacement(sb, "$1new List()$3");
+								else if (returnType.equals("Opt"))
+									m.appendReplacement(sb, "$1new Opt()$3");
+								else
+									m.appendReplacement(sb, "$1new " + elementType + "()$3");
 							}
 						}
 						m.appendTail(sb);
@@ -356,7 +376,10 @@ aspect PrettyPrint {
 	}
 	public void ListElement.pp() {
 		if(isNonTerminal()) {
-			print(name() + "_opt_list");
+			if (inlineOptional())
+				print(name() + "_list");
+			else
+				print(name() + "_opt_list");
 			if(alias() != null)
 		  		print("." + alias());
 		}
