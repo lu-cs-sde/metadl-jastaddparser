@@ -64,6 +64,7 @@
     		srcdir    = "src" 
     		destdir   = "bin"
     		includes  = "**/*.java"
+    		target    = "1.6"
     		excludes  = "test/**/*.java" />
 		
 	</target>
