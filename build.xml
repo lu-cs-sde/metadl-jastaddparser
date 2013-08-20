@@ -64,7 +64,6 @@
     		srcdir    = "src" 
     		destdir   = "bin"
     		includes  = "**/*.java"
-    		target    = "1.6"
     		excludes  = "test/**/*.java" />
 		
 	</target>
@@ -77,15 +76,19 @@
 		
 		<jar 
 			destfile = "JastAddParser.jar" 
-			basedir  = "bin" 
-			includes = "**/*.class" 
-			excludes = "test/**/*.class"
-			
 			compress = "false">
+			
+			<fileset dir = "bin">
+				<include name = "**/*.class"/>
+				<exclude name = "test/**/*.class"/>
+			</fileset>
+			<fileset dir = ".">
+				<include name = "properties/*"/>
+			</fileset>
 	 		
 	 		<manifest>
-	 		<attribute name = "Built-By" value = "${user.home}" />
-        	<attribute name = "Main-Class" value = "Main" />
+	 			<attribute name = "Built-By" value = "${user.home}" />
+        		<attribute name = "Main-Class" value = "Main" />
 	 		</manifest>	
 		</jar>
 		
@@ -102,9 +105,9 @@
    		        <include name = "src/beaver/**/*.java"/>
 				<include name = "licenses/**/*" />
    				<include name = "parser/**/*"/>
+				<include name = "properties/*"/>
    				<include name = "tools/**/*.jar"/>
    				<include name = "build.xml"/>
-				
 				<exclude name = "parser/*.beaver"/>
    			</fileset>
 			<manifest></manifest>
@@ -137,12 +140,30 @@
 		<delete includeemptydirs="true">
 			<fileset dir="bin" includes="**/*" excludes="test/*"/>
 		</delete>
-    	<!--delete dir = "bin"/-->
     	<ant antfile="testcases/build.xml" inheritAll="false" target="clean"/>
 	</target>
 	
-	<target name = "test" description="test JastAddParser" depends="jar,bootstrap">
-		<ant antfile="testcases/build.xml" inheritAll="false"/>
+	<target name = "release" description = "build a JastAddParser release" >
+		<property file="properties/version.properties"/>
+		<exec executable="git">
+			<arg value="tag"/>
+			<arg value="-a"/>
+			<arg value="${version}"/>
+			<arg value="-m"/>
+			<arg value="Version ${version}"/>
+		</exec>
+		<antcall target="build-dist"/>
+		<echo message="Release tag ${version} created for the latest (local) commit."/>
+		<echo message="To push the any local commits:"/>
+		<echo message="git push origin"/>
+		<echo message="To push the release tag for version ${version}:"/>
+		<echo message="git push origin ${version}"/>
+	</target>
+	
+	<target name="build-dist" >
+		<antcall target="jar"/>
+		<antcall target="source"/>
+		<echo message="Source and binary jar files created."/>
 	</target>
 
 </project>

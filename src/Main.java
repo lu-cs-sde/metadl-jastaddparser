@@ -1,10 +1,10 @@
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -80,7 +80,7 @@ public class Main {
 		Properties props = new Properties();
 		String version = null;
 		try {
-			FileInputStream in = new FileInputStream(new File("properties/version.properties"));
+			InputStream in = Main.class.getResourceAsStream("/properties/version.properties");
 			props.load(in);
 			version = props.getProperty("version");
 		} catch (Exception e) {
