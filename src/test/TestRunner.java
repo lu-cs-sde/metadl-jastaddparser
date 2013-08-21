@@ -42,8 +42,7 @@ public class TestRunner {
 		Properties properties = getProperties(testRoot + SYS_FILE_SEP + testName);
 		TestResult expected = getResult(properties);
 
-		File testTmpDir = new File(tmpRoot, testName);
-		testTmpDir.mkdirs();
+		setupTestDir(tmpRoot, testName);
 
 		invokeJastAddParser(testRoot, testName, tmpRoot, properties, expected);
 		
@@ -56,6 +55,24 @@ public class TestRunner {
 		invokeBeaver(testRoot, testName, tmpRoot);
 		compileSourceFiles(testRoot, testName, tmpRoot);
 		runParser(testRoot, testName, expected);
+	}
+
+	private static void setupTestDir(String tmpRoot, String testName) {
+		File testDir = new File(tmpRoot, testName);
+		if (!testDir.exists()) {
+			testDir.mkdirs();
+		} else {
+			cleanDirectory(testDir);
+		}
+	}
+
+	private static void cleanDirectory(File testDir) {
+		for (File file : testDir.listFiles()) {
+			if (file.isFile())
+				file.delete();
+			else
+				cleanDirectory(file);
+		}
 	}
 
 	private static Properties getProperties(String testPath) {
