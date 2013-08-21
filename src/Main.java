@@ -19,14 +19,16 @@ public class Main {
 
 	public static void main(String[] args) {
 		try {
-			
+			boolean noBeaverSymbol = false;
 			if (args[0].equals("--version")) {
 				System.out.println("JastAddParser version " + versionString());
 				System.exit(0);
+			} else if (args[0].equals("--no-beaver-symbol")) {
+				noBeaverSymbol = true;
 			}
-			boolean beaver = false;
-			if (args[0].equals("--beaver")) {
-				beaver = true;	
+			if (args.length > 2 && !noBeaverSymbol) {
+				System.err.println("Unrecognized option \"" + args[0] + '\"');
+				System.exit(1);
 			}
 			int sourceIndex = args.length == 3 ? 1 : 0;
 			int destIndex = args.length == 3 ? 2 : 1;
@@ -56,7 +58,7 @@ public class Main {
 					System.err.println(iter.next());
 				FileOutputStream os = new FileOutputStream(args[destIndex]);
 				PrintStream out = new PrintStream(os);
-				root.pp(out, beaver);
+				root.pp(out, noBeaverSymbol);
 				out.close();
 				System.out.println("Parser specification " + dest + " generated from " + source);
 			}
