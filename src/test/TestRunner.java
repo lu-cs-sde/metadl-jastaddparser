@@ -192,7 +192,7 @@ public class TestRunner {
 		
 		String fileName = buildJastAddParserInput(testRoot, testName, tmpRoot);
 
-		StringBuffer command = new StringBuffer("java -jar tools/JastAddParser.jar");
+		StringBuffer command = new StringBuffer("java -jar JastAddParser.jar");
 		if (options != null) {
 			command.append(' ').append(options);
 		}
