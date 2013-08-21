@@ -143,10 +143,21 @@
     	<ant antfile="testcases/build.xml" inheritAll="false" target="clean"/>
 	</target>
 	
+	
 	<target name = "release" description = "build a JastAddParser release" >
 		<property file="properties/version.properties"/>
 		<echo message="The new version will be tagged as ${version}."/>
 		<input message="Press return to continue"/>
+		<antcall target="build-dist"/>
+		<exec executable="git">
+			<arg value="add"/>
+			<arg value="tools/JastAddParser.jar"/>
+		</exec>
+		<exec executable="git">
+			<arg value="commit"/>
+			<arg value="-m"/>
+			<arg value="Release ${version}"/>
+		</exec>
 		<exec executable="git">
 			<arg value="tag"/>
 			<arg value="-a"/>
@@ -154,16 +165,16 @@
 			<arg value="-m"/>
 			<arg value="Version ${version}"/>
 		</exec>
-		<antcall target="build-dist"/>
-		<echo message="Release tag ${version} created for the latest (local) commit."/>
-		<echo message="To push the any local commits:"/>
+		<echo message="Release tag ${version} created."/>
+		<echo message="To push the release commit:"/>
 		<echo message="git push origin"/>
 		<echo message="To push the release tag for version ${version}:"/>
 		<echo message="git push origin ${version}"/>
 	</target>
 	
+	
 	<target name="build-dist" >
-		<antcall target="jar"/>
+		<antcall target="bootstrap"/>
 		<antcall target="source"/>
 		<echo message="Source and binary jar files created."/>
 	</target>
