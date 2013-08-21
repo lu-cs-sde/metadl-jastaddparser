@@ -10,6 +10,10 @@ aspect ToString {
 		sb.append('\n');
 		appendChildren(sb, indent);
     }
+    
+    public void List.toString(StringBuffer sb, int indent) {
+    	appendChildren(sb, indent - 1);
+    }
    
     public void Opt.toString(StringBuffer sb, int indent) {
     	appendChildren(sb, indent - 1);
@@ -18,28 +22,24 @@ aspect ToString {
     public void ASTNode.appendString(StringBuffer sb, int indent) {}
  
     public void A.appendString(StringBuffer sb, int indent) {
-    	appendRowCol(sb, indent, getLine(getStart()), getColumn(getStart()), getLine(getEnd()), getColumn(getEnd()));
-    	sb.append("A\n");
+    	appendRowCol(sb, indent, getStartLine(), getStartColumn(), getEndLine(), getEndColumn());
+    	sb.append("A");
     }
 
     public void B.appendString(StringBuffer sb, int indent) {
-    	appendRowCol(sb, indent, getLine(getStart()), getColumn(getStart()), getLine(getEnd()), getColumn(getEnd()));
-		sb.append("B\n");
-		appendRowCol(sb, indent + 1, getLine(T1start), getColumn(T1start), getLine(T1end), getColumn(T1end));
-		sb.append("T1");
+    	appendRowCol(sb, indent, getStartLine(), getStartColumn(), getEndLine(), getEndColumn());
+		sb.append("B(").append(getT1()).append(')');
     }
 
     public void C.appendString(StringBuffer sb, int indent) {
-    	appendRowCol(sb, indent, getLine(getStart()), getColumn(getStart()), getLine(getEnd()), getColumn(getEnd()));
-		sb.append("C\n");
-		appendRowCol(sb, indent + 1, getLine(T2start), getColumn(T2start), getLine(T2end), getColumn(T2end));
-		sb.append("T2");
+    	appendRowCol(sb, indent, getStartLine(), getStartColumn(), getEndLine(), getEndColumn());
+    	sb.append("C(").append(getT2()).append(')');
     }
     
-    public void ASTNode.appendRowCol(StringBuffer sb, int indent, int lStart, int lEnd, int cStart, int cEnd) {
+    public void ASTNode.appendRowCol(StringBuffer sb, int indent, int lStart, int cStart, int lEnd, int cEnd) {
 		sb.append('(').append(lStart).append(':');
-		sb.append(lEnd).append(")-(");
-		sb.append(cStart).append(':');
+		sb.append(cStart).append(")-(");
+		sb.append(lEnd).append(':');
 		sb.append(cEnd).append(")");
 		appendIndent(sb, indent);
     }
@@ -53,18 +53,4 @@ aspect ToString {
 	    for (int i = 0; i < getNumChild(); i++)
 	    	getChild(i).toString(sb, indent + 1);
     }
-    
-    /*public void A2.appendChildren(StringBuffer sb, int indent) {
-    	appendRowCol(sb, indent + 1, getLine(T3start), getColumn(T3start), getLine(T3end), getColumn(T3end));
-    	sb.append("T3\n");
-    	super.appendChildren(sb, indent);
-    	appendRowCol(sb, indent + 1, getLine(T4start), getColumn(T4start), getLine(T4end), getColumn(T4end));
-    	sb.append("T4\n");
-    }
-    
-    public void A3.appendChildren(StringBuffer sb, int indent) {
-    	appendRowCol(sb, indent + 1, getLine(T3start), getColumn(T3start), getLine(T3end), getColumn(T3end));
-    	sb.append("T3\n");
-    	super.appendChildren(sb, indent);
-    }*/
 }

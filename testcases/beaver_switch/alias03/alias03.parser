@@ -9,8 +9,8 @@ import java.io.IOException;
 	public Object parse(Scanner source) throws IOException, Parser.Exception {
 		A a = (A) super.parse(source);
 		StringBuffer sb = new StringBuffer(a.getClass().getName());
-		sb.append(" (").append(a.getLine(a.getStart())).append(':').append(a.getColumn(a.getStart()));
-		sb.append(")-(").append(a.getLine(a.getEnd())).append(':').append(a.getColumn(a.getEnd()));
+		sb.append(" (").append(a.getStartLine()).append(':').append(a.getStartColumn());
+		sb.append(")-(").append(a.getEndLine()).append(':').append(a.getEndColumn());
 		sb.append(')');
 		System.out.println(sb.toString());
 		return a;

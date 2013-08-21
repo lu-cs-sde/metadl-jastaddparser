@@ -5,17 +5,17 @@
 %goal non_terminal;
 non_terminal =
 non_terminal2.non_terminal2 TERMINAL.TERMINAL {: ASTNode _node_ = new TypeName(non_terminal2);
-_node_.start = _symbol_non_terminal2.getStart();
-_node_.end = TERMINAL.getEnd(); 
+_node_.setStart(Symbol.getLine(_symbol_non_terminal2.getStart()), (short) Symbol.getColumn(_symbol_non_terminal2.getStart()));
+_node_.setEnd(Symbol.getLine(TERMINAL.getEnd()), (short) Symbol.getColumn(TERMINAL.getEnd()));
 return new Symbol(_node_); :}
 | TERMINAL.TERMINAL {: ASTNode _node_ = new TypeName();
-_node_.start = TERMINAL.getStart();
-_node_.end = TERMINAL.getEnd(); 
+_node_.setStart(Symbol.getLine(TERMINAL.getStart()), (short) Symbol.getColumn(TERMINAL.getStart()));
+_node_.setEnd(Symbol.getLine(TERMINAL.getEnd()), (short) Symbol.getColumn(TERMINAL.getEnd()));
 return new Symbol(_node_); :}
 ;
 non_terminal2 =
-TERMINAL2.TERMINAL2 {: ASTNode _node_ = new TypeName(TERMINAL2);
-_node_.start = TERMINAL2.getStart();
-_node_.end = TERMINAL2.getEnd(); 
+TERMINAL2.TERMINAL2 {: ASTNode _node_ = new TypeName(((String)TERMINAL2.value));
+_node_.setStart(Symbol.getLine(TERMINAL2.getStart()), (short) Symbol.getColumn(TERMINAL2.getStart()));
+_node_.setEnd(Symbol.getLine(TERMINAL2.getEnd()), (short) Symbol.getColumn(TERMINAL2.getEnd()));
 return new Symbol(_node_); :}
 ;

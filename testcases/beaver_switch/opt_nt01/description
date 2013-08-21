@@ -1,1 +1,1 @@
-Row and column numbers are calculated correctly when JastAddParser is invoked with --beaver and optional non-terminals are present in the grammar.
+Row and column numbers are calculated correctly when JastAddParser is invoked with --no-beaver-symbol and optional non-terminals are present in the grammar.
