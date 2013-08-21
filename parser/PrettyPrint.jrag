@@ -425,7 +425,7 @@ aspect PrettyPrint {
   syn boolean Element.genOpt() = false;
   eq OptionalElement.genOpt() = !inlineOptional();
   syn boolean Element.genOptList() = false;
-  eq ListElement.genOptList() = true;
+  eq ListElement.genOptList() = !inlineOptional();
   syn boolean Element.genList() = false;
   eq ListElement.genList() = true;
   eq ListPlusElement.genList() = true;
