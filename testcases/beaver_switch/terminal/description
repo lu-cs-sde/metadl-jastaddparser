@@ -1,0 +1,1 @@
+When the option --no-beaver-symbol is in effect, Terminal objects will always be unpacked and handled as token strings.

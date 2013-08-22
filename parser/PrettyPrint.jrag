@@ -219,7 +219,7 @@ aspect PrettyPrint {
 		for (int j = 0; j < permutations(); j++) {
 			int optIndex = 1;
 			int firstElementIndex = 0;
-			int lastElementIndex = 0;
+			int lastElementIndex = -1;
 			if (j != 0)
 				print("\n  | ");
 			for (int i = 0; i < getNumElement(); i++) {
@@ -299,28 +299,19 @@ aspect PrettyPrint {
 					while (m.find()) {
 						if (firstElementIndex <= lastElementIndex) {
 							m.appendReplacement(sb, "ASTNode _node_ = $1;\n");
-							boolean firstNt = getElement(firstElementIndex).isNonTerminal();
-							boolean lastNt = getElement(lastElementIndex).isNonTerminal();
-							sb.append("        _node_.setStart(Symbol.getLine(");
-							if (firstNt) {
-								sb.append("_symbol_");
-							}
+							String firstNamePrefix = "";
+							String lastNamePrefix = "";
+							if(getElement(firstElementIndex).isNonTerminal())
+								firstNamePrefix = "_symbol_";
+							if(getElement(lastElementIndex).isNonTerminal())
+								lastNamePrefix = "_symbol_";
+							sb.append("        _node_.setStart(Symbol.getLine(").append(firstNamePrefix);
 							sb.append(getElement(firstElementIndex).alias()).append(".getStart()), ");
-							sb.append("(short) Symbol.getColumn(");
-							if (firstNt) {
-								sb.append("_symbol_");
-							}
+							sb.append("(short) Symbol.getColumn(").append(firstNamePrefix);
 							sb.append(getElement(firstElementIndex).alias()).append(".getStart()));\n");
-							sb.append("        _node_.setEnd(Symbol.getLine(");
-							if (lastNt) {
-								sb.append("_symbol_");
-							}
+							sb.append("        _node_.setEnd(Symbol.getLine(").append(lastNamePrefix);
 							sb.append(getElement(lastElementIndex).alias()).append(".getEnd()), ");
-							
-							sb.append("(short) Symbol.getColumn(");
-							if (lastNt) {
-								sb.append("_symbol_");
-							}
+							sb.append("(short) Symbol.getColumn(").append(lastNamePrefix);
 							sb.append(getElement(lastElementIndex).alias()).append(".getEnd()));\n"); 
 							sb.append("        return new Symbol(_node_);");
 						} else {

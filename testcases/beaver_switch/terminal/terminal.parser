@@ -1,0 +1,1 @@
+A a = TOKEN.T TOKEN.t {: return new A(T, t); :};

@@ -1,0 +1,3 @@
+%goal non_terminal;
+A non_terminal	=		{: return new A(); :}
+				;

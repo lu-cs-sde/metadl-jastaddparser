@@ -1,0 +1,9 @@
+%terminals TOKEN;
+%typeof a = "A";
+%goal a;
+a =
+TOKEN.T TOKEN.t {: ASTNode _node_ = new A(((String)T.value), ((String)t.value));
+_node_.setStart(Symbol.getLine(T.getStart()), (short) Symbol.getColumn(T.getStart()));
+_node_.setEnd(Symbol.getLine(t.getEnd()), (short) Symbol.getColumn(t.getEnd()));
+return new Symbol(_node_); :}
+;
