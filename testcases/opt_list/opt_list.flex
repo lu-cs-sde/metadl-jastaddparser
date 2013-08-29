@@ -44,5 +44,6 @@ WhiteSpace = [ ] | \t | \f | \r | \n | \r\n
 	     {WhiteSpace}	{}
 	     "T1"	     { return sym(Terminals.T1); }
 	     "T2"	     { return sym(Terminals.T2); }
+	     "T3"	     { return sym(Terminals.T3); }
 	     .           { error("Error: " + yytext()); }
 }

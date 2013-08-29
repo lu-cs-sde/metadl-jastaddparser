@@ -15,8 +15,8 @@ import java.io.IOException;
 :};
 
 %goal a;
-//Deleting T1* at the end here since list of tokens is not yet well supported
-A a = b* c {: return new A(b, c); :}
+//Deleting T1* at the end of the constructor since list of tokens is not yet well supported
+A a = b* c T3 T1* {: return new A(b, c); :}
     ;
 
 B b = T1 {: return new B(T1); :}
