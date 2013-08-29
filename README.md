@@ -2,27 +2,34 @@ JastAddParser
 =============
 
 JastAddParser is a preprocessor to the LR parser generator
-[Beaver](http://beaver.sourceforge.net). It facilitates modularization of a
-parser specification into several files. It also works as a bridge between the
-APIs of Beaver and [JastAdd](http://jastadd.org)'s predefined AST classes.
+[Beaver](http://beaver.sourceforge.net). It facilitates modularization
+of a parser specification into several files. It also works as a
+bridge between the APIs of Beaver and [JastAdd](http://jastadd.org)'s
+predefined AST classes.
 
 JastAddParser can be run using the command
-`$ java -jar JastAddParser.jar <options> <input file> <output file>`. The
-resulting file will, assuming the input file is well formed, be a parser
-specification that Beaver can process. Note that if the input consists of
-separate files, these must be concatenated before JastAddParser is invoked. In
-most cases, the order of concatenation is not relevant.
+`$ java -jar JastAddParser.jar <options> <input file> <output
+file>`. The resulting file will, assuming the input file is well
+formed, be a parser specification that Beaver can process. Note that
+if the input consists of separate files, these must be concatenated
+before JastAddParser is invoked. In most cases, the order of
+concatenation is not relevant. 
 
-The available options are `--version` and `--no-beaver-symbol`. `--version` will
-print out version information and exit. If the option `--no-beaver-symbol` is
-specified, the generated parser will not assume that the classes of the AST are
-sub-classes of Beaver's `Symbol` class. It will, however, assume that the AST
-classes are generated using JastAdd's `--lineColumnNumbers` switch. Thus the
-typical ways of using JastAdd and JastAddParser are invoking JastAdd with
-`--beaver` (to extend `beaver.Symbol` and use it to store line and column
-numbers) and invoking JastAdd with `--lineColumnNumbers` and JastAddParser with
-`--no-beaver-symbol` (to store line and column information in JastAdd's AST
-classes instead, making them independent of `beaver.Symbol`). 
+The available options are `--version` and
+`--no-beaver-symbol`. `--version` will print out version information
+and exit. If the option `--no-beaver-symbol` is specified, the 
+generated parser will not assume that the classes of the AST are
+sub-classes of Beaver's `Symbol` class. It will, however, assume that
+the AST classes are generated using JastAdd's `--lineColumnNumbers`
+switch. Thus the typical ways of using JastAdd and JastAddParser are:
+
+* invoking JastAdd with `--beaver` (to extend `beaver.Symbol` and use
+it to store line and column numbers), and
+
+* invoking JastAdd with `--lineColumnNumbers` and JastAddParser with
+`--no-beaver-symbol` (to store line and column information in
+JastAdd's AST classes instead, making them independent of
+`beaver.Symbol`).
 
 Dependencies
 ------------

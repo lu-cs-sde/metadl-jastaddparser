@@ -203,10 +203,6 @@ aspect PrettyPrint {
 	syn lazy boolean Definition.inlineRight(int index) =
 	getElement(index) instanceof OptionalElement && (index == getNumElement() - 1 || getElement(index+1) instanceof OptionalElement); //inlineRight(index + 1));
 
-	inh boolean Element.inlineOptList();
-	eq Definition.getElement(int index).inlineOptList() =
-			getElement(index) instanceof ListElement && index == 0;
-
 	syn lazy int Definition.permutations() {
 		int num = 1;
 			for(int i = 0; i < getNumElement(); i++)
