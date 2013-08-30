@@ -4,9 +4,10 @@ import java.util.Collection;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(ParallelParameterized.class)
+@RunWith(Parameterized.class)
 public class TestJastAddParser {
                 
         private static final String TEST_ROOT = "testcases";
