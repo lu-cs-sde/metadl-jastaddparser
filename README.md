@@ -41,7 +41,7 @@ JastAddParser uses Beaver, JFlex, and Apache Ant. Beaver and JFlex are included
 in the source tree of JastAddParser, so the only external tools needed are Java
 and Ant. See licences/ for the full license text for JavaCC (and JJTree).
 
-Specification syntax
+Specification Syntax
 --------------------
 
 JastAddParser input files use a syntax similar to Beaver's, with some slight
@@ -58,6 +58,22 @@ attempts to automatically generate variable aliases for all symbols in a
 production rule, in order to make them available in action routines.
 
 For more details, see the unit tests in the `testcases` directory.
+
+Modular Parser Support
+----------------------
+
+Multiple parser specifications can be combined with JastAddParser. If a
+production occurs more than once between all included specifications, the
+productions are either combined or replaced.
+
+For example, if two separate files files include these two productions:
+
+    a = A;
+    a = B;
+
+then they are combined into the single production `a = A | B`. If the second
+production instead uses `:=` rather than `=` then the second production
+replaces the first.
 
 Building
 --------
