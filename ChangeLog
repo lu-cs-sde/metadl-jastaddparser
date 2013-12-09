@@ -1,0 +1,3 @@
+2013-12-09  Jesper Öqvist <jesper.oqvist@cs.lth.se>
+
+    * Added associativity declarations `%left`, `%right` and `%nonassoc`
