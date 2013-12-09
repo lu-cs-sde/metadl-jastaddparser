@@ -1,7 +1,7 @@
 %header {:
-package assoc01.parser;
+package assoc02.parser;
 	
-import assoc01.ast.*;
+import assoc02.ast.*;
 import java.io.IOException;
 :};
 
@@ -30,7 +30,7 @@ Assign assign
 
 // Associativity and precedence
 %left RPAREN;
-%left MULT, DIV;
+%right MULT, DIV;
 %left PLUS, MINUS;
 
 Expr expr =
