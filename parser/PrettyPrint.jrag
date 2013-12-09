@@ -142,7 +142,6 @@ aspect PrettyPrint {
 				printReturn("l.add(n)", "l", "n");
 				println("  ;");
 			}
-			print("\n");
 		}
 	}
 
@@ -197,8 +196,7 @@ aspect PrettyPrint {
 				print("\n  | ");
 			getDefinition(i).pp();
 		}
-		print("  ;");
-		print("\n");
+		println("  ;");
 	}
 
 	inh boolean Element.inlineOptional();
