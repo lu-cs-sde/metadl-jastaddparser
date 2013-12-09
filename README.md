@@ -44,11 +44,13 @@ and Ant. See licences/ for the full license text for JavaCC (and JJTree).
 Specification Syntax
 --------------------
 
-JastAddParser input files use a syntax similar to Beaver's, with some slight
+JastAddParser input files use a syntax similar to [Beaver
+specifications](http://beaver.sourceforge.net/spec.html), with some slight
 differences. Beaver supports a number of options to be specified at the start
-of a parser specification. Of these options, JastAddParser recognizes `%header`,
- `%embed` and `%goal`. `%typeof` and `%terminals` are generated automatically
- from the JastAddParser input file.
+of a parser specification. Of these options, JastAddParser recognizes
+`%header`, `%embed`, `%goal`, `%left`, `%right`, `%nonassoc`. The `%typeof` and
+`%terminals` declarations are generated automatically from the JastAddParser
+input file.
 
 Production rules are augmented by an (optional) Java class name at the start of
 the production, which JastAddParser uses to generate a corresponding `%typeof`
