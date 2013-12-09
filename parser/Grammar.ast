@@ -30,3 +30,8 @@ ListPlusElement : Element;
 
 IdDecl ::= <ID>;
 IdUse ::= <ID>;
+
+/**
+ * Associativity definition.
+ */
+Assoc : Declaration ::= <ASSOC> Symbol:IdUse*;

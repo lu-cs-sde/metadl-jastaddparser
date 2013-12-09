@@ -10,3 +10,6 @@ TEST*.xml
 *~
 .#*
 .directory
+
+# test output
+/tmp

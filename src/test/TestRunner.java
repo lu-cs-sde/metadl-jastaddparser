@@ -14,6 +14,8 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,12 +27,12 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
 public class TestRunner {
-	
+
 	private static String SYS_FILE_SEP = System.getProperty("file.separator");
 
 	/**
 	 * Build necessary source files, compile and run test
-	 * 
+	 *
 	 * @param testRoot
 	 *            common path to test input files
 	 * @param testName
@@ -45,7 +47,7 @@ public class TestRunner {
 		setupTestDir(tmpRoot, testName);
 
 		invokeJastAddParser(testRoot, testName, tmpRoot, properties, expected);
-		
+
 		if (expected != TestResult.EXEC_PASS && expected != TestResult.EXEC_OUTPUT_PASS) {
 			return;
 		}
@@ -54,7 +56,7 @@ public class TestRunner {
 		invokeJastAdd(testRoot, testName, tmpRoot, properties);
 		invokeBeaver(testRoot, testName, tmpRoot);
 		compileSourceFiles(testRoot, testName, tmpRoot);
-		runParser(testRoot, testName, expected);
+		runParser(testRoot, testName, expected, tmpRoot);
 	}
 
 	private static void setupTestDir(String tmpRoot, String testName) {
@@ -92,7 +94,7 @@ public class TestRunner {
 	/**
 	 * Reads the expected test result from the result file in the test
 	 * directory.
-	 * 
+	 *
 	 * @param testPath
 	 *            the path to the test directory
 	 * @return the expected result
@@ -118,11 +120,11 @@ public class TestRunner {
 
 	/**
 	 * Invoke JastAdd with the relevant files from the test directory
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
-	 * @param properties 
+	 * @param properties
 	 */
 	private static void invokeJastAdd(String testRoot, String testName,
 			String tmpRoot, Properties properties) {
@@ -135,7 +137,7 @@ public class TestRunner {
 				fileArgs.append(' ').append(name);
 			}
 		}
-		
+
 		if (fileArgs.length() == 0) {
 			return;
 		}
@@ -143,12 +145,12 @@ public class TestRunner {
 		StringBuffer command = new StringBuffer("java -jar tools/jastadd2.jar");
 		command.append(" --package=").append(testName).append(".ast");
 		command.append(" --o=").append(tmpRoot);
-		
-		String options = properties.getProperty("JastAddOptions"); 
+
+		String options = properties.getProperty("JastAddOptions");
 		if (options != null) {
 			command.append(' ').append(options).append(' ');
 		}
-		
+
 		command.append(fileArgs);
 
 		executeCommand(command.toString(), "JastAdd invocation failed",
@@ -157,7 +159,7 @@ public class TestRunner {
 
 	/**
 	 * Invoke JFlex on a .flex file assumed to be present in the test directory
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
@@ -178,18 +180,18 @@ public class TestRunner {
 	 * Invoke JastAddParser with the .parser file(s) in the test directory. The
 	 * test will fail if no such files are present or if the expected result was
 	 * not obtained.
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
-	 * @param properties 
+	 * @param properties
 	 * @param expected the expected result
 	 */
 	private static void invokeJastAddParser(String testRoot, String testName,
 			String tmpRoot, Properties properties, TestResult expected) {
-		
+
 		String options = properties.getProperty("JAPOptions");
-		
+
 		String fileName = buildJastAddParserInput(testRoot, testName, tmpRoot);
 
 		StringBuffer command = new StringBuffer("java -jar JastAddParser.jar");
@@ -206,7 +208,7 @@ public class TestRunner {
 	/**
 	 * Concatenate all .parser files in the test directory and write the result
 	 * to the temporary directory.
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
@@ -249,7 +251,7 @@ public class TestRunner {
 
 	/**
 	 * Invoke Beaver with the previously generated .beaver file.
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
@@ -260,13 +262,13 @@ public class TestRunner {
 		fileNameBuf.append(SYS_FILE_SEP).append(testName);
 		String testDir = fileNameBuf.toString();
 		fileNameBuf.append(SYS_FILE_SEP).append("TestParser.beaver");
-		
+
 		StringBuffer parserDirBuf = new StringBuffer(testDir);
 		parserDirBuf.append("/parser");
 		String parserPath = parserDirBuf.toString();
 		File parserDir = new File(parserPath);
 		parserDir.mkdirs();
-		
+
 		StringBuffer command = new StringBuffer("java -jar tools/beaver-cc.jar");
 		command.append(" -d ").append(parserPath);
 		command.append(" -t -w -c ").append(fileNameBuf);
@@ -274,7 +276,7 @@ public class TestRunner {
 		executeCommand(command.toString(), "Parser generation failed",
 				TestResult.STEP_PASS);
 	}
-	
+
 	private static void executeCommand(String command, String errorMsg,
 			TestResult expected) {
 		executeCommand("", "", "", command, errorMsg, expected);
@@ -282,7 +284,7 @@ public class TestRunner {
 
 	/**
 	 * Fork a process using the specified command.
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
@@ -297,9 +299,9 @@ public class TestRunner {
 //		List<String> errors = new ArrayList<String>();
 		try {
 			Process p = Runtime.getRuntime().exec(command);
-			
+
 			int exitValue = p.waitFor();
-			
+
 			Scanner outputScan = new Scanner(p.getInputStream());
 			while (outputScan.hasNextLine()) {
 				String strippedLine = clean(outputScan.nextLine());
@@ -316,7 +318,7 @@ public class TestRunner {
 				}
 			}
 			err.close();
-			
+
 			if (exitValue == 0) {
 				if (expected == TestResult.JAP_ERR_OUTPUT) {
 					fail("JastAddParser succeeded when expected to fail");
@@ -355,7 +357,7 @@ public class TestRunner {
 	/**
 	 * Compare the contents of the output file in the test directory with the
 	 * received output from a process. Fail the test if it does not match.
-	 * 
+	 *
 	 * @param testDir the test directory containing the expected output
 	 * @param output the received output lines in the form of a list of strings
 	 */
@@ -380,7 +382,7 @@ public class TestRunner {
 
 	/**
 	 * Remove unwanted components of an output line.
-	 * 
+	 *
 	 * @param line
 	 * @return
 	 */
@@ -393,7 +395,7 @@ public class TestRunner {
 		String noEOLComments = line.split("\\s*//")[0];
 		return noEOLComments.trim();
 	}
-	
+
 	/**
 	 * Read a file into a list of strings
 	 * @param file the reader to read from
@@ -410,10 +412,10 @@ public class TestRunner {
 		}
 		return ans;
 	}
-	
+
 	/**
 	 * Read a source into a list of strings
-	 * 
+	 *
 	 * @param reader the reader to read from
 	 * @return a List containing all the lines of the file as separate String entries
 	 */
@@ -430,7 +432,7 @@ public class TestRunner {
 
 	/**
 	 * Compile all Java source files in the test directory
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
 	 * @param tmpRoot
@@ -466,15 +468,16 @@ public class TestRunner {
 	/**
 	 * Invoke the generated parser with the generated scanner on the test input
 	 * file.
-	 * 
+	 *
 	 * @param testRoot
 	 * @param testName
+	 * @param tmpRoot
 	 */
-	private static <T extends beaver.Scanner, U extends beaver.Parser> void runParser(
-			String testRoot, String testName, TestResult expected) {
+	private static void runParser(
+			String testRoot, String testName, TestResult expected, String tmpRoot) {
 		String testPath = testRoot + SYS_FILE_SEP + testName;
 		File inputFile = new File(testPath, "input.test");
-		
+
 		PrintStream oldOut = null;
 		PrintStream oldErr = null;
 		ByteArrayOutputStream baos = null;
@@ -484,18 +487,19 @@ public class TestRunner {
 		PrintStream newOut = new PrintStream(baos);
 		System.setOut(newOut);
 		System.setErr(newOut);
-		
-		T scanner;
-		U parser;
-		try {
-			String testPackage = testName.replace(SYS_FILE_SEP, ".");
-			Class<T> scannerClass = (Class<T>) Class.forName(testPackage + ".scanner.TestScanner");
 
-			Constructor<T> scannerCon = scannerClass.getConstructor(java.io.Reader.class);
+		beaver.Scanner scanner;
+		beaver.Parser parser;
+		try {
+			URLClassLoader cl = new URLClassLoader(new URL[] { new File(tmpRoot).toURI().toURL() });
+			String testPackage = testName.replace(SYS_FILE_SEP, ".");
+			Class<beaver.Scanner> scannerClass = (Class<beaver.Scanner>) cl.loadClass(testPackage + ".scanner.TestScanner");
+
+			Constructor<beaver.Scanner> scannerCon = scannerClass.getConstructor(java.io.Reader.class);
 			scanner = scannerCon.newInstance(new FileReader(inputFile));
 
-			Class<U> parserClass = (Class<U>) Class.forName(testPackage	+ ".parser.TestParser");
-			Constructor<U> parserCon = parserClass.getConstructor();
+			Class<beaver.Parser> parserClass = (Class<beaver.Parser>) cl.loadClass(testPackage + ".parser.TestParser");
+			Constructor<beaver.Parser> parserCon = parserClass.getConstructor();
 			parser = parserCon.newInstance();
 			parser.parse(scanner);
 		} catch (java.lang.Exception e) {
@@ -509,13 +513,13 @@ public class TestRunner {
 			compareOutput(testPath, actual);
 		} else if(!output.isEmpty()) {
 			fail("Process output not empty:\n" + output);
-		} 
+		}
 	}
 
 	/**
 	 * Collect file names ending with a specific suffix from the specified
 	 * directory
-	 * 
+	 *
 	 * @param dirPath
 	 *            the directory to search
 	 * @param suffix
@@ -550,7 +554,7 @@ public class TestRunner {
 	/**
 	 * Find all valid test directories (directories containing a file with the
 	 * name result.test) in the directory tree below the specified root directory
-	 * 
+	 *
 	 * @param rootDir
 	 *            the root of the tree to search
 	 * @param currentDir
@@ -558,8 +562,8 @@ public class TestRunner {
 	 * @return path names relative to rootDir, represented as Object arrays in a
 	 *         collection
 	 */
-	public static Collection<Object[]> getTests(File currentDir, File rootDir) {
-		Collection<Object[]> tests = new ArrayList<Object[]>();
+	public static Collection<String> getTests(File currentDir, File rootDir) {
+		List<String> tests = new ArrayList<String>();
 		for (File f : currentDir.listFiles()) {
 			if (f.isDirectory()) {
 				tests.addAll(getTests(f, rootDir));
@@ -569,9 +573,11 @@ public class TestRunner {
 				if (testPath.startsWith(rootPath + SYS_FILE_SEP)) {
 					testPath = testPath.substring(rootPath.length() + 1);
 				}
-				tests.add(new Object[] { testPath });
+				tests.add(testPath);
 			}
 		}
+		// sort result
+		Collections.sort(tests);
 		return tests;
 	}
 

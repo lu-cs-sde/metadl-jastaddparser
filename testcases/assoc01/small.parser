@@ -1,0 +1,52 @@
+%header {:
+package assoc01.parser;
+	
+import assoc01.ast.*;
+import java.io.IOException;
+:};
+
+%embed {:
+	public Object parse(Scanner source) throws IOException, Parser.Exception {
+		Object calc = super.parse(source);
+		((Calculation) calc).print(System.out, 0);
+		return calc;
+	}
+:};
+
+%goal calc;
+
+Calculation calc
+	= stmt.stmts*				{: return new Calculation(stmts); :}
+	;
+	
+Stmt stmt
+	= assign.a SEMI				{: return a; :}
+	| expr.e SEMI				{: return e; :}
+	;
+
+Assign assign
+	= id_use.id EQUALS expr.e		{: return new Assign(id, e); :}
+	;
+
+// Associativity and precedence
+%left RPAREN;
+%left MULT, DIV;
+%left PLUS, MINUS;
+
+Expr expr =
+	  expr.e PLUS expr.t		{: return new AddExpr(e, t); :}
+	| expr.e MINUS expr.t		{: return new SubExpr(e, t); :}
+	| expr.t MULT expr.f		{: return new MulExpr(t, f); :}
+	| expr.t DIV expr.f			{: return new DivExpr(t, f); :}
+	| LPAREN expr.e RPAREN		{: return new ParExpr(e); :}
+	| id_use.id					{: return id; :}
+	| number.n					{: return n; :}
+	;
+
+IdUse id_use
+	= IDENTIFIER.id				{: return new IdUse(id); :}
+	;
+
+Num number
+	= NUMBER.n					{: return new Num(n); :}
+	;

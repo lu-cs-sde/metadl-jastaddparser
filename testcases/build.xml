@@ -12,7 +12,8 @@
 			debug="true"
 			srcdir="${testsrc.dir}"
 			destdir="${bin.dir}"
-			includes="test/**/*.java">
+			includes="test/**/*.java"
+			includeantruntime="false">
 			<classpath>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 				<pathelement path="${tools.dir}/beaver-rt.jar"/>
