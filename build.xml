@@ -140,9 +140,8 @@
 	    <delete dir = "src/${ASTPackage}" />
 	    <delete file = "JastAddParser.jar" />
 		<delete file = "JastAddParser-src.jar" />
-		<delete includeemptydirs="true">
-			<fileset dir="bin" includes="**/*" excludes="test/*"/>
-		</delete>
+	    <delete dir = "tmp" />
+	    <delete dir = "bin" />
     	<ant antfile="testcases/build.xml" inheritAll="false" target="clean"/>
 	</target>
 	
