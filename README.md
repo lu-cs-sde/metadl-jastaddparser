@@ -31,15 +31,24 @@ it to store line and column numbers), and
 JastAdd's AST classes instead, making them independent of
 `beaver.Symbol`).
 
+License
+-------
+
+Copyright (c) 2005-2013, The JastAdd Team. All rights reserved.
+
+JastAddParser is covered by the modified BSD License. For the full license 
+text see the LICENSE file.
+
 Dependencies
 ------------
 
 JastAddParser requires a Java Runtime Environment (JRE) to run, and a JDK to
 build. The minimum required Java version for JastAddParser is Java SE 6.
 
-JastAddParser uses Beaver, JFlex, and Apache Ant. Beaver and JFlex are included
-in the source tree of JastAddParser, so the only external tools needed are Java
-and Ant. See licences/ for the full license text for JavaCC (and JJTree).
+JastAddParser uses JastAdd2, Beaver, JFlex, JUnit and Apache Ant. JastAdd2, 
+Beaver, JFlex and JUnit are included in the source tree of JastAddParser, so 
+the only external tools needed are Java and Ant. See licences/ for the full 
+license text for the included tools.
 
 Specification Syntax
 --------------------
