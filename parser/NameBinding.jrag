@@ -2,7 +2,7 @@
  * The JastAdd Extensible Java Compiler (http://jastadd.org) is covered
  * by the modified BSD License. You should have received a copy of the
  * modified BSD license with this compiler.
- * 
+ *
  * Copyright (c) 2005-2008, Torbjorn Ekman
  * All rights reserved.
  */
@@ -16,18 +16,18 @@ aspect NameChecking {
   protected void ASTNode.nameCheck() {
   }
   protected void Grammar.nameCheck() {
-	  if (explicitGoals().isEmpty()) {
-		  ArrayList rules = rule(firstGoal());
-		  if (!rules.isEmpty()) {
-			  Rule r = (Rule) rule(firstGoal()).get(0);
-			  r.warning("No explicit goals in grammar; will use \"" + firstGoal() + "\"");
-		  }
-	  }
-	  for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
-		  Goal goal = (Goal) iter.next();
-		  if (rule(goal.getName()).isEmpty())
-			  goal.error("Goal " + goal.getName() + " is not defined");
-	  }
+    if (explicitGoals().isEmpty()) {
+      ArrayList rules = rule(firstGoal());
+      if (!rules.isEmpty()) {
+        Rule r = (Rule) rule(firstGoal()).get(0);
+        r.warning("No explicit goals in grammar; will use \"" + firstGoal() + "\"");
+      }
+    }
+    for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
+      Goal goal = (Goal) iter.next();
+      if (rule(goal.getName()).isEmpty())
+        goal.error("Goal " + goal.getName() + " is not defined");
+    }
   }
   protected void Rule.nameCheck() {
     if(uses().isEmpty() && !isGoal())
@@ -45,7 +45,7 @@ aspect NameChecking {
 }
 aspect NameBinding {
 
-  
+
   inh boolean Rule.isGoal();
   eq Grammar.getClause(int index).isGoal() {
     if(!(getClause(index) instanceof Rule))
@@ -71,17 +71,17 @@ aspect NameBinding {
     }
     return set;
   }
-  
+
   syn lazy Goal Grammar.goal(String name) {
-	  for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
-		  Goal g = (Goal) iter.next();
-		  if (g.getName().equals(name)) {
-			  return g;
-		  }
-	  }
-	  return null;
+    for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
+      Goal g = (Goal) iter.next();
+      if (g.getName().equals(name)) {
+        return g;
+      }
+    }
+    return null;
   }
-  
+
   syn lazy String Element.name() = getIdUse().getID();
   syn lazy String Rule.name() = getIdDecl().getID();
   syn lazy String Rule.type() = hasIdUse() ? getIdUse().getID() : "ASTNode";
@@ -108,27 +108,27 @@ aspect NameBinding {
 
   inh String Element.codeString();
   eq Definition.getElement().codeString() = getCODE();
-  
+
   syn lazy HashMap Grammar.uses() {
     HashMap map = new HashMap();
     findUses(map);
     return map;
   }
   protected void ASTNode.findUses(HashMap map) {
-  	for(int i = 0; i < getNumChild(); i++)
-  	  getChild(i).findUses(map);
+    for(int i = 0; i < getNumChild(); i++)
+      getChild(i).findUses(map);
   }
   protected void Element.findUses(HashMap map) {
-  	if(!map.containsKey(name())) {
-  	  map.put(name(), new HashSet());
-  	}
-  	HashSet set = (HashSet)map.get(name());
-  	set.add(this);
+    if(!map.containsKey(name())) {
+      map.put(name(), new HashSet());
+    }
+    HashSet set = (HashSet)map.get(name());
+    set.add(this);
   }
   inh lazy HashSet Rule.uses(String name);
   eq Grammar.getClause().uses(String name) = uses().containsKey(name) ? (HashSet)uses().get(name) : new HashSet();
   syn HashSet Rule.uses() = uses(name());
-  
+
   syn lazy boolean Element.isNonTerminal() = isNonTerminal(name());
   inh boolean Element.isNonTerminal(String name);
   eq Grammar.getClause().isNonTerminal(String name) = isNonTerminal(name);
@@ -138,7 +138,7 @@ aspect NameBinding {
       if(r.name().equals(name))
         return true;
     }
-  	return false;
+    return false;
   }
 
   syn lazy Rule Element.rule() = nonTerminal(name());
@@ -150,22 +150,29 @@ aspect NameBinding {
       if(r.name().equals(name))
         return r;
     }
-  	return null;
+    return null;
   }
-  
+
   syn lazy Set Grammar.terminals() {
     LinkedHashSet set = new LinkedHashSet();
     findTerminals(set);
     return set;
   }
   protected void ASTNode.findTerminals(HashSet set) {
-  	for(int i = 0; i < getNumChild(); i++)
-  	  getChild(i).findTerminals(set);
+    for (int i = 0; i < getNumChild(); i++) {
+      getChild(i).findTerminals(set);
+    }
+  }
+  protected void Rule.findTerminals(HashSet set) {
+    // Ignore terminals for replaced production rules
+    if (!replaced()) {
+      super.findTerminals(set);
+    }
   }
   protected void Element.findTerminals(HashSet set) {
-  	if(!isNonTerminal()) {
-  	  set.add(name());
-  	}
+    if(!isNonTerminal()) {
+      set.add(name());
+    }
   }
 
   syn lazy Set Grammar.ruleNames() {
@@ -176,7 +183,7 @@ aspect NameBinding {
     }
     return set;
   }
-  
+
   syn lazy Collection Grammar.rules() {
     Collection c = new ArrayList();
     for(int i = 0; i < getNumClause(); i++)
