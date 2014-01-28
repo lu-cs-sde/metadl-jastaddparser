@@ -77,7 +77,7 @@ MyCode = "{:" [^:] ~":}" | "{:" + ":" "}"
   "="             { return newSymbol(Terminals.IS         ); }
   ";"             { return newSymbol(Terminals.SEMI       ); }
 
-//"@"             { return newSymbol(Terminals.AT         ); }
+  "@"             { return newSymbol(Terminals.AT         ); }
   "."             { return newSymbol(Terminals.DOT        ); }
   "|"             { return newSymbol(Terminals.BAR        ); }
 

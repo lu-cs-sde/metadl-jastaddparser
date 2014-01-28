@@ -246,6 +246,13 @@ aspect PrettyPrint {
 					lastElementIndex = i;
 				}
 			}
+			if (getNumPrecedence() > 0) {
+				print("@ ");
+				for (Precedence prec: getPrecedenceList()) {
+					prec.getIdUse().pp();
+					print(" ");
+				}
+			}
 			if (getCODE() != null && !getCODE().equals("")) {
 				String code = getCODE();
 				optIndex = 1;

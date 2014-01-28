@@ -65,14 +65,20 @@ Rule rule =
   | idUse idDecl REPLACE def_list SEMI       {: return new ReplaceRule(new Opt(idUse), idDecl, def_list); :}
   ;
 
-List def_list   =
+List def_list =
     definition                               {: return new List().add(definition); :}
   | def_list BAR definition                  {: return def_list.add(definition); :}
   ;
 
-Definition definition   =
-    def_element*                            {: return new Definition(def_element, ""); :}
-  | def_element* CODE                       {: return new Definition(def_element, CODE); :}
+Definition definition =
+    def_element*                             {: return new Definition(def_element, new List(), ""); :}
+  | def_element* CODE                        {: return new Definition(def_element, new List(), CODE); :}
+  | def_element* AT precedence*              {: return new Definition(def_element, precedence, ""); :}
+  | def_element* AT precedence* CODE         {: return new Definition(def_element, precedence, CODE); :}
+  ;
+
+Precedence precedence =
+    idUse 									 {: return new Precedence(idUse); :}
   ;
 
 Element def_element =

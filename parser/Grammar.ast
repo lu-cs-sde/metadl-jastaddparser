@@ -21,12 +21,17 @@ Goal : Clause ::= <Name>;
 Rule : Clause ::= [IdUse] IdDecl Definition*;
 ReplaceRule : Rule;
 
-Definition ::= Element* <CODE>;
+Definition ::= Element* Precedence* <CODE>;
 
 Element ::= IdUse [Name:IdUse];
 OptionalElement : Element;
 ListElement : Element;
 ListPlusElement : Element;
+
+/**
+ * Explicit precedence rule.
+ */
+Precedence ::= IdUse;
 
 IdDecl ::= <ID>;
 IdUse ::= <ID>;
