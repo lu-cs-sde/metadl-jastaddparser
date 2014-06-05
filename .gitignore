@@ -13,3 +13,7 @@ TEST*.xml
 
 # test output
 /tmp
+
+# Gradle
+/.gradle
+/build
