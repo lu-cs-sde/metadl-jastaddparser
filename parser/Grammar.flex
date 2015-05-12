@@ -8,11 +8,11 @@
  */
 
 
-package parser;
+package org.jastadd.jastaddparser.parser;
 
 import beaver.Symbol;
 import beaver.Scanner;
-import parser.GrammarParser.Terminals;
+import org.jastadd.jastaddparser.parser.GrammarParser.Terminals;
 
 %%
 

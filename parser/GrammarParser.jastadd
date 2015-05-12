@@ -10,8 +10,8 @@
 
 %header {:
 /* source is GrammarParser.jastadd */
- package parser;
- import AST.*;
+ package org.jastadd.jastaddparser.parser;
+ import org.jastadd.jastaddparser.AST.*;
 :};
 %embed {:
     /* comment */

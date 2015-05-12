@@ -1,10 +1,10 @@
 <project name="JastAddParser tests" default="test" basedir="..">
-	
+
 	<property name="testsrc.dir" location="src"/>
 	<property name="tmp.dir" location="gen"/>
 	<property name="bin.dir" location="bin"/>
 	<property name="tools.dir" location="tools"/>
-	
+
 	<target name="build" description="build test classes">
 		<mkdir dir="${tmp.dir}"/>
 
@@ -12,7 +12,7 @@
 			debug="true"
 			srcdir="${testsrc.dir}"
 			destdir="${bin.dir}"
-			includes="test/**/*.java"
+			includes="org/jastadd/jastaddparser/test/**/*.java"
 			includeantruntime="false">
 			<classpath>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
@@ -20,7 +20,7 @@
 			</classpath>
 		</javac>
 	</target>
-	
+
 	<target name="test" depends="build" description="run test">
 		<delete includeemptydirs="true" failonerror="false">
 			<fileset dir="${tmp.dir}" includes="**/*"/>
@@ -33,7 +33,7 @@
 				<pathelement path="${tools.dir}/beaver-rt.jar"/>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 			</classpath>
-			<test name="test.TestJastAddParser"/>
+			<test name="org.jastadd.jastaddparser.test.TestJastAddParser"/>
 			<formatter type="xml"/>
 		</junit>
 	</target>
@@ -44,6 +44,6 @@
 			<fileset dir="${bin.dir}" excludes="Main.class AST/* beaver/* parser/*"/>
 		</delete>
 	</target>
-	
+
 </project>
 

@@ -1,4 +1,5 @@
-package test;
+package org.jastadd.jastaddparser.test;
+
 /**
  * Possible results from a JastAddParser test.
  */

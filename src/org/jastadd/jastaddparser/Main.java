@@ -1,3 +1,4 @@
+package org.jastadd.jastaddparser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,10 +11,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Properties;
 
-import parser.GrammarParser;
-import parser.GrammarScanner;
-import AST.ASTNode;
-import AST.Grammar;
+import org.jastadd.jastaddparser.parser.GrammarParser;
+import org.jastadd.jastaddparser.parser.GrammarScanner;
+import org.jastadd.jastaddparser.AST.ASTNode;
+import org.jastadd.jastaddparser.AST.Grammar;
 
 public class Main {
 
