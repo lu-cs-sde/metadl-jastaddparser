@@ -30,6 +30,7 @@
 			<classpath>
 				<pathelement path="${bin.dir}"/>
 				<pathelement path="${tmp.dir}"/>
+				<pathelement path="${tools.dir}/beaver-rt.jar"/>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 			</classpath>
 			<test name="test.TestJastAddParser"/>

@@ -3,6 +3,8 @@
 /src/AST
 /src/parser
 /JastAddParser*.jar
+/jastaddparser*.jar
+/source.jar
 *.beaver
 TEST*.xml
 

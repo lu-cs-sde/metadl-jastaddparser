@@ -3,21 +3,22 @@
 	default = "build" >
 
 	<property name = "ASTPackage" value = "AST" />
+	<property name = "tools.dir" location="tools"/>
 	
 	<taskdef 
 		name      = "jflex" 
 		classname = "JFlex.anttask.JFlexTask" 
-		classpath = "tools/JFlex.jar" />
+		classpath = "${tools.dir}/JFlex.jar" />
 	
 	<taskdef 
 		name      = "beaver" 
 		classname = "beaver.comp.run.AntTask" 
-		classpath = "tools/beaver-ant.jar" />
+		classpath = "${tools.dir}/beaver-ant.jar" />
 	
 	<taskdef 
 		name      = "jastadd" 
 		classname = "jastadd.JastAddTask" 
-		classpath = "tools/jastadd2.jar" />
+		classpath = "${tools.dir}/jastadd2.jar" />
 
 	
 	<target name = "build" description = "Build JastAddParser">
@@ -45,7 +46,7 @@
 		
 		<java 
 			fork      = "true"
-			classpath = "tools/JastAddParser.jar" 
+			classpath = "${tools.dir}/JastAddParser.jar"
 			classname = "Main" >
 			<arg line = "parser/GrammarParser.jastadd parser/GrammarParser.beaver" />
 		</java>
@@ -67,7 +68,8 @@
     		destdir   = "bin"
     		includes  = "**/*.java"
     		excludes  = "test/**/*.java"
-			includeantruntime="true"/>
+			includeantruntime="true"
+			classpath = "${tools.dir}/beaver-rt.jar"/>
 		
 	</target>
 	
@@ -77,10 +79,12 @@
 		depends = "build" 
 		 description = "Create runnable JastAddParser.jar" >
 		
+		 <!-- standalone jar (includes Beaver runtime classes) -->
 		<jar 
 			destfile = "JastAddParser.jar" 
 			compress = "false">
 			
+			<zipgroupfileset dir="${tools.dir}" includes="beaver-rt.jar"/>
 			<fileset dir = "bin">
 				<include name = "**/*.class"/>
 				<exclude name = "test/**/*.class"/>
@@ -90,31 +94,57 @@
 			</fileset>
 	 		
 	 		<manifest>
-	 			<attribute name = "Built-By" value = "${user.home}" />
         		<attribute name = "Main-Class" value = "Main" />
 	 		</manifest>	
 		</jar>
-		
+
+		<!-- non-standalone Jar (depends on beaver-rt.jar) -->
+		<jar
+			destfile = "jastaddparser-lib.jar"
+			compress = "false">
+
+			<fileset dir = "bin">
+				<include name = "**/*.class"/>
+				<exclude name = "test/**/*.class"/>
+			</fileset>
+
+			<fileset dir = ".">
+				<include name = "properties/*"/>
+			</fileset>
+
+			<manifest>
+				<attribute name = "Main-Class" value = "Main" />
+			</manifest>
+		</jar>
+
 	</target>
 
 	
 	<target 
-		name    = "source" 
-        description = "Create source jar" >
+		name	= "source" 
+		depends = "jar"
+		description = "Create source jars" >
 		
-   		<jar destfile = "JastAddParser-src.jar" >
+		<jar destfile = "JastAddParser-src.jar" >
 			<fileset dir = ".">
-				<include name = "src/Main.java"/>
-   		        <include name = "src/beaver/**/*.java"/>
+				<include name = "src/**/*.java"/>
 				<include name = "licenses/**/*" />
-   				<include name = "parser/**/*"/>
+				<include name = "parser/**/*"/>
 				<include name = "properties/*"/>
-   				<include name = "tools/**/*.jar"/>
-   				<include name = "build.xml"/>
+				<include name = "${tools.dir}/**/*.jar"/>
+				<include name = "build.xml"/>
 				<exclude name = "parser/*.beaver"/>
-   			</fileset>
+			</fileset>
 			<manifest></manifest>
-    	</jar>
+		</jar>
+
+		<!-- minimal source jar rooted at src/ -->
+		<jar destfile = "source.jar" >
+			<fileset dir = "src">
+				<include name = "**/*.java"/>
+			</fileset>
+			<manifest></manifest>
+		</jar>
 		
 	</target>
 	
@@ -126,8 +156,8 @@
 		
 		<echo>Copying the generated jar-file to directory tools</echo>
 		<copy 
-			file      = "JastAddParser.jar" 
-			todir     = "tools/" 
+			file      = "JastAddParser.jar"
+			todir     = "${tools.dir}/"
 			overwrite = "true" />
 		
 	</target>
@@ -140,6 +170,8 @@
 	    <delete dir = "src/${ASTPackage}" />
 	    <delete file = "JastAddParser.jar" />
 		<delete file = "JastAddParser-src.jar" />
+		<delete file = "jastaddparser-lib.jar" />
+		<delete file = "source.jar" />
 	    <delete dir = "tmp" />
 	    <delete dir = "bin" />
     	<ant antfile="testcases/build.xml" inheritAll="false" target="clean"/>
@@ -153,7 +185,7 @@
 		<antcall target="build-dist"/>
 		<exec executable="git">
 			<arg value="add"/>
-			<arg value="tools/JastAddParser.jar"/>
+			<arg value="${tools.dir}/JastAddParser.jar"/>
 		</exec>
 		<exec executable="git">
 			<arg value="commit"/>
