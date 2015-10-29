@@ -3,6 +3,7 @@
 	default = "build" >
 
 	<property name = "ASTPackage" value = "org.jastadd.jastaddparser.AST" />
+	<property name = "ast.dir" value = "org/jastadd/jastaddparser/AST" />
 	<property name = "tmp.dir" location="gen"/>
 	<property name = "bin.dir" location="bin"/>
 	<property name = "tools.dir" location="tools"/>
@@ -164,8 +165,8 @@
 	<target name = "clean" description = "Remove generated files">
 
 		<delete file = "parser/GrammarParser.beaver" />
-		<delete dir = "src/parser" />
-		<delete dir = "src/${ASTPackage}" />
+		<delete dir = "src/org/jastadd/jastaddparser/parser" />
+		<delete dir = "src/${ast.dir}" />
 		<delete file = "JastAddParser.jar" />
 		<delete file = "JastAddParser-src.jar" />
 		<delete file = "jastaddparser-lib.jar" />
