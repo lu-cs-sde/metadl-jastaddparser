@@ -8,6 +8,7 @@
 *.beaver
 TEST*.xml
 
+*.swp
 *#
 *~
 .#*

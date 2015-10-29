@@ -1,28 +1,104 @@
+apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
 project.version = '1.0.2-17'
 project.group = 'org.jastadd'
-
-configurations {
-	deployerJars
-}
+project.archivesBaseName = 'jastaddparser'
+jar.manifest.attributes 'Main-Class': 'org.jastadd.jastaddparser.Main'
 
 repositories {
 	mavenCentral()
 }
 
 dependencies {
-	deployerJars "org.apache.maven.wagon:wagon-ssh:2.2"
+	compile group: 'net.sf.beaver', name: 'beaver-rt', version: '0.9.11'
+}
+
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
+
+task javadocJar(type: Jar) {
+	classifier = 'javadoc'
+	from javadoc
+}
+
+task sourcesJar(type: Jar) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
 }
 
 artifacts {
-	archives file: file('JastAddParser.jar'), name: 'JastAddParser', type: 'jar'
+	archives javadocJar, sourcesJar
+}
+
+signing {
+	sign configurations.archives
+}
+
+javadoc.options.addStringOption('Xdoclint:none', '-quiet')
+
+sourceSets {
+	main {
+		java {
+			srcDir 'src'
+			exclude 'org/jastadd/jastaddparser/test/**'
+		}
+	}
 }
 
 uploadArchives {
 	repositories.mavenDeployer {
-		configuration = configurations.deployerJars
-		repository(url: "scp://login.cs.lth.se/cs/jastadd/mvn/")
+		beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+		repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
+			if (hasProperty('ossrhUsername')) {
+				authentication(userName: ossrhUsername, password: ossrhPassword)
+			}
+		}
+
+		snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots') {
+			if (hasProperty('ossrhUsername')) {
+				authentication(userName: ossrhUsername, password: ossrhPassword)
+			}
+		}
+
+		pom.project {
+			name 'JastAddParser'
+			packaging 'jar'
+			description 'Beaver parser specification preprocessor.'
+			url 'http://jastadd.org'
+			organization {
+				name 'The JastAdd Team'
+				url 'http://jastadd.org'
+			}
+			licenses {
+				license {
+					name 'Modified BSD License'
+					url 'http://opensource.org/licenses/BSD-3-Clause'
+					distribution 'repo'
+				}
+			}
+			developers {
+				developer {
+					name 'Görel Hedin'
+					email 'gorel.hedin@cs.lth.se'
+				}
+				developer {
+					name 'Torbjörn Ekman'
+				}
+				developer {
+					name 'Jesper Öqvist'
+					email 'jesper.oqvist@cs.lth.se'
+				}
+				developer {
+					name 'Harald Görtz'
+				}
+			}
+			scm {
+				connection 'scm:git:https://bitbucket.org/jastadd/jastaddparser.git'
+				url 'https://bitbucket.org/jastadd/jastaddparser'
+			}
+		}
 	}
 }
-
