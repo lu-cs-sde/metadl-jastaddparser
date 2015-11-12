@@ -67,7 +67,7 @@
 			source    = "1.6"
 			srcdir    = "src"
 			destdir   = "${bin.dir}"
-			includes  = "src/**/*.java"
+			includes  = "**/*.java"
 			excludes  = "org/jastadd/jastaddparser/test/**/*.java"
 			includeantruntime="true"
 			classpath = "${tools.dir}/beaver-rt.jar"/>
@@ -114,7 +114,7 @@
 			</fileset>
 
 			<manifest>
-				<attribute name = "Main-Class" value = "Main" />
+				<attribute name = "Main-Class" value = "org.jastadd.jastaddparser.Main" />
 			</manifest>
 		</jar>
 
