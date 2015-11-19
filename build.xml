@@ -65,12 +65,14 @@
 			debug     = "true"
 			target    = "1.6"
 			source    = "1.6"
-			srcdir    = "src"
 			destdir   = "${bin.dir}"
-			includes  = "**/*.java"
-			excludes  = "org/jastadd/jastaddparser/test/**/*.java"
 			includeantruntime="true"
-			classpath = "${tools.dir}/beaver-rt.jar"/>
+			classpath = "${tools.dir}/beaver-rt.jar">
+			<src path="src"/>
+			<include name="**/*.java"/>
+			<exclude name="org/jastadd/ant/**/*.java"/>
+			<exclude name="org/jastadd/jastaddparser/test/**/*.java"/>
+		</javac>
 
 	</target>
 

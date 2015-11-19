@@ -10,10 +10,11 @@
 
 		<javac
 			debug="true"
-			srcdir="${testsrc.dir}"
 			destdir="${bin.dir}"
-			includes="org/jastadd/jastaddparser/test/**/*.java"
-			includeantruntime="false">
+			includeantruntime="true">
+			<src path="${testsrc.dir}"/>
+			<include name="org/jastadd/ant/**/*.java"/>
+			<include name="org/jastadd/jastaddparser/test/**/*.java"/>
 			<classpath>
 				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
 				<pathelement path="${tools.dir}/beaver-rt.jar"/>
