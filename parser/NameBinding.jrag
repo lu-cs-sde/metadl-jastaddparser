@@ -10,8 +10,11 @@
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.LinkedHashSet;
 import java.util.ArrayList;
 import java.util.Set;
+
 aspect NameChecking {
   protected void ASTNode.nameCheck() {
   }
@@ -175,20 +178,21 @@ aspect NameBinding {
     }
   }
 
-  syn lazy Set Grammar.ruleNames() {
-    HashSet set = new HashSet();
-    for(Iterator iter = rules().iterator(); iter.hasNext(); ) {
-      Rule r = (Rule)iter.next();
+  syn lazy Set<String> Grammar.ruleNames() {
+    Set<String> set = new LinkedHashSet<String>();
+    for (Rule r : rules()) {
       set.add(r.name());
     }
     return set;
   }
 
-  syn lazy Collection Grammar.rules() {
-    Collection c = new ArrayList();
-    for(int i = 0; i < getNumClause(); i++)
-      if(getClause(i) instanceof Rule)
-        c.add(getClause(i));
+  syn lazy Collection<Rule> Grammar.rules() {
+    Collection<Rule> c = new ArrayList<Rule>();
+    for (Clause clause : getClauseList()) {
+      if (clause instanceof Rule) {
+        c.add((Rule) clause);
+      }
+    }
     return c;
   }
 
