@@ -188,6 +188,9 @@
 		<delete dir = "${testout.dir}" />
 		<delete dir = "${gen.dir}" />
 		<delete dir = "${bin.dir}" />
+		<delete>
+			<fileset dir="${basedir}" includes="TEST-*.xml"/>
+		</delete>
 	</target>
 
 
