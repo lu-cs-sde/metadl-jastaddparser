@@ -1,18 +1,18 @@
 %terminals T1;
 %terminals T2;
 %terminals T3;
-%typeof d = "D";
+%typeof a = "A";
 %typeof b = "B";
 %typeof c = "C";
-%typeof a = "A";
+%typeof d = "D";
 %goal a;
 a =
-a.a b.b   ;
+    a.a b.b   ;
 a =
-d.d   ;
+    d.d   ;
 b =
-T1.T1   ;
+    T1.T1   ;
 c =
-T2.T2   ;
+    T2.T2   ;
 d =
-T3.T3   ;
+    T3.T3   ;

@@ -1,21 +1,21 @@
-%header {:
+%header {: // Generated from tmp/multiple_files01/TestParser.all
 /* Typically, header and embedded code
-* can be put in its own file for clarity
-*/ :};
+            * can be put in its own file for clarity
+            */ :};
 %terminals T;
 %terminals U;
 %terminals V;
-%typeof d = "D";
+%typeof a = "A";
 %typeof b = "B";
 %typeof c = "C";
-%typeof a = "A";
+%typeof d = "D";
 %goal a;
 a =
-b.b c.c   ;
+    b.b c.c   ;
 b =
-T.T   ;
+    T.T   ;
 c =
-U.U d.d
-| V.V b.b   ;
+    U.U d.d 
+  | V.V b.b   ;
 d =
-T.T U.U V.V   ;
+    T.T U.U V.V   ;

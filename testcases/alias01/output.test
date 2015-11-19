@@ -1,6 +1,6 @@
 %terminals TOKEN;
-%typeof nt = "OtherClass";
 %typeof non_terminal = "SomeClass";
+%typeof nt = "OtherClass";
 %goal non_terminal;
 non_terminal =
 nt.a nt.b nt.c {: return new SomeClass(a, b, c); :}

@@ -1,16 +1,16 @@
 %terminals T;
 %terminals U;
 %terminals V;
+%typeof a = "A";
 %typeof b = "B";
 %typeof c = "C";
-%typeof a = "A";
 %goal a;
 a =
-c.c b.b   ;
+    c.c b.b   ;
 a =
-b.b c.c   ;
+    b.b c.c   ;
 b =
-T.T   ;
+    T.T   ;
 c =
-U.U
-| V.V b.b   ;
+    U.U 
+  | V.V b.b   ;

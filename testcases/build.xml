@@ -26,7 +26,7 @@
 			<fileset dir="${tmp.dir}" includes="**/*"/>
 		</delete>
 
-		<junit fork="yes" printsummary="yes" dir="${basedir}">
+		<junit fork="yes" showoutput="yes" dir="${basedir}">
 			<classpath>
 				<pathelement path="${bin.dir}"/>
 				<pathelement path="${tmp.dir}"/>
@@ -35,6 +35,7 @@
 			</classpath>
 			<test name="org.jastadd.jastaddparser.test.TestJastAddParser"/>
 			<formatter type="xml"/>
+			<formatter classname="org.jastadd.ant.SimpleTestFormatter" usefile="false"/>
 		</junit>
 	</target>
 

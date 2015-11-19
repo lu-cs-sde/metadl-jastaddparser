@@ -1,8 +1,8 @@
 %terminals TERMINAL;
-%typeof other_production = "ASTNode";
 %typeof implicit_goal_production = "ASTNode";
+%typeof other_production = "ASTNode";
 %goal implicit_goal_production;
 implicit_goal_production =
-other_production.other_production   ;
+    other_production.other_production   ;
 other_production =
-TERMINAL.TERMINAL   ;
+    TERMINAL.TERMINAL   ;
