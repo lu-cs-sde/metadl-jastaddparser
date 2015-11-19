@@ -1,11 +1,10 @@
-/bin
-/gen
-/src/org/jastadd/jastaddparser/AST
-/src/org/jastadd/jastaddparser/parser
+/bin/
+/ant-bin/
+/src/gen/
+/src/tmp/
 /JastAddParser*.jar
 /jastaddparser*.jar
 /source.jar
-*.beaver
 TEST*.xml
 
 *.swp
@@ -14,9 +13,9 @@ TEST*.xml
 .#*
 .directory
 
-# test output
-/tmp
+# Test output directory.
+/tmp/
 
 # Gradle
 /.gradle
-/build
+/build/

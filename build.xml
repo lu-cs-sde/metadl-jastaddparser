@@ -3,9 +3,13 @@
 	default = "build" >
 
 	<property name = "ASTPackage" value = "org.jastadd.jastaddparser.AST" />
-	<property name = "ast.dir" value = "org/jastadd/jastaddparser/AST" />
-	<property name = "tmp.dir" location="gen"/>
-	<property name = "bin.dir" location="bin"/>
+	<property name = "ast.dir" value = "src/gen/org/jastadd/jastaddparser/AST" />
+	<property name = "tmp.dir" location="src/tmp"/>
+	<property name = "gen.dir" location="src/gen"/>
+	<property name = "src.dir" location="src/java"/>
+	<property name = "testsrc.dir" location="src/test"/>
+	<property name="testout.dir" location="tmp"/>
+	<property name = "bin.dir" location="ant-bin"/>
 	<property name = "tools.dir" location="tools"/>
 
 	<taskdef
@@ -25,53 +29,61 @@
 
 
 	<target name = "build" description = "Build JastAddParser">
+		<mkdir dir="${gen.dir}"/>
 		<jastadd
 			package = "${ASTPackage}"
 			rewrite = "true"
 			beaver  = "true"
-			outdir  = "${basedir}/src"
+			outdir  = "${gen.dir}"
 			>
 
-			<fileset dir = "parser" >
-				<include name = "*.ast" />
-				<include name = "*.jrag" />
-				<include name = "*.jadd" />
+			<fileset dir="src/jastadd">
+				<include name="*.ast"/>
+				<include name="*.jrag"/>
+				<include name="*.jadd"/>
 			</fileset>
 
 		</jastadd>
 
 		<jflex
-			file  = "parser/Grammar.flex"
-			outdir= "src/org/jastadd/jastaddparser/parser"
+			file  = "src/parser/Grammar.flex"
+			outdir= "${gen.dir}/org/jastadd/jastaddparser/parser"
 			nobak = "yes" />
 
+		<mkdir dir="${tmp.dir}/parser"/>
 		<java
 			fork = "true"
 			jar = "${tools.dir}/JastAddParser.jar">
-			<arg value = "parser/GrammarParser.jastadd" />
-			<arg value = "parser/GrammarParser.beaver" />
+			<arg value = "src/parser/GrammarParser.jastadd" />
+			<arg value = "${tmp.dir}/parser/GrammarParser.beaver" />
 		</java>
 
+		<mkdir dir="${gen.dir}/org/jastadd/jastaddparser/parser"/>
 		<beaver
-			file          = "parser/GrammarParser.beaver"
-			destdir       = "src/org/jastadd/jastaddparser/parser"
+			file          = "${tmp.dir}/parser/GrammarParser.beaver"
+			destdir       = "${gen.dir}/org/jastadd/jastaddparser/parser"
 			compress      = "no"
 			useSwitch     = "yes"
 			terminalNames = "yes" />
 
-		<mkdir  dir       = "${bin.dir}" />
-
+		<mkdir  dir="${bin.dir}" />
+		<!-- Copy version resource. -->
+		<copy todir="${bin.dir}">
+			<fileset dir="src/res">
+				<include name="**/*"/>
+			</fileset>
+		</copy>
 		<javac
 			debug     = "true"
 			target    = "1.6"
 			source    = "1.6"
 			destdir   = "${bin.dir}"
-			includeantruntime="true"
-			classpath = "${tools.dir}/beaver-rt.jar">
-			<src path="src"/>
-			<include name="**/*.java"/>
-			<exclude name="org/jastadd/ant/**/*.java"/>
-			<exclude name="org/jastadd/jastaddparser/test/**/*.java"/>
+			includeantruntime="true">
+			<src path="${gen.dir}"/>
+			<src path="${src.dir}"/>
+			<classpath>
+				<pathelement path="${tools.dir}/beaver-rt.jar"/>
+			</classpath>
 		</javac>
 
 	</target>
@@ -80,7 +92,7 @@
 	<target
 		name    = "jar"
 		depends = "build"
-		 description = "Create runnable JastAddParser.jar" >
+		description = "Create runnable JastAddParser.jar" >
 
 		 <!-- standalone jar (includes Beaver runtime classes) -->
 		<jar
@@ -91,9 +103,10 @@
 			<fileset dir = "${bin.dir}">
 				<include name = "**/*.class"/>
 				<exclude name = "org/jastadd/jastaddparser/test/**/*.class"/>
+				<exclude name = "org/jastadd/ant/**/*.class"/>
 			</fileset>
-			<fileset dir = ".">
-				<include name = "properties/*"/>
+			<fileset dir = "src/res">
+				<include name = "**/*"/>
 			</fileset>
 
 			<manifest>
@@ -111,15 +124,14 @@
 				<exclude name = "org/jastadd/jastaddparser/test/**/*.class"/>
 			</fileset>
 
-			<fileset dir = ".">
-				<include name = "properties/*"/>
+			<fileset dir = "src/res">
+				<include name = "**/*"/>
 			</fileset>
 
 			<manifest>
 				<attribute name = "Main-Class" value = "org.jastadd.jastaddparser.Main" />
 			</manifest>
 		</jar>
-
 	</target>
 
 
@@ -130,23 +142,26 @@
 
 		<jar destfile = "JastAddParser-src.jar" >
 			<fileset dir = ".">
-				<include name = "src/**/*.java"/>
+				<include name = "${src.dir}/**/*.java"/>
+				<include name = "${testsrc.dir}/**/*.java"/>
+				<include name = "src/parser/**/*"/>
 				<include name = "licenses/**/*" />
-				<include name = "parser/**/*"/>
-				<include name = "properties/*"/>
+				<include name = "src/res/**/*"/>
 				<include name = "${tools.dir}/**/*.jar"/>
 				<include name = "build.xml"/>
 				<exclude name = "parser/*.beaver"/>
 			</fileset>
 		</jar>
 
-		<!-- minimal source jar rooted at src/ -->
+		<!-- Minimal source jar rooted at src/ -->
 		<jar destfile = "source.jar" >
-			<fileset dir = "src">
+			<fileset dir = "${src.dir}">
+				<include name = "**/*.java"/>
+			</fileset>
+			<fileset dir = "${testsrc.dir}">
 				<include name = "**/*.java"/>
 			</fileset>
 		</jar>
-
 	</target>
 
 
@@ -160,27 +175,24 @@
 			file      = "JastAddParser.jar"
 			todir     = "${tools.dir}/"
 			overwrite = "true" />
-
 	</target>
 
 
 	<target name = "clean" description = "Remove generated files">
-
-		<delete file = "parser/GrammarParser.beaver" />
-		<delete dir = "src/org/jastadd/jastaddparser/parser" />
-		<delete dir = "src/${ast.dir}" />
+		<delete dir = "${gen.dir}/${ast.dir}" />
 		<delete file = "JastAddParser.jar" />
 		<delete file = "JastAddParser-src.jar" />
 		<delete file = "jastaddparser-lib.jar" />
 		<delete file = "source.jar" />
 		<delete dir = "${tmp.dir}" />
+		<delete dir = "${testout.dir}" />
+		<delete dir = "${gen.dir}" />
 		<delete dir = "${bin.dir}" />
-		<ant antfile="testcases/build.xml" inheritAll="false" target="clean"/>
 	</target>
 
 
 	<target name = "release" description = "build a JastAddParser release" >
-		<property file="properties/version.properties"/>
+		<property file="src/res/Version.properties"/>
 		<echo message="The new version will be tagged as ${version}."/>
 		<input message="Press return to continue"/>
 		<antcall target="build-dist"/>
@@ -207,14 +219,44 @@
 		<echo message="git push origin ${version}"/>
 	</target>
 
-	<target name = "test" description="test JastAddParser" depends="jar">
-		<ant antfile="testcases/build.xml" inheritAll="false"/>
-	</target>
-
 	<target name="build-dist" >
 		<antcall target="bootstrap"/>
 		<antcall target="source"/>
 		<echo message="Source and binary jar files created."/>
+	</target>
+
+	<target name="build-tests" depends="jar" description="build test classes">
+		<mkdir dir="${bin.dir}"/>
+		<mkdir dir="${testout.dir}"/>
+		<javac
+			debug="true"
+			destdir="${bin.dir}"
+			includeantruntime="true">
+			<src path="${src.dir}"/>
+			<src path="${testsrc.dir}"/>
+			<classpath>
+				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
+				<pathelement path="${tools.dir}/beaver-rt.jar"/>
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="test" depends="build-tests" description="run test">
+		<delete includeemptydirs="true" failonerror="false">
+			<fileset dir="${testout.dir}" includes="**/*"/>
+		</delete>
+
+		<junit fork="yes" showoutput="yes" dir="${basedir}">
+			<classpath>
+				<pathelement path="${bin.dir}"/>
+				<pathelement path="${testout.dir}"/>
+				<pathelement path="${tools.dir}/beaver-rt.jar"/>
+				<pathelement path="${tools.dir}/junit-4.11-SNAPSHOT.jar"/>
+			</classpath>
+			<test name="org.jastadd.jastaddparser.test.TestJastAddParser"/>
+			<formatter type="xml"/>
+			<formatter classname="org.jastadd.ant.SimpleTestFormatter" usefile="false"/>
+		</junit>
 	</target>
 
 </project>

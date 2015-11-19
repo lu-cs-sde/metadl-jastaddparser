@@ -112,7 +112,7 @@ public class Main {
 		Properties props = new Properties();
 		String version = null;
 		try {
-			InputStream in = Main.class.getResourceAsStream("/properties/version.properties");
+			InputStream in = Main.class.getResourceAsStream("/Version.properties");
 			props.load(in);
 			version = props.getProperty("version");
 		} catch (Exception e) {

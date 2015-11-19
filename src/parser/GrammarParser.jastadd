@@ -1,0 +1,100 @@
+/*
+ * The JastAdd Extensible Java Compiler (http://jastadd.org) is covered
+ * by the modified BSD License. You should have received a copy of the
+ * modified BSD license with this compiler.
+ *
+ * Copyright (c) 2005-2008, Torbjorn Ekman
+ * All rights reserved.
+ */
+
+
+%header {:
+/* source is GrammarParser.jastadd */
+ package org.jastadd.jastaddparser.parser;
+ import org.jastadd.jastaddparser.AST.*;
+:};
+%embed {:
+    /* comment */
+:};
+
+%goal grammar;
+
+Grammar grammar =
+  clause+                         {: return new Grammar(clause); :}
+  ;
+
+Clause clause =
+    declaration
+  | rule
+  | goal
+  ;
+
+Goal goal =
+  GOAL IDENT SEMI {: return new Goal(IDENT); :}
+  ;
+
+Declaration declaration =
+    header
+  | class_code
+  | assoc
+  ;
+
+Header header =
+  HEADER CODE SEMI                           {: return new Header(CODE); :}
+  ;
+
+ClassCode class_code =
+  EMBED CODE SEMI                            {: return new ClassCode(CODE); :}
+  ;
+
+Assoc assoc =
+    RIGHTASSOC sym_list SEMI    {: return new Assoc("right", sym_list); :}
+  | LEFTASSOC sym_list SEMI     {: return new Assoc("left", sym_list); :}
+  | NONASSOC sym_list SEMI      {: return new Assoc("nonassoc", sym_list); :}
+  ;
+
+List sym_list =
+    idUse.name                      {: return new List().add(name); :}
+  | sym_list.list COMMA idUse.name  {: return list.add(name); :}
+  ;
+
+Rule rule =
+    idDecl IS def_list SEMI                  {: return new Rule(new Opt(), idDecl, def_list); :}
+  | idUse idDecl IS def_list SEMI            {: return new Rule(new Opt(idUse), idDecl, def_list); :}
+  | idDecl REPLACE def_list SEMI             {: return new ReplaceRule(new Opt(), idDecl, def_list); :}
+  | idUse idDecl REPLACE def_list SEMI       {: return new ReplaceRule(new Opt(idUse), idDecl, def_list); :}
+  ;
+
+List def_list =
+    definition                               {: return new List().add(definition); :}
+  | def_list BAR definition                  {: return def_list.add(definition); :}
+  ;
+
+Definition definition =
+    def_element*                             {: return new Definition(def_element, new List(), ""); :}
+  | def_element* CODE                        {: return new Definition(def_element, new List(), CODE); :}
+  | def_element* AT precedence*              {: return new Definition(def_element, precedence, ""); :}
+  | def_element* AT precedence* CODE         {: return new Definition(def_element, precedence, CODE); :}
+  ;
+
+Precedence precedence =
+    idUse 									 {: return new Precedence(idUse); :}
+  ;
+
+Element def_element =
+    idUse alias? QUESTION                    {: return new OptionalElement(idUse, alias); :}
+  | idUse alias? PLUS                        {: return new ListPlusElement(idUse, alias); :}
+  | idUse alias? STAR                        {: return new ListElement(idUse, alias); :}
+  | idUse alias?                             {: return new Element(idUse, alias); :}
+  ;
+
+IdUse alias =
+    DOT idUse                                {: return idUse; :}
+  ;
+
+IdDecl idDecl =
+  IDENT                                    {: return new IdDecl(IDENT); :}
+  ;
+IdUse idUse =
+  IDENT                                    {: return new IdUse(IDENT); :}
+  ;

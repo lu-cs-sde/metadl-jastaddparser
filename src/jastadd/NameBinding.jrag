@@ -1,0 +1,219 @@
+/*
+ * The JastAdd Extensible Java Compiler (http://jastadd.org) is covered
+ * by the modified BSD License. You should have received a copy of the
+ * modified BSD license with this compiler.
+ *
+ * Copyright (c) 2005-2008, Torbjorn Ekman
+ * All rights reserved.
+ */
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.Set;
+
+aspect NameChecking {
+  protected void ASTNode.nameCheck() {
+  }
+  protected void Grammar.nameCheck() {
+    if (explicitGoals().isEmpty()) {
+      ArrayList rules = rule(firstGoal());
+      if (!rules.isEmpty()) {
+        Rule r = (Rule) rule(firstGoal()).get(0);
+        r.warning("No explicit goals in grammar; will use \"" + firstGoal() + "\"");
+      }
+    }
+    for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
+      Goal goal = (Goal) iter.next();
+      if (rule(goal.getName()).isEmpty())
+        goal.error("Goal " + goal.getName() + " is not defined");
+    }
+  }
+  protected void Rule.nameCheck() {
+    if(uses().isEmpty() && !isGoal())
+      error("Non terminal production " + name() + " is not used");
+    if(Character.isUpperCase(name().charAt(0)))
+      error("Non-terminals must start with a lower case letter: " + name());
+  }
+  protected void Element.nameCheck() {
+    if(findAlias(alias()) != this)
+      error("Element name " + alias() + " is used multiple times");
+    if(Character.isLowerCase(name().charAt(0)) && !isNonTerminal() && !name().equals("error"))
+      error("Non-terminal " + name() + " is not defined");
+  }
+
+}
+aspect NameBinding {
+
+
+  inh boolean Rule.isGoal();
+  eq Grammar.getClause(int index).isGoal() {
+    if(!(getClause(index) instanceof Rule))
+      return false;
+    Rule r  = (Rule)getClause(index);
+    return goal(r.name()) != null || r.name().equals(firstGoal());
+  }
+  syn lazy String Grammar.firstGoal() {
+    for(int i = 0; i < getNumClause(); i++)
+      if(getClause(i) instanceof Rule)
+        return ((Rule)getClause(i)).name();
+    return null;
+  }
+
+  syn lazy HashSet Grammar.explicitGoals() {
+    HashSet set = new HashSet();
+    for(int i = 0; i < getNumClause(); i++) {
+      if(getClause(i) instanceof Goal) {
+        Goal g = (Goal)getClause(i);
+//        set.add(g.getName());
+        set.add(g);
+      }
+    }
+    return set;
+  }
+
+  syn lazy Goal Grammar.goal(String name) {
+    for (Iterator iter = explicitGoals().iterator(); iter.hasNext(); ) {
+      Goal g = (Goal) iter.next();
+      if (g.getName().equals(name)) {
+        return g;
+      }
+    }
+    return null;
+  }
+
+  syn lazy String Element.name() = getIdUse().getID();
+  syn lazy String Rule.name() = getIdDecl().getID();
+  syn lazy String Rule.type() = hasIdUse() ? getIdUse().getID() : "ASTNode";
+
+  inh Element Element.findAlias(String alias);
+  eq Definition.getElement(int index).findAlias(String alias) {
+    for(int i = 0; i < getNumElement(); i++)
+      if(getElement(i).alias().equals(alias))
+        return getElement(i);
+    return null;
+  }
+
+  //syn lazy String Element.alias() = hasName() ? getName().getID() : name();
+  syn lazy String Element.alias() circular [hasName() ? getName().getID() : name()] {
+    if(hasName())
+      return getName().getID();
+    if(codeString() != null && codeString().indexOf(name()) != -1)
+      return name();
+    String alias = alias();
+    if(findAlias(alias) != this)
+      return alias + "_";
+    return alias;
+  }
+
+  inh String Element.codeString();
+  eq Definition.getElement().codeString() = getCODE();
+
+  syn lazy HashMap Grammar.uses() {
+    HashMap map = new HashMap();
+    findUses(map);
+    return map;
+  }
+  protected void ASTNode.findUses(HashMap map) {
+    for(int i = 0; i < getNumChild(); i++)
+      getChild(i).findUses(map);
+  }
+  protected void Element.findUses(HashMap map) {
+    if(!map.containsKey(name())) {
+      map.put(name(), new HashSet());
+    }
+    HashSet set = (HashSet)map.get(name());
+    set.add(this);
+  }
+  inh lazy HashSet Rule.uses(String name);
+  eq Grammar.getClause().uses(String name) = uses().containsKey(name) ? (HashSet)uses().get(name) : new HashSet();
+  syn HashSet Rule.uses() = uses(name());
+
+  syn lazy boolean Element.isNonTerminal() = isNonTerminal(name());
+  inh boolean Element.isNonTerminal(String name);
+  eq Grammar.getClause().isNonTerminal(String name) = isNonTerminal(name);
+  syn lazy boolean Grammar.isNonTerminal(String name) {
+    for(Iterator iter = rules().iterator(); iter.hasNext(); ) {
+      Rule r = (Rule)iter.next();
+      if(r.name().equals(name))
+        return true;
+    }
+    return false;
+  }
+
+  syn lazy Rule Element.rule() = nonTerminal(name());
+  inh Rule Element.nonTerminal(String name);
+  eq Grammar.getClause().nonTerminal(String name) = nonTerminal(name);
+  syn lazy Rule Grammar.nonTerminal(String name) {
+    for(Iterator iter = rules().iterator(); iter.hasNext(); ) {
+      Rule r = (Rule)iter.next();
+      if(r.name().equals(name))
+        return r;
+    }
+    return null;
+  }
+
+  syn lazy Set Grammar.terminals() {
+    LinkedHashSet set = new LinkedHashSet();
+    findTerminals(set);
+    return set;
+  }
+  protected void ASTNode.findTerminals(HashSet set) {
+    for (int i = 0; i < getNumChild(); i++) {
+      getChild(i).findTerminals(set);
+    }
+  }
+  protected void Rule.findTerminals(HashSet set) {
+    // Ignore terminals for replaced production rules
+    if (!replaced()) {
+      super.findTerminals(set);
+    }
+  }
+  protected void Element.findTerminals(HashSet set) {
+    if(!isNonTerminal()) {
+      set.add(name());
+    }
+  }
+
+  syn lazy Set<String> Grammar.ruleNames() {
+    Set<String> set = new LinkedHashSet<String>();
+    for (Rule r : rules()) {
+      set.add(r.name());
+    }
+    return set;
+  }
+
+  syn lazy Collection<Rule> Grammar.rules() {
+    Collection<Rule> c = new ArrayList<Rule>();
+    for (Clause clause : getClauseList()) {
+      if (clause instanceof Rule) {
+        c.add((Rule) clause);
+      }
+    }
+    return c;
+  }
+
+  syn lazy ArrayList Grammar.rule(String name) {
+    ArrayList list = new ArrayList(1);
+    for(Iterator iter = rules().iterator(); iter.hasNext(); ) {
+      Rule r = (Rule)iter.next();
+      if(r.name().equals(name))
+        list.add(r);
+    }
+    return list;
+  }
+
+  syn boolean Clause.replaces(String name) = false;
+  eq ReplaceRule.replaces(String name) = name.equals(name());
+  syn boolean Rule.replaced() = replaced(name());
+  inh boolean Rule.replaced(String name);
+  eq Grammar.getClause(int index).replaced(String name) {
+    for(int i = index + 1; i < getNumClause(); i++)
+      if(getClause(i).replaces(name))
+        return true;
+    return false;
+  }
+}
