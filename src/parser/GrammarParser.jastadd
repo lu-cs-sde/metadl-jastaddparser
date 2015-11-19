@@ -11,7 +11,7 @@
 %header {:
 /* source is GrammarParser.jastadd */
  package org.jastadd.jastaddparser.parser;
- import org.jastadd.jastaddparser.AST.*;
+ import org.jastadd.jastaddparser.ast.*;
 :};
 %embed {:
     /* comment */

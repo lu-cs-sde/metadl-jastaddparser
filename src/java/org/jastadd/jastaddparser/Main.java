@@ -42,8 +42,8 @@ import java.util.Properties;
 
 import org.jastadd.jastaddparser.parser.GrammarParser;
 import org.jastadd.jastaddparser.parser.GrammarScanner;
-import org.jastadd.jastaddparser.AST.ASTNode;
-import org.jastadd.jastaddparser.AST.Grammar;
+import org.jastadd.jastaddparser.ast.ASTNode;
+import org.jastadd.jastaddparser.ast.Grammar;
 
 public class Main {
 

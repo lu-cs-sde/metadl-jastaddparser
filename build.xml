@@ -2,8 +2,8 @@
 	name    = "JastAddParser"
 	default = "build" >
 
-	<property name = "ASTPackage" value = "org.jastadd.jastaddparser.AST" />
-	<property name = "ast.dir" value = "src/gen/org/jastadd/jastaddparser/AST" />
+	<property name = "ASTPackage" value = "org.jastadd.jastaddparser.ast" />
+	<property name = "ast.dir" value = "src/gen/org/jastadd/jastaddparser/ast" />
 	<property name = "tmp.dir" location="src/tmp"/>
 	<property name = "gen.dir" location="src/gen"/>
 	<property name = "src.dir" location="src/java"/>
