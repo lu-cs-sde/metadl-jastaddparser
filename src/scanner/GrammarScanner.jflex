@@ -55,7 +55,7 @@ EndOfLineComment = "//" {InputCharacter}* {LineTerminator}?
 
 Identifier     = [:letter:] ([:letter:] | [:digit:] | "_")*
 
-AnyChar        = . | \n
+AnyChar        = [^]
 
 MyCode = "{:" [^:] ~":}" | "{:" + ":" "}"
 
