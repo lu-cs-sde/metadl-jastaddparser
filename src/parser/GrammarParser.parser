@@ -9,12 +9,8 @@
 
 
 %header {:
-/* source is GrammarParser.jastadd */
- package org.jastadd.jastaddparser.parser;
- import org.jastadd.jastaddparser.ast.*;
-:};
-%embed {:
-    /* comment */
+package org.jastadd.jastaddparser.parser;
+import org.jastadd.jastaddparser.ast.*;
 :};
 
 %goal grammar;
