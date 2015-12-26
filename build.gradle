@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-project.version = '1.0.3'
+project.version = '1.0.4'
 project.group = 'org.jastadd'
 project.archivesBaseName = 'jastaddparser'
 jar.manifest.attributes 'Main-Class': 'org.jastadd.jastaddparser.Main'
@@ -11,12 +11,84 @@ repositories {
 	mavenCentral()
 }
 
+configurations {
+	jastaddparser
+	jflex
+	beaver
+}
+
 dependencies {
-	compile group: 'net.sf.beaver', name: 'beaver-rt', version: '0.9.11'
+	jastaddparser('org.jastadd:jastaddparser:1.0.3') { force = true /* Avoid conflict with local artifact. */ }
+	jflex 'de.jflex:jflex:1.6.1'
+	beaver 'net.sf.beaver:beaver-cc:0.9.11'
+	compile 'net.sf.beaver:beaver-rt:0.9.11'
+	testCompile 'junit:junit:4.12'
+	testCompile 'org.apache.ant:ant:1.9.4'
+	testCompile 'org.apache.ant:ant-junit:1.9.4'
+}
+
+sourceSets {
+	main {
+		java {
+			srcDirs 'src/gen', 'src/java'
+		}
+	}
+	test {
+		java {
+			srcDirs 'src/test'
+		}
+	}
 }
 
 sourceCompatibility = '1.6'
 targetCompatibility = '1.6'
+
+compileJava.dependsOn 'generateParser'
+compileJava.dependsOn 'generateScanner'
+
+task preprocessParser(type: JavaExec) {
+	classpath = configurations.jastaddparser
+	main = 'org.jastadd.jastaddparser.Main'
+	args file('src/parser/GrammarParser.parser').path,
+		file('src/tmp/parser/GrammarParser.beaver').path
+
+	inputs.files 'src/parser/GrammarParser.parser'
+	outputs.files 'src/tmp/parser/GrammarParser.beaver'
+
+	doFirst {
+		file('src/tmp/parser').mkdirs()
+	}
+}
+
+task generateParser(type: JavaExec) {
+	dependsOn 'preprocessParser'
+
+	classpath = configurations.beaver
+	main = 'beaver.comp.run.Make'
+	args '-c', '-w', '-t', '-d', file('src/gen/org/jastadd/jastaddparser/parser').path,
+		file('src/tmp/parser/GrammarParser.beaver').path
+
+	inputs.files 'src/tmp/parser/GrammarParser.beaver'
+	outputs.files 'src/gen/org/jastadd/jastaddparser/parser/GrammarParser.java'
+
+	doFirst {
+		file('src/gen/org/jastadd/jastaddparser/parser').mkdirs()
+	}
+}
+
+task generateScanner(type: JavaExec) {
+	classpath = configurations.jflex
+	main = 'jflex.Main'
+	args '-d', file('src/gen/org/jastadd/jastaddparser/parser').path,
+		file('src/scanner/GrammarScanner.jflex').path
+
+	inputs.files 'src/scanner/GrammarScanner.jflex'
+	outputs.files 'src/gen/org/jastadd/jastaddparser/parser/GrammarScanner.java'
+
+	doFirst {
+		file('src/gen/org/jastadd/jastaddparser/parser').mkdirs()
+	}
+}
 
 task javadocJar(type: Jar) {
 	classifier = 'javadoc'
@@ -37,15 +109,6 @@ signing {
 }
 
 javadoc.options.addStringOption('Xdoclint:none', '-quiet')
-
-sourceSets {
-	main {
-		java {
-			srcDir 'src'
-			exclude 'org/jastadd/jastaddparser/test/**'
-		}
-	}
-}
 
 uploadArchives {
 	repositories.mavenDeployer {

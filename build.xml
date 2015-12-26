@@ -46,7 +46,7 @@
 		</jastadd>
 
 		<jflex
-			file  = "src/parser/Grammar.flex"
+			file  = "src/scanner/GrammarScanner.jflex"
 			outdir= "${gen.dir}/org/jastadd/jastaddparser/parser"
 			nobak = "yes" />
 
@@ -54,7 +54,7 @@
 		<java
 			fork = "true"
 			jar = "${tools.dir}/JastAddParser.jar">
-			<arg value = "src/parser/GrammarParser.jastadd" />
+			<arg value = "src/parser/GrammarParser.parser" />
 			<arg value = "${tmp.dir}/parser/GrammarParser.beaver" />
 		</java>
 
