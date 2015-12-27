@@ -7,7 +7,6 @@
  * All rights reserved.
  */
 
-
 %header {:
 package org.jastadd.jastaddparser.parser;
 import org.jastadd.jastaddparser.ast.*;
@@ -16,7 +15,7 @@ import org.jastadd.jastaddparser.ast.*;
 %goal grammar;
 
 Grammar grammar =
-  clause+                         {: return new Grammar(clause); :}
+  clause+                              {: return new Grammar(clause); :}
   ;
 
 Clause clause =
@@ -36,61 +35,62 @@ Declaration declaration =
   ;
 
 Header header =
-  HEADER CODE SEMI                           {: return new Header(CODE); :}
+  HEADER CODE SEMI                     {: return new Header(CODE); :}
   ;
 
 ClassCode class_code =
-  EMBED CODE SEMI                            {: return new ClassCode(CODE); :}
+  EMBED CODE SEMI                      {: return new ClassCode(CODE); :}
   ;
 
 Assoc assoc =
-    RIGHTASSOC sym_list SEMI    {: return new Assoc("right", sym_list); :}
-  | LEFTASSOC sym_list SEMI     {: return new Assoc("left", sym_list); :}
-  | NONASSOC sym_list SEMI      {: return new Assoc("nonassoc", sym_list); :}
+    RIGHTASSOC sym_list SEMI           {: return new Assoc("right", sym_list); :}
+  | LEFTASSOC sym_list SEMI            {: return new Assoc("left", sym_list); :}
+  | NONASSOC sym_list SEMI             {: return new Assoc("nonassoc", sym_list); :}
   ;
 
 List sym_list =
-    idUse.name                      {: return new List().add(name); :}
-  | sym_list.list COMMA idUse.name  {: return list.add(name); :}
+    idUse.name                         {: return new List().add(name); :}
+  | sym_list.list COMMA idUse.name     {: return list.add(name); :}
   ;
 
 Rule rule =
-    idDecl IS def_list SEMI                  {: return new Rule(new Opt(), idDecl, def_list); :}
-  | idUse idDecl IS def_list SEMI            {: return new Rule(new Opt(idUse), idDecl, def_list); :}
-  | idDecl REPLACE def_list SEMI             {: return new ReplaceRule(new Opt(), idDecl, def_list); :}
-  | idUse idDecl REPLACE def_list SEMI       {: return new ReplaceRule(new Opt(idUse), idDecl, def_list); :}
+    idDecl IS def_list SEMI            {: return new Rule(new Opt(), idDecl, def_list); :}
+  | idUse idDecl IS def_list SEMI      {: return new Rule(new Opt(idUse), idDecl, def_list); :}
+  | idDecl REPLACE def_list SEMI       {: return new ReplaceRule(new Opt(), idDecl, def_list); :}
+  | idUse idDecl REPLACE def_list SEMI {: return new ReplaceRule(new Opt(idUse), idDecl, def_list); :}
   ;
 
 List def_list =
-    definition                               {: return new List().add(definition); :}
-  | def_list BAR definition                  {: return def_list.add(definition); :}
+    definition                         {: return new List().add(definition); :}
+  | def_list BAR definition            {: return def_list.add(definition); :}
   ;
 
 Definition definition =
-    def_element*                             {: return new Definition(def_element, new List(), ""); :}
-  | def_element* CODE                        {: return new Definition(def_element, new List(), CODE); :}
-  | def_element* AT precedence*              {: return new Definition(def_element, precedence, ""); :}
-  | def_element* AT precedence* CODE         {: return new Definition(def_element, precedence, CODE); :}
+    def_element*                       {: return new Definition(def_element, new List(), ""); :}
+  | def_element* CODE                  {: return new Definition(def_element, new List(), CODE); :}
+  | def_element* AT precedence*        {: return new Definition(def_element, precedence, ""); :}
+  | def_element* AT precedence* CODE   {: return new Definition(def_element, precedence, CODE); :}
   ;
 
 Precedence precedence =
-    idUse 									 {: return new Precedence(idUse); :}
+    idUse                              {: return new Precedence(idUse); :}
   ;
 
 Element def_element =
-    idUse alias? QUESTION                    {: return new OptionalElement(idUse, alias); :}
-  | idUse alias? PLUS                        {: return new ListPlusElement(idUse, alias); :}
-  | idUse alias? STAR                        {: return new ListElement(idUse, alias); :}
-  | idUse alias?                             {: return new Element(idUse, alias); :}
+    idUse alias? QUESTION              {: return new OptionalElement(idUse, alias); :}
+  | idUse alias? PLUS                  {: return new ListPlusElement(idUse, alias); :}
+  | idUse alias? STAR                  {: return new ListElement(idUse, alias); :}
+  | idUse alias?                       {: return new Element(idUse, alias); :}
   ;
 
 IdUse alias =
-    DOT idUse                                {: return idUse; :}
+    DOT idUse                          {: return idUse; :}
   ;
 
 IdDecl idDecl =
-  IDENT                                    {: return new IdDecl(IDENT); :}
+  IDENT                                {: return new IdDecl(IDENT); :}
   ;
+
 IdUse idUse =
-  IDENT                                    {: return new IdUse(IDENT); :}
+  IDENT                                {: return new IdUse(IDENT); :}
   ;

@@ -7,7 +7,6 @@
  * All rights reserved.
  */
 
-
 package org.jastadd.jastaddparser.parser;
 
 import beaver.Symbol;
@@ -45,47 +44,46 @@ import org.jastadd.jastaddparser.parser.GrammarParser.Terminals;
 
 LineTerminator = \r | \n | \r\n
 InputCharacter = [^\r\n]
-WhiteSpace     = {LineTerminator} | [ \t\f]
+WhiteSpace = {LineTerminator} | [ \t\f]
 
-Comment = {TraditionalComment}
-        | {EndOfLineComment}
+Comment = {TraditionalComment} | {EndOfLineComment}
 
 TraditionalComment = "/*" [^*] ~"*/" | "/*" "*"+ "/" | "/*" "*"+ [^/*] ~"*/"
 EndOfLineComment = "//" {InputCharacter}* {LineTerminator}?
 
-Identifier     = [:letter:] ([:letter:] | [:digit:] | "_")*
+Identifier = [:letter:] ([:letter:] | [:digit:] | "_")*
 
-AnyChar        = [^]
+AnyChar = [^]
 
-MyCode = "{:" [^:] ~":}" | "{:" + ":" "}"
+JavaCode = "{:" [^:] ~":}" | "{:" + ":" "}"
 
 %%
 
 <YYINITIAL> {
-  {WhiteSpace}    { /* ignore */ }
-  {Comment}       { /* ignore */ }
+  {WhiteSpace}    { /* Skipped. */ }
+  {Comment}       { /* Skipped. */ }
 
-  "%header"       { return newSymbol(Terminals.HEADER     ); }
-  "%embed"        { return newSymbol(Terminals.EMBED      ); }
-  "%goal"         { return newSymbol(Terminals.GOAL       ); }
-  "%left"         { return newSymbol(Terminals.LEFTASSOC  ); }
-  "%right"        { return newSymbol(Terminals.RIGHTASSOC ); }
-  "%nonassoc"     { return newSymbol(Terminals.NONASSOC   ); }
+  "%header"       { return newSymbol(Terminals.HEADER); }
+  "%embed"        { return newSymbol(Terminals.EMBED); }
+  "%goal"         { return newSymbol(Terminals.GOAL); }
+  "%left"         { return newSymbol(Terminals.LEFTASSOC); }
+  "%right"        { return newSymbol(Terminals.RIGHTASSOC); }
+  "%nonassoc"     { return newSymbol(Terminals.NONASSOC); }
 
-  ","             { return newSymbol(Terminals.COMMA      ); }
-  ":="            { return newSymbol(Terminals.REPLACE   ); }
-  "="             { return newSymbol(Terminals.IS         ); }
-  ";"             { return newSymbol(Terminals.SEMI       ); }
+  ","             { return newSymbol(Terminals.COMMA); }
+  ":="            { return newSymbol(Terminals.REPLACE); }
+  "="             { return newSymbol(Terminals.IS); }
+  ";"             { return newSymbol(Terminals.SEMI); }
 
-  "@"             { return newSymbol(Terminals.AT         ); }
-  "."             { return newSymbol(Terminals.DOT        ); }
-  "|"             { return newSymbol(Terminals.BAR        ); }
+  "@"             { return newSymbol(Terminals.AT); }
+  "."             { return newSymbol(Terminals.DOT); }
+  "|"             { return newSymbol(Terminals.BAR); }
 
-  "?"             { return newSymbol(Terminals.QUESTION   ); }
-  "+"             { return newSymbol(Terminals.PLUS       ); }
-  "*"             { return newSymbol(Terminals.STAR       ); }
+  "?"             { return newSymbol(Terminals.QUESTION); }
+  "+"             { return newSymbol(Terminals.PLUS); }
+  "*"             { return newSymbol(Terminals.STAR); }
 
-  {MyCode}        { String s = yytext().trim();
+  {JavaCode}      { String s = yytext().trim();
                     s = s.substring(2, s.length()-2).trim();
                     return newSymbol(Terminals.CODE, s);
                   }
@@ -93,4 +91,3 @@ MyCode = "{:" [^:] ~":}" | "{:" + ":" "}"
   {Identifier}    { return newSymbol(Terminals.IDENT, yytext()); }
   {AnyChar}       { throw new Scanner.Exception(yyline + 1, yycolumn + 1, "unrecognized character '" + yytext() + "'"); }
 }
-
