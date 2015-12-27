@@ -5,19 +5,20 @@ apply plugin: 'signing'
 project.version = '1.0.4'
 project.group = 'org.jastadd'
 project.archivesBaseName = 'jastaddparser'
-jar.manifest.attributes 'Main-Class': 'org.jastadd.jastaddparser.Main'
 
 repositories {
 	mavenCentral()
 }
 
 configurations {
+	jastadd
 	jastaddparser
 	jflex
 	beaver
 }
 
 dependencies {
+	jastadd 'org.jastadd:jastadd:2.1.13'
 	jastaddparser('org.jastadd:jastaddparser:1.0.3') { force = true /* Avoid conflict with local artifact. */ }
 	jflex 'de.jflex:jflex:1.6.1'
 	beaver 'net.sf.beaver:beaver-cc:0.9.11'
@@ -43,8 +44,51 @@ sourceSets {
 sourceCompatibility = '1.6'
 targetCompatibility = '1.6'
 
+jar {
+	manifest.attributes 'Main-Class': 'org.jastadd.jastaddparser.Main'
+	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
 compileJava.dependsOn 'generateParser'
 compileJava.dependsOn 'generateScanner'
+compileJava.dependsOn 'generateJastAdd'
+clean.dependsOn 'cleanGen'
+test.dependsOn 'copyJar'
+
+task copyJar(type: Copy) {
+	dependsOn 'jar'
+	from jar.archivePath
+	into project.projectDir
+	rename { _ -> "JastAddParser.jar" }
+}
+
+task cleanGen(type: Delete) {
+	delete 'src/gen'
+	delete 'src/tmp'
+	delete 'tmp' // Test outputs.
+	delete 'JastAddParser.jar'
+}
+
+task generateJastAdd(type: JavaExec) {
+	classpath = configurations.jastadd
+	main = 'org.jastadd.JastAdd'
+	args ([ '--rewrite=regular',
+		'--package=org.jastadd.jastaddparser.ast',
+		'--beaver',
+		"--o=${file('src/gen').path}" ] +
+		fileTree('src/jastadd')
+			.include('**/*.ast')
+			.include('**/*.jadd')
+			.include('**/*.jrag')
+			.files)
+
+	inputs.dir 'src/jastadd'
+	outputs.dir 'src/gen/org/jastadd/jastaddparser/ast'
+
+	doFirst {
+		file('src/gen').mkdirs()
+	}
+}
 
 task preprocessParser(type: JavaExec) {
 	classpath = configurations.jastaddparser
