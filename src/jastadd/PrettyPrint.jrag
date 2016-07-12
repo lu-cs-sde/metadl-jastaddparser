@@ -14,9 +14,10 @@ aspect PrettyPrint {
 
 	protected static PrintStream ASTNode.out;
 	protected static boolean ASTNode.beaver;
+	protected static boolean ASTNode.ppFunc;
 
 	protected static void ASTNode.print(String s) {
-		out.print(s);
+		out.print(s); 
 	}
 
 	protected static void ASTNode.println(String s) {
@@ -26,9 +27,10 @@ aspect PrettyPrint {
 	public void ASTNode.pp() {
 	}
 
-	public void Grammar.pp(PrintStream out, boolean beaver) {
+	public void Grammar.pp(PrintStream out, boolean beaver,boolean ppFunc) {
 		ASTNode.out = out;
 		ASTNode.beaver = beaver;
+		ASTNode.ppFunc = ppFunc;
 		for(int i = 0; i < getNumClause(); i++) {
 			if(getClause(i) instanceof Declaration) {
 				getClause(i).pp();
@@ -150,6 +152,22 @@ aspect PrettyPrint {
 			println("	 {: return " + returnVal + "; :}");
 		} else {
 			println("	 {: ASTNode _node_ = " + returnVal + ";");
+			if(ppFunc){
+				println("	Object first = _symbol_" + alias1 + ".value;");
+				println("	Object last = _symbol_" + alias2 + ".value;");
+				println("  	if(first instanceof Token){");
+				println("		_node_.setStartToken((Token) first);");
+				println("  	}else {");
+				println("  		ASTNode fn = (ASTNode) first;");
+				println("  		_node_.setStartToken(fn.getStartToken());");
+				println("  	}");
+				println("  	if(last instanceof Token){");
+				println("  		_node_.setEndToken((Token) last);");
+				println("  	}else {");
+				println(" 		ASTNode ln = (ASTNode) last;");
+				println("  		_node_.setEndToken(ln.getEndToken());");
+				println("  	}");
+			}
 			println("		_node_.setStart(Symbol.getLine(_symbol_" + alias1 +
 					".getStart()), (short) Symbol.getColumn(_symbol_" + alias1 +".getStart()));");
 			println("		_node_.setEnd(Symbol.getLine(_symbol_" + alias2 +
@@ -206,7 +224,7 @@ aspect PrettyPrint {
 			(index == 0 || getElement(index-1).isNonTerminal() || getElement(index-1) instanceof OptionalElement ||
 			(index < getNumElement() - 1 && (getElement(index+1).isNonTerminal() || getElement(index+1) instanceof OptionalElement)));
 	/*
-  eq Definition.getElement(int index).inlineOptional() =
+ 	 eq Definition.getElement(int index).inlineOptional() =
 	getElement(index) instanceof OptionalElement && (index == 0 || index == getNumElement() - 1 || getElement(index-1).isNonTerminal() || getElement(index-1) instanceof OptionalElement || getElement(index+1).isNonTerminal() || getElement(index+1) instanceof OptionalElement);
 	// inlineLeft(index) || inlineRight(index);
 */
@@ -224,10 +242,12 @@ aspect PrettyPrint {
 	}
 
 	public void Definition.pp() {
-		for (int j = 0; j < permutations(); j++) {
+	for (int j = 0; j < permutations(); j++) {
 			int optIndex = 1;
 			int firstElementIndex = 0;
 			int lastElementIndex = -1;
+			LinkedList indexList = new LinkedList();
+			LinkedList names = new LinkedList();
 			if (j != 0)
 				print("\n  | ");
 			for (int i = 0; i < getNumElement(); i++) {
@@ -236,6 +256,7 @@ aspect PrettyPrint {
 						getElement(i).pp();
 						print(" ");
 						lastElementIndex = i;
+						indexList.add(i);
 					} else if (i == firstElementIndex) {
 						firstElementIndex++;
 					}
@@ -244,6 +265,7 @@ aspect PrettyPrint {
 					getElement(i).pp();
 					print(" ");
 					lastElementIndex = i;
+					indexList.add(i);
 				}
 			}
 			if (getNumPrecedence() > 0) {
@@ -293,10 +315,16 @@ aspect PrettyPrint {
 						java.util.regex.Matcher m = p.matcher(code);
 						StringBuffer sb = new StringBuffer();
 						while (m.find()) {
-							if (Character.isUpperCase(name.charAt(0)) && !beaver)
+							if (Character.isUpperCase(name.charAt(0)) && !beaver){
 								m.appendReplacement(sb, "$1$2$3");
-							else
-								m.appendReplacement(sb, "$1((String)$2.value)$3");
+							}else{
+								if(ppFunc){
+									m.appendReplacement(sb, "$1(((Token)$2.value).getValue())$3");
+									names.add(name);
+								}else {
+									m.appendReplacement(sb, "$1((String)$2.value)$3");
+								}
+							}
 						}
 						m.appendTail(sb);
 						code = sb.toString();
@@ -320,6 +348,44 @@ aspect PrettyPrint {
 								firstNamePrefix = "_symbol_";
 							if(getElement(lastElementIndex).isNonTerminal())
 								lastNamePrefix = "_symbol_";
+							
+							if(ppFunc){
+								if(names.size() == 1){
+									sb.append(" //name: " +names.get(0) +"\n");
+								}
+								sb.append("	Object first = " + firstNamePrefix + getElement(firstElementIndex).alias() + ".value;\n");
+								sb.append("	Object last = " + lastNamePrefix + getElement(lastElementIndex).alias() + ".value;\n");
+								
+								if(getElement(firstElementIndex).isNonTerminal()){
+								sb.append("  		ASTNode fn = (ASTNode) first;\n");
+								sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
+								}else{
+								sb.append("			_node_.setStartToken((Token) first);\n");
+								}
+								
+								if(getElement(lastElementIndex).isNonTerminal()){
+								sb.append(" 		ASTNode ln = (ASTNode) last;\n");
+								generateRursiveLast(firstElementIndex, indexList, sb, "last");
+								
+								//sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+								}else{
+								sb.append("  		_node_.setEndToken((Token) last);\n");
+								}
+								
+							//	sb.append("  	if(first instanceof Token){\n");
+							//	sb.append("		_node_.setStartToken((Token) first);\n");
+							//	sb.append("  	}else {\n");
+							//	sb.append("  		ASTNode fn = (ASTNode) first;\n");
+							//	sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
+							//	sb.append("  	}\n");
+							//	sb.append("  	if(last instanceof Token){\n");
+							//	sb.append("  		_node_.setEndToken((Token) last);\n");
+							//	sb.append("  	}else {\n");
+							//	sb.append(" 		ASTNode ln = (ASTNode) last;\n");
+							//	sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+							//	sb.append("  	}\n");
+							}
+								
 							sb.append("		   _node_.setStart(Symbol.getLine(").append(firstNamePrefix);
 							sb.append(getElement(firstElementIndex).alias()).append(".getStart()), ");
 							sb.append("(short) Symbol.getColumn(").append(firstNamePrefix);
@@ -341,6 +407,38 @@ aspect PrettyPrint {
 			}
 		}
 	}
+	
+public void Definition.generateRursiveLast(int startIndex, LinkedList lastIndexList, StringBuffer sb, String last) {
+			if(lastIndexList.size() == 0){
+			return;
+		}
+		
+		sb.append(" 		ln = (ASTNode) " + last + ";\n");
+		if (getElement((Integer) lastIndexList.getLast()) instanceof OptionalElement) {
+			String firstNamePrefix = "";
+			sb.append("			if(ln.getEndToken() == null){\n");
+			lastIndexList.pollLast();
+			if (getElement((Integer) lastIndexList.getLast()).isNonTerminal()) {
+				firstNamePrefix = "_symbol_";
+			}
+			String var = "tmp" + startIndex + "Last" + (Integer) lastIndexList.getLast(); 
+			sb.append("				Object " + var + " = " + firstNamePrefix + getElement((Integer) lastIndexList.getLast()).alias() + ".value;\n");
+			if (getElement((Integer) lastIndexList.getLast()).isNonTerminal()) {
+				generateRursiveLast(startIndex, lastIndexList, sb, var);
+			
+			} else {
+				sb.append("			_node_.setEndToken((Token) " + var + ");\n");
+			}
+			sb.append("			}else{\n");
+			sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+			sb.append("			}");
+		} else {
+			sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+		}
+	}
+
+	
+	
 	public void Element.pp() {
 		print(name());
 		if(alias() != null)
