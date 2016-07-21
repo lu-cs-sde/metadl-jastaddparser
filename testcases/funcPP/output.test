@@ -1,0 +1,279 @@
+%header {: // Generated from /Users/alfred/git/jastaddparser/testcases/funcPP/funcPP.parser
+package gen;
+	import se.lth.cs.akesson.alfred.TokenList.*; :};
+%embed {: // Generated from /Users/alfred/git/jastaddparser/testcases/funcPP/funcPP.parser
+static public class SyntaxError extends RuntimeException { public SyntaxError(String msg) {super(msg);}}
+	// Disable syntax error recovery
+	protected void recoverFromError(Symbol token, TokenStream in) {
+		throw new SyntaxError("Cannot recover from the syntax error" + token.value.toString());
+		
+	} :};
+%terminals INDENT;
+%terminals LEFT_BRACE;
+%terminals RIGHT_BRACE;
+%terminals EXAMPLE;
+%terminals LINE;
+%terminals ON;
+%terminals BAR;
+%terminals OPT;
+%typeof indent = "Indent";
+%typeof example = "Example";
+%typeof line = "Line";
+%typeof onLine = "Line";
+%typeof onEx = "Example";
+%typeof bar = "Bar";
+%typeof opt = "Option";
+%typeof test = "Test";
+%typeof stmt = "Stmt";
+%typeof stmt_opt_list = "List";
+%typeof stmt_list = "List";
+%goal indent;
+indent =
+    INDENT.INDENT LEFT_BRACE.LEFT_BRACE stmt_opt_list.stmts RIGHT_BRACE.RIGHT_BRACE {: ASTNode _node_ = new Indent(stmts);
+	Object first = INDENT.value;
+	Object last = RIGHT_BRACE.value;
+			_node_.setStartToken((Token) first);
+  		_node_.setEndToken((Token) last);
+		   _node_.setStart(Symbol.getLine(INDENT.getStart()), (short) Symbol.getColumn(INDENT.getStart()));
+		   _node_.setEnd(Symbol.getLine(RIGHT_BRACE.getEnd()), (short) Symbol.getColumn(RIGHT_BRACE.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+example =
+    EXAMPLE.EXAMPLE {: ASTNode _node_ = new Example();
+	Object first = EXAMPLE.value;
+	Object last = EXAMPLE.value;
+			_node_.setStartToken((Token) first);
+  		_node_.setEndToken((Token) last);
+		   _node_.setStart(Symbol.getLine(EXAMPLE.getStart()), (short) Symbol.getColumn(EXAMPLE.getStart()));
+		   _node_.setEnd(Symbol.getLine(EXAMPLE.getEnd()), (short) Symbol.getColumn(EXAMPLE.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+line =
+    LINE.line {: ASTNode _node_ = new Line((((Token)line.value).getValue()));
+				String[] tokenNames = _node_.getTokens();
+				_node_.addToken(tokenNames[0], (SignificantToken) line.value);
+	Object first = line.value;
+	Object last = line.value;
+			_node_.setStartToken((Token) first);
+  		_node_.setEndToken((Token) last);
+		   _node_.setStart(Symbol.getLine(line.getStart()), (short) Symbol.getColumn(line.getStart()));
+		   _node_.setEnd(Symbol.getLine(line.getEnd()), (short) Symbol.getColumn(line.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+onLine =
+    ON.ON LINE.line {: ASTNode _node_ = new Line((((Token)line.value).getValue()));
+				String[] tokenNames = _node_.getTokens();
+				_node_.addToken(tokenNames[0], (SignificantToken) line.value);
+	Object first = ON.value;
+	Object last = line.value;
+			_node_.setStartToken((Token) first);
+  		_node_.setEndToken((Token) last);
+		   _node_.setStart(Symbol.getLine(ON.getStart()), (short) Symbol.getColumn(ON.getStart()));
+		   _node_.setEnd(Symbol.getLine(line.getEnd()), (short) Symbol.getColumn(line.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+onEx =
+    ON.ON example.ex {: ASTNode _node_ = ex;
+	Object first = ON.value;
+	Object last = _symbol_ex.value;
+			_node_.setStartToken((Token) first);
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(ON.getStart()), (short) Symbol.getColumn(ON.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_ex.getEnd()), (short) Symbol.getColumn(_symbol_ex.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+bar =
+    example.e BAR.BAR indent.i {: ASTNode _node_ = new Bar(e,i);
+	Object first = _symbol_e.value;
+	Object last = _symbol_i.value;
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(_symbol_e.getStart()), (short) Symbol.getColumn(_symbol_e.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_i.getEnd()), (short) Symbol.getColumn(_symbol_i.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+opt =
+    OPT.OPT {: ASTNode _node_ = new Option(new Opt(),new Opt());
+	Object first = OPT.value;
+	Object last = OPT.value;
+			_node_.setStartToken((Token) first);
+  		_node_.setEndToken((Token) last);
+		   _node_.setStart(Symbol.getLine(OPT.getStart()), (short) Symbol.getColumn(OPT.getStart()));
+		   _node_.setEnd(Symbol.getLine(OPT.getEnd()), (short) Symbol.getColumn(OPT.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | OPT.OPT onLine.l {: ASTNode _node_ = new Option(new Opt(l),new Opt());
+	Object first = OPT.value;
+	Object last = _symbol_l.value;
+			_node_.setStartToken((Token) first);
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(OPT.getStart()), (short) Symbol.getColumn(OPT.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_l.getEnd()), (short) Symbol.getColumn(_symbol_l.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | OPT.OPT onEx.e {: ASTNode _node_ = new Option(new Opt(),new Opt(e));
+	Object first = OPT.value;
+	Object last = _symbol_e.value;
+			_node_.setStartToken((Token) first);
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(OPT.getStart()), (short) Symbol.getColumn(OPT.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_e.getEnd()), (short) Symbol.getColumn(_symbol_e.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | OPT.OPT onLine.l onEx.e {: ASTNode _node_ = new Option(new Opt(l),new Opt(e));
+	Object first = OPT.value;
+	Object last = _symbol_e.value;
+			_node_.setStartToken((Token) first);
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(OPT.getStart()), (short) Symbol.getColumn(OPT.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_e.getEnd()), (short) Symbol.getColumn(_symbol_e.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+test =
+    BAR.BAR LINE.l1 LINE.l2 BAR.BAR_ {: ASTNode _node_ = new Test((((Token)l1.value).getValue()),(((Token)l2.value).getValue()));
+				String[] tokenNames = _node_.getTokens();
+				_node_.addToken(tokenNames[0], (SignificantToken) l1.value);
+				_node_.addToken(tokenNames[1], (SignificantToken) l2.value);
+	Object first = BAR.value;
+	Object last = BAR_.value;
+			_node_.setStartToken((Token) first);
+  		_node_.setEndToken((Token) last);
+		   _node_.setStart(Symbol.getLine(BAR.getStart()), (short) Symbol.getColumn(BAR.getStart()));
+		   _node_.setEnd(Symbol.getLine(BAR_.getEnd()), (short) Symbol.getColumn(BAR_.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+stmt =
+    indent.i {: ASTNode _node_ = i;
+	Object first = _symbol_i.value;
+	Object last = _symbol_i.value;
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(_symbol_i.getStart()), (short) Symbol.getColumn(_symbol_i.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_i.getEnd()), (short) Symbol.getColumn(_symbol_i.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | example.e {: ASTNode _node_ = e;
+	Object first = _symbol_e.value;
+	Object last = _symbol_e.value;
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(_symbol_e.getStart()), (short) Symbol.getColumn(_symbol_e.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_e.getEnd()), (short) Symbol.getColumn(_symbol_e.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | bar.b {: ASTNode _node_ = b;
+	Object first = _symbol_b.value;
+	Object last = _symbol_b.value;
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(_symbol_b.getStart()), (short) Symbol.getColumn(_symbol_b.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_b.getEnd()), (short) Symbol.getColumn(_symbol_b.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | opt.o {: ASTNode _node_ = o;
+	Object first = _symbol_o.value;
+	Object last = _symbol_o.value;
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(_symbol_o.getStart()), (short) Symbol.getColumn(_symbol_o.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_o.getEnd()), (short) Symbol.getColumn(_symbol_o.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | line.l {: ASTNode _node_ = l;
+	Object first = _symbol_l.value;
+	Object last = _symbol_l.value;
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_l.getEnd()), (short) Symbol.getColumn(_symbol_l.getEnd()));
+		   return new Symbol(_node_); :}
+
+  | test.t {: ASTNode _node_ = t;
+	Object first = _symbol_t.value;
+	Object last = _symbol_t.value;
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+		   _node_.setStart(Symbol.getLine(_symbol_t.getStart()), (short) Symbol.getColumn(_symbol_t.getStart()));
+		   _node_.setEnd(Symbol.getLine(_symbol_t.getEnd()), (short) Symbol.getColumn(_symbol_t.getEnd()));
+		   return new Symbol(_node_); :}
+  ;
+stmt_opt_list =
+    {: return new Symbol(new List()); :}
+  | stmt_list.n
+	 {: ASTNode _node_ = n;
+	Object first = _symbol_n.value;
+	Object last = _symbol_n.value;
+  	if(first instanceof Token){
+		_node_.setStartToken((Token) first);
+  	}else {
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+  	}
+  	if(last instanceof Token){
+  		_node_.setEndToken((Token) last);
+  	}else {
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+  	}
+		_node_.setStart(Symbol.getLine(_symbol_n.getStart()), (short) Symbol.getColumn(_symbol_n.getStart()));
+		_node_.setEnd(Symbol.getLine(_symbol_n.getEnd()), (short) Symbol.getColumn(_symbol_n.getEnd()));
+		return new Symbol(_node_); :}
+  ;
+stmt_list =
+	 stmt.n
+	 {: ASTNode _node_ = new List().add(n);
+	Object first = _symbol_n.value;
+	Object last = _symbol_n.value;
+  	if(first instanceof Token){
+		_node_.setStartToken((Token) first);
+  	}else {
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+  	}
+  	if(last instanceof Token){
+  		_node_.setEndToken((Token) last);
+  	}else {
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+  	}
+		_node_.setStart(Symbol.getLine(_symbol_n.getStart()), (short) Symbol.getColumn(_symbol_n.getStart()));
+		_node_.setEnd(Symbol.getLine(_symbol_n.getEnd()), (short) Symbol.getColumn(_symbol_n.getEnd()));
+		return new Symbol(_node_); :}
+  | stmt_list.l stmt.n
+	 {: ASTNode _node_ = l.add(n);
+	Object first = _symbol_l.value;
+	Object last = _symbol_n.value;
+  	if(first instanceof Token){
+		_node_.setStartToken((Token) first);
+  	}else {
+  		ASTNode fn = (ASTNode) first;
+  		_node_.setStartToken(fn.getStartToken());
+  	}
+  	if(last instanceof Token){
+  		_node_.setEndToken((Token) last);
+  	}else {
+ 		ASTNode ln = (ASTNode) last;
+  		_node_.setEndToken(ln.getEndToken());
+  	}
+		_node_.setStart(Symbol.getLine(_symbol_l.getStart()), (short) Symbol.getColumn(_symbol_l.getStart()));
+		_node_.setEnd(Symbol.getLine(_symbol_n.getEnd()), (short) Symbol.getColumn(_symbol_n.getEnd()));
+		return new Symbol(_node_); :}
+  ;

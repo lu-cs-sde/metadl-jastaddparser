@@ -350,8 +350,15 @@ aspect PrettyPrint {
 								lastNamePrefix = "_symbol_";
 							
 							if(ppFunc){
-								if(names.size() == 1){
-									sb.append(" //name: " +names.get(0) +"\n");
+								if(names.size() > 0){
+								sb.append("				String[] tokenNames = _node_.getTokens();\n");
+								for(int i = 0; i < names.size(); i++){
+									sb.append("				_node_.addToken(tokenNames[");
+									sb.append(i);
+									sb.append("], (SignificantToken) ");
+									sb.append(names.get(i));
+									sb.append(".value);\n");
+								}
 								}
 								sb.append("	Object first = " + firstNamePrefix + getElement(firstElementIndex).alias() + ".value;\n");
 								sb.append("	Object last = " + lastNamePrefix + getElement(lastElementIndex).alias() + ".value;\n");
@@ -365,7 +372,8 @@ aspect PrettyPrint {
 								
 								if(getElement(lastElementIndex).isNonTerminal()){
 								sb.append(" 		ASTNode ln = (ASTNode) last;\n");
-								generateRursiveLast(firstElementIndex, indexList, sb, "last");
+								sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+//								generateRursiveLast(firstElementIndex, indexList, sb, "last");
 								
 								//sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
 								}else{
