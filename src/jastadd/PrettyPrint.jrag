@@ -364,34 +364,19 @@ aspect PrettyPrint {
 								sb.append("	Object last = " + lastNamePrefix + getElement(lastElementIndex).alias() + ".value;\n");
 								
 								if(getElement(firstElementIndex).isNonTerminal()){
-								sb.append("  		ASTNode fn = (ASTNode) first;\n");
-								sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
+									sb.append("  		ASTNode fn = (ASTNode) first;\n");
+									sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
 								}else{
-								sb.append("			_node_.setStartToken((Token) first);\n");
+									sb.append("			_node_.setStartToken((Token) first);\n");
 								}
 								
 								if(getElement(lastElementIndex).isNonTerminal()){
-								sb.append(" 		ASTNode ln = (ASTNode) last;\n");
-								sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
-//								generateRursiveLast(firstElementIndex, indexList, sb, "last");
-								
-								//sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+									sb.append(" 		ASTNode ln = (ASTNode) last;\n");
+									sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
 								}else{
-								sb.append("  		_node_.setEndToken((Token) last);\n");
+									sb.append("  		_node_.setEndToken((Token) last);\n");
 								}
 								
-							//	sb.append("  	if(first instanceof Token){\n");
-							//	sb.append("		_node_.setStartToken((Token) first);\n");
-							//	sb.append("  	}else {\n");
-							//	sb.append("  		ASTNode fn = (ASTNode) first;\n");
-							//	sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
-							//	sb.append("  	}\n");
-							//	sb.append("  	if(last instanceof Token){\n");
-							//	sb.append("  		_node_.setEndToken((Token) last);\n");
-							//	sb.append("  	}else {\n");
-							//	sb.append(" 		ASTNode ln = (ASTNode) last;\n");
-							//	sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
-							//	sb.append("  	}\n");
 							}
 								
 							sb.append("		   _node_.setStart(Symbol.getLine(").append(firstNamePrefix);
