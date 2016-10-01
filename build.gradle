@@ -6,6 +6,8 @@ project.version = '1.0.4'
 project.group = 'org.jastadd'
 project.archivesBaseName = 'jastaddparser'
 
+defaultTasks 'test'
+
 repositories {
 	mavenCentral()
 }
