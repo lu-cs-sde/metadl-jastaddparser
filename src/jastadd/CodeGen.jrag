@@ -51,7 +51,7 @@ aspect CodeGen {
    * This is {@code true} if the parser should generate
    * beaver Symbol nodes in the generated semantic actions.
    */
-  protected static boolean ASTNode.beaver;
+  protected static boolean ASTNode.noBeaverSymbol;
 
   protected static void ASTNode.print(String s) {
     out.print(s);
@@ -70,9 +70,9 @@ aspect CodeGen {
   public void ASTNode.genCode() {
   }
 
-  public void Grammar.genCode(PrintStream out, boolean beaver) {
+  public void Grammar.genCode(PrintStream out, boolean noBeaverSymbol) {
     ASTNode.out = out;
-    ASTNode.beaver = beaver;
+    ASTNode.noBeaverSymbol = noBeaverSymbol;
     for (Clause clause : getClauseList()) {
       if (clause instanceof Declaration) {
         clause.genCode();
@@ -190,7 +190,7 @@ aspect CodeGen {
    * Generates the semantic action code for a single production.
    */
   private void Grammar.printReturn(String returnVal, String alias1, String alias2) {
-    if (beaver) {
+    if (noBeaverSymbol) {
       format("  {: ASTNode _node_ = %s;\n", returnVal);
       println("   _node_.setStart(Symbol.getLine(_symbol_" + alias1 +
           ".getStart()), (short) Symbol.getColumn(_symbol_" + alias1 +".getStart()));");
@@ -203,7 +203,7 @@ aspect CodeGen {
   }
 
   private void Grammar.printReturn(String returnVal) {
-    if (beaver) {
+    if (noBeaverSymbol) {
       format("    {: return new Symbol(%s); :}\n", returnVal);
     } else {
       format("  {: return %s; :}\n", returnVal);
@@ -358,7 +358,7 @@ aspect CodeGen {
             Matcher matcher = pattern.matcher(code);
             StringBuffer sb = new StringBuffer();
             while (matcher.find()) {
-              if (Character.isUpperCase(name.charAt(0)) && !beaver) {
+              if (Character.isUpperCase(name.charAt(0)) && !noBeaverSymbol) {
                 matcher.appendReplacement(sb, "$1$2$3");
               } else {
                 matcher.appendReplacement(sb, "$1((String)$2.value)$3");
@@ -372,7 +372,7 @@ aspect CodeGen {
           }
         }
 
-        if (beaver) {
+        if (noBeaverSymbol) {
           Pattern pattern = Pattern.compile("return ([^;]*?);");
           Matcher matcher = pattern.matcher(code);
           StringBuffer sb = new StringBuffer();
