@@ -1,4 +1,4 @@
-/* Copyright (c) 2005-2008, Torbjorn Ekman
+/* Copyright (c) 2016, The JastAdd Team
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,35 +28,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-Grammar ::= Clause*;
-
-abstract Clause;
-
-abstract Declaration : Clause;
-Header : Declaration ::= <CODE>;
-ClassCode : Declaration ::= <CODE>;
-
-Goal : Clause ::= <Name>;
-
-Rule : Clause ::= [IdUse] IdDecl Definition*;
-ReplaceRule : Rule;
-
-Definition ::= Element* Precedence* <CODE>;
-
-Element ::= IdUse [Name:IdUse];
-OptionalElement : Element;
-ListElement : Element;
-ListPlusElement : Element;
-
 /**
- * Explicit precedence rule.
+ * Helper attributes.
  */
-Precedence ::= IdUse;
+aspect Util {
+  syn boolean Element.isOptional() = false;
+  eq OptionalElement.isOptional() = true;
 
-IdDecl ::= <ID>;
-IdUse ::= <ID>;
-
-/**
- * Associativity definition.
- */
-Assoc : Declaration ::= <ASSOC> Symbol:IdUse*;
+  syn boolean Element.isList() = false;
+  eq ListElement.isList() = true;
+}

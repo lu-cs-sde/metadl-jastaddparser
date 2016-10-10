@@ -151,3 +151,9 @@ expected result is `EXEC_PASS` or `EXEC_OUTPUT_PASS`.
 If the expected result is `JAP_ERR_OUTPUT`, `JAP_OUTPUT_PASS` or
 `EXEC_OUTPUT_PASS`, the test system looks for a file `test.output` and compares
 the relevant output with the contents of this file.
+
+Code Style
+----------
+
+JastAddParser uses the same code style as ExtendJ. The style is based on the Google Java style
+guide. For pull requests it is preferable to stick to the same style as surrounding code.

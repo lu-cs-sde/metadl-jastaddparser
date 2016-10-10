@@ -1,499 +1,499 @@
-/*
- * The JastAdd Extensible Java Compiler (http://jastadd.org) is covered
- * by the modified BSD License. You should have received a copy of the
- * modified BSD license with this compiler.
- *
- * Copyright (c) 2005-2008, Torbjorn Ekman
- * All rights reserved.
- */
-import java.util.Iterator;
-import java.io.PrintStream;
-
-aspect PrettyPrint {
-	public static String ASTNode.sourceName = "";
-
-	protected static PrintStream ASTNode.out;
-	protected static boolean ASTNode.beaver;
-	protected static boolean ASTNode.useTokenlist;
-
-	protected static void ASTNode.print(String s) {
-		out.print(s); 
-	}
-
-	protected static void ASTNode.println(String s) {
-		print(s + "\n");
-	}
-
-	public void ASTNode.pp() {
-	}
-
-	public void Grammar.pp(PrintStream out, boolean beaver,boolean useTokenlist) {
-		ASTNode.out = out;
-		ASTNode.beaver = beaver;
-		ASTNode.useTokenlist = useTokenlist;
-		for(int i = 0; i < getNumClause(); i++) {
-			if(getClause(i) instanceof Declaration) {
-				getClause(i).pp();
-			}
-		}
-		for(Iterator iter = terminals().iterator(); iter.hasNext(); ) {
-			String terminal = (String)iter.next();
-			println("%terminals " + terminal + ";");
-		}
-		for(Iterator iter = ruleNames().iterator(); iter.hasNext(); ) {
-			String name = (String)iter.next();
-			ArrayList list = rule(name);
-			boolean genOpt = false;
-			boolean genOptList = false;
-			boolean genList = false;
-			String typeName = "";
-			for(Iterator i2 = list.iterator(); i2.hasNext(); ) {
-				Rule r = (Rule)i2.next();
-				if(r.genOpt())
-					genOpt = true;
-				if(r.genOptList())
-					genOptList = true;
-				if(r.genList())
-					genList = true;
-				typeName = r.type();
-			}
-			println("%typeof " + name + " = \"" + typeName + "\";");
-			if(genOpt) {
-				Rule r = nonTerminal(name);
-				if(r != null && r.type().equals("List"))
-					println("%typeof " + name + "_opt = \"List\";");
-				else
-					println("%typeof " + name + "_opt = \"Opt\";");
-			}
-			if(genOptList)
-				println("%typeof " + name + "_opt_list = \"List\";");
-			if(genList)
-				println("%typeof " + name + "_list = \"List\";");
-		}
-		String defaultGoal = null;
-		Collection c = new ArrayList();
-		for(int i = 0; i < getNumClause(); i++) {
-			if(defaultGoal == null && (getClause(i) instanceof Rule))
-				defaultGoal = ((Rule)getClause(i)).name();
-			if(getClause(i) instanceof Goal)
-				c.add(((Goal)getClause(i)).getName());
-		}
-		if(c.isEmpty())
-			c.add(defaultGoal);
-		for(Iterator iter = c.iterator(); iter.hasNext(); ) {
-			String s = (String)iter.next();
-			println("%goal " + s + ";");
-		}
-		for(Iterator iter = rules().iterator(); iter.hasNext(); ) {
-			Rule r = (Rule)iter.next();
-			r.pp();
-		}
-
-		// generate _opt, _opt_list, _list
-		for(Iterator iter = ruleNames().iterator(); iter.hasNext(); ) {
-			String name = (String)iter.next();
-			ArrayList list = rule(name);
-			boolean genOpt = false;
-			boolean genOptList = false;
-			boolean genList = false;
-			String typeName = "";
-			for(Iterator i2 = list.iterator(); i2.hasNext(); ) {
-				Rule r = (Rule)i2.next();
-				if(r.genOpt())
-					genOpt = true;
-				if(r.genOptList())
-					genOptList = true;
-				if(r.genList())
-					genList = true;
-				typeName = r.type();
-			}
-			if(genOpt) {
-				Rule r = (Rule)list.iterator().next();
-				if(r.type().equals("List")) {
-					println(name + "_opt =");
-					printReturn("new List()");
-					println("  | " + name + ".n");
-					printReturn("n", "n", "n");
-					println("  ;");
-				} else if(r.type().equals("Opt")) {
-					println(name + "_opt =");
-					printReturn("new Opt()");
-					println("  | " + name + ".n");
-					printReturn("n", "n", "n");
-					println("  ;");
-				} else {
-					println(name + "_opt =");
-					printReturn("new Opt()");
-					println("  | " + name + ".n");
-					printReturn("new Opt(n)", "n", "n");
-					println("  ;");
-				}
-			}
-			if(genOptList) {
-				println(name + "_opt_list =");
-				printReturn("new List()");
-				println("  | " + name + "_list.n");
-				printReturn("n", "n", "n");
-				println("  ;");
-			}
-			if(genList) {
-				println(name + "_list =");
-				println("	 " + name + ".n");
-				printReturn("new List().add(n)", "n", "n");
-				println("  | " + name + "_list.l " + name + ".n");
-				printReturn("l.add(n)", "l", "n");
-				println("  ;");
-			}
-		}
-	}
-
-	private void Grammar.printReturn(String returnVal, String alias1, String alias2) {
-		if (!beaver) {
-			println("	 {: return " + returnVal + "; :}");
-		} else {
-			println("	 {: ASTNode _node_ = " + returnVal + ";");
-			if(useTokenlist){
-				println("	Object first = _symbol_" + alias1 + ".value;");
-				println("	Object last = _symbol_" + alias2 + ".value;");
-				println("  	if(first instanceof Token){");
-				println("		_node_.setStartToken((Token) first);");
-				println("  	} else {");
-				println("  		ASTNode fn = (ASTNode) first;");
-				println("  		_node_.setStartToken(fn.getStartToken());");
-				println("  	}");
-				println("  	if(last instanceof Token){");
-				println("  		_node_.setEndToken((Token) last);");
-				println("  	} else {");
-				println(" 		ASTNode ln = (ASTNode) last;");
-				println("  		_node_.setEndToken(ln.getEndToken());");
-				println("  	}");
-			}
-			println("		_node_.setStart(Symbol.getLine(_symbol_" + alias1 +
-					".getStart()), (short) Symbol.getColumn(_symbol_" + alias1 +".getStart()));");
-			println("		_node_.setEnd(Symbol.getLine(_symbol_" + alias2 +
-					".getEnd()), (short) Symbol.getColumn(_symbol_" + alias2 + ".getEnd()));");
-			println("		return new Symbol(_node_); :}");
-		}
-	}
-
-	private void Grammar.printReturn(String returnVal) {
-		if (!beaver) {
-			println("	 {: return " + returnVal + "; :}");
-		} else {
-		  println("    {: return new Symbol(" + returnVal + "); :}");
-		}
-	}
-
-	public void Header.pp() {
-		println("%header {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + " :};");
-	}
-	public void ClassCode.pp() {
-		println("%embed {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + " :};");
-	}
-
-	public void Assoc.pp() {
-		print("%" + getASSOC() + " ");
-		boolean first = true;
-		for (IdUse sym : getSymbolList()) {
-			if (!first) {
-				print(", ");
-			}
-			first = false;
-			print(sym.getID());
-		}
-		println(";");
-	}
-
-	public void Rule.pp() {
-		if (replaced()) {
-			return;
-		}
-		println(name() + " =");
-		print("    ");
-		for(int i = 0; i < getNumDefinition(); i++) {
-			if(i != 0)
-				print("\n  | ");
-			getDefinition(i).pp();
-		}
-		println("  ;");
-	}
-
-	inh boolean Element.inlineOptional();
-	eq Definition.getElement(int index).inlineOptional() =
-			(getElement(index) instanceof OptionalElement || getElement(index) instanceof ListElement)&&
-			(index == 0 || getElement(index-1).isNonTerminal() || getElement(index-1) instanceof OptionalElement ||
-			(index < getNumElement() - 1 && (getElement(index+1).isNonTerminal() || getElement(index+1) instanceof OptionalElement)));
-	/*
- 	 eq Definition.getElement(int index).inlineOptional() =
-	getElement(index) instanceof OptionalElement && (index == 0 || index == getNumElement() - 1 || getElement(index-1).isNonTerminal() || getElement(index-1) instanceof OptionalElement || getElement(index+1).isNonTerminal() || getElement(index+1) instanceof OptionalElement);
-	// inlineLeft(index) || inlineRight(index);
-*/
-	syn lazy boolean Definition.inlineLeft(int index) =
-	getElement(index) instanceof OptionalElement && (index == 0 || getElement(index-1) instanceof OptionalElement); //inlineLeft(index - 1));
-	syn lazy boolean Definition.inlineRight(int index) =
-	getElement(index) instanceof OptionalElement && (index == getNumElement() - 1 || getElement(index+1) instanceof OptionalElement); //inlineRight(index + 1));
-
-	syn lazy int Definition.permutations() {
-		int num = 1;
-			for(int i = 0; i < getNumElement(); i++)
-				if(getElement(i).inlineOptional())
-					num *=2;
-			return num;
-	}
-
-	public void Definition.pp() {
-	for (int j = 0; j < permutations(); j++) {
-			int optIndex = 1;
-			int firstElementIndex = 0;
-			int lastElementIndex = -1;
-			LinkedList indexList = new LinkedList();
-			LinkedList names = new LinkedList();
-			if (j != 0)
-				print("\n  | ");
-			for (int i = 0; i < getNumElement(); i++) {
-				if (getElement(i).inlineOptional()) {
-					if ((j & optIndex) != 0) {
-						getElement(i).pp();
-						print(" ");
-						lastElementIndex = i;
-						indexList.add(i);
-					} else if (i == firstElementIndex) {
-						firstElementIndex++;
-					}
-					optIndex *= 2;
-				} else {
-					getElement(i).pp();
-					print(" ");
-					lastElementIndex = i;
-					indexList.add(i);
-				}
-			}
-			if (getNumPrecedence() > 0) {
-				print("@ ");
-				for (Precedence prec: getPrecedenceList()) {
-					prec.getIdUse().pp();
-					print(" ");
-				}
-			}
-			if (getCODE() != null && !getCODE().equals("")) {
-				String code = getCODE();
-				optIndex = 1;
-				for (int i = 0; i < getNumElement(); i++) {
-					if (getElement(i).inlineOptional() && getElement(i).isNonTerminal()) {
-						String name = getElement(i).alias();
-						// the char before must be one of " ", "(", ")", ","
-						// the char after must be one of " ", "," ")", "."
-						String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
-						java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
-						java.util.regex.Matcher m = p.matcher(code);
-						StringBuffer sb = new StringBuffer();
-						while (m.find()) {
-							String returnType = getElement(i).rule().type();
-							String elementType = getElement(i) instanceof OptionalElement ? "Opt" : "List";
-							if ((j & optIndex) != 0) {
-								if (returnType.equals("Opt") || returnType.equals("List") || elementType.equals("List"))
-									m.appendReplacement(sb, "$1$2$3");
-								else
-									m.appendReplacement(sb, "$1new Opt($2)$3");
-							} else {
-								if (returnType.equals("List"))
-									m.appendReplacement(sb, "$1new List()$3");
-								else if (returnType.equals("Opt"))
-									m.appendReplacement(sb, "$1new Opt()$3");
-								else
-									m.appendReplacement(sb, "$1new " + elementType + "()$3");
-							}
-						}
-						m.appendTail(sb);
-						code = sb.toString();
-					} else if (!getElement(i).isNonTerminal()) {
-						String name = getElement(i).alias();
-						// the char before must be one of " ", "(", ")", ","
-						// the char after must be one of " ", "," ")", "."
-						String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
-						java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
-						java.util.regex.Matcher m = p.matcher(code);
-						StringBuffer sb = new StringBuffer();
-						while (m.find()) {
-							if (Character.isUpperCase(name.charAt(0)) && !beaver){
-								m.appendReplacement(sb, "$1$2$3");
-							} else {
-								if(useTokenlist){
-									m.appendReplacement(sb, "$1(((Token)$2.value).getValue())$3");
-									names.add(name);
-								} else {
-									m.appendReplacement(sb, "$1((String)$2.value)$3");
-								}
-							}
-						}
-						m.appendTail(sb);
-						code = sb.toString();
-						// code = code.replaceAll(pattern, "((String)" + name + ".value)");
-					}
-					if (getElement(i).inlineOptional())
-						optIndex *= 2;
-				}
-
-				if (beaver) {
-					String returnPattern = "return ([^;]*?);";
-					java.util.regex.Pattern p = java.util.regex.Pattern.compile(returnPattern);
-					java.util.regex.Matcher m = p.matcher(code);
-					StringBuffer sb = new StringBuffer();
-					while (m.find()) {
-						if (firstElementIndex <= lastElementIndex) {
-							m.appendReplacement(sb, "ASTNode _node_ = $1;\n");
-							String firstNamePrefix = "";
-							String lastNamePrefix = "";
-							if(getElement(firstElementIndex).isNonTerminal())
-								firstNamePrefix = "_symbol_";
-							if(getElement(lastElementIndex).isNonTerminal())
-								lastNamePrefix = "_symbol_";
-							
-							if(useTokenlist){
-								if(names.size() > 0){
-								sb.append("				String[] tokenNames = _node_.getTokens();\n");
-								for(int i = 0; i < names.size(); i++){
-									sb.append("				_node_.addToken(tokenNames[");
-									sb.append(i);
-									sb.append("], (SignificantToken) ");
-									sb.append(names.get(i));
-									sb.append(".value);\n");
-								}
-								}
-								sb.append("	Object first = " + firstNamePrefix + getElement(firstElementIndex).alias() + ".value;\n");
-								sb.append("	Object last = " + lastNamePrefix + getElement(lastElementIndex).alias() + ".value;\n");
-								
-								if(getElement(firstElementIndex).isNonTerminal()){
-									sb.append("  		ASTNode fn = (ASTNode) first;\n");
-									sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
-								} else {
-									sb.append("			_node_.setStartToken((Token) first);\n");
-								}
-								
-								if(getElement(lastElementIndex).isNonTerminal()){
-									sb.append(" 		ASTNode ln = (ASTNode) last;\n");
-									sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
-								} else {
-									sb.append("  		_node_.setEndToken((Token) last);\n");
-								}
-								
-							}
-								
-							sb.append("		   _node_.setStart(Symbol.getLine(").append(firstNamePrefix);
-							sb.append(getElement(firstElementIndex).alias()).append(".getStart()), ");
-							sb.append("(short) Symbol.getColumn(").append(firstNamePrefix);
-							sb.append(getElement(firstElementIndex).alias()).append(".getStart()));\n");
-							sb.append("		   _node_.setEnd(Symbol.getLine(").append(lastNamePrefix);
-							sb.append(getElement(lastElementIndex).alias()).append(".getEnd()), ");
-							sb.append("(short) Symbol.getColumn(").append(lastNamePrefix);
-							sb.append(getElement(lastElementIndex).alias()).append(".getEnd()));\n");
-							sb.append("		   return new Symbol(_node_);");
-						} else {
-							m.appendReplacement(sb, "return new Symbol($1);");
-						}
-					}
-					m.appendTail(sb);
-					code = sb.toString();
-				}
-
-				println("{: " + code + " :}");
-			}
-		}
-	}
-	
-	
-	public void Element.pp() {
-		print(name());
-		if(alias() != null)
-		  print("." + alias());
-	}
-	public void OptionalElement.pp() {
-		if(isNonTerminal()) {
-			if(inlineOptional())
-				print(name());
-			else {
-				print(name() +"_opt");
-			}
-			if(alias() != null)
-				print("." + alias());
-		} else {
-			print(name());
-			if(alias() != null)
-				print("." + alias());
-			if(!inlineOptional())
-				print("?");
-		}
-	}
-
-	public void ListPlusElement.pp() {
-		if(isNonTerminal()) {
-			print(name() + "_list");
-			if(alias() != null)
-				print("." + alias());
-		} else {
-			print(name());
-			if(alias() != null)
-				print("." + alias());
-			print("+");
-		}
-	}
-
-	public void ListElement.pp() {
-		if(isNonTerminal()) {
-			if (inlineOptional())
-				print(name() + "_list");
-			else
-				print(name() + "_opt_list");
-			if(alias() != null)
-				print("." + alias());
-		} else {
-			print(name());
-			if(alias() != null)
-				print("." + alias());
-			print("*");
-		}
-	}
-
-	public void IdUse.pp() {
-		print(getID());
-	}
-
-	public void IdDecl.pp() {
-		print(getID());
-	}
-
-	syn lazy boolean Rule.genOpt() {
-		for(Iterator iter = uses().iterator(); iter.hasNext(); ) {
-			Element e = (Element)iter.next();
-			if(e.genOpt())
-				return true;
-		}
-		return false;
-	}
-
-	syn lazy boolean Rule.genOptList() {
-		for(Iterator iter = uses().iterator(); iter.hasNext(); ) {
-			Element e = (Element)iter.next();
-			if(e.genOptList())
-				return true;
-		}
-		return false;
-	}
-
-	syn lazy boolean Rule.genList() {
-		for(Iterator iter = uses().iterator(); iter.hasNext(); ) {
-			Element e = (Element)iter.next();
-			if(e.genList())
-				return true;
-		}
-		return false;
-	}
-
-	syn boolean Element.genOpt() = false;
-	eq OptionalElement.genOpt() = !inlineOptional();
-	syn boolean Element.genOptList() = false;
-	eq ListElement.genOptList() = !inlineOptional();
-	syn boolean Element.genList() = false;
-	eq ListElement.genList() = true;
-	eq ListPlusElement.genList() = true;
-}
+///*
+// * The JastAdd Extensible Java Compiler (http://jastadd.org) is covered
+// * by the modified BSD License. You should have received a copy of the
+// * modified BSD license with this compiler.
+// *
+// * Copyright (c) 2005-2008, Torbjorn Ekman
+// * All rights reserved.
+// */
+//import java.util.Iterator;
+//import java.io.PrintStream;
+//
+//aspect PrettyPrint {
+//	public static String ASTNode.sourceName = "";
+//
+//	protected static PrintStream ASTNode.out;
+//	protected static boolean ASTNode.beaver;
+//	protected static boolean ASTNode.useTokenlist;
+//
+//	protected static void ASTNode.print(String s) {
+//		out.print(s); 
+//	}
+//
+//	protected static void ASTNode.println(String s) {
+//		print(s + "\n");
+//	}
+//
+//	public void ASTNode.pp() {
+//	}
+//
+//	public void Grammar.pp(PrintStream out, boolean beaver,boolean useTokenlist) {
+//		ASTNode.out = out;
+//		ASTNode.beaver = beaver;
+//		ASTNode.useTokenlist = useTokenlist;
+//		for(int i = 0; i < getNumClause(); i++) {
+//			if(getClause(i) instanceof Declaration) {
+//				getClause(i).pp();
+//			}
+//		}
+//		for(Iterator iter = terminals().iterator(); iter.hasNext(); ) {
+//			String terminal = (String)iter.next();
+//			println("%terminals " + terminal + ";");
+//		}
+//		for(Iterator iter = ruleNames().iterator(); iter.hasNext(); ) {
+//			String name = (String)iter.next();
+//			ArrayList list = rule(name);
+//			boolean genOpt = false;
+//			boolean genOptList = false;
+//			boolean genList = false;
+//			String typeName = "";
+//			for(Iterator i2 = list.iterator(); i2.hasNext(); ) {
+//				Rule r = (Rule)i2.next();
+//				if(r.genOpt())
+//					genOpt = true;
+//				if(r.genOptList())
+//					genOptList = true;
+//				if(r.genList())
+//					genList = true;
+//				typeName = r.type();
+//			}
+//			println("%typeof " + name + " = \"" + typeName + "\";");
+//			if(genOpt) {
+//				Rule r = nonTerminal(name);
+//				if(r != null && r.type().equals("List"))
+//					println("%typeof " + name + "_opt = \"List\";");
+//				else
+//					println("%typeof " + name + "_opt = \"Opt\";");
+//			}
+//			if(genOptList)
+//				println("%typeof " + name + "_opt_list = \"List\";");
+//			if(genList)
+//				println("%typeof " + name + "_list = \"List\";");
+//		}
+//		String defaultGoal = null;
+//		Collection c = new ArrayList();
+//		for(int i = 0; i < getNumClause(); i++) {
+//			if(defaultGoal == null && (getClause(i) instanceof Rule))
+//				defaultGoal = ((Rule)getClause(i)).name();
+//			if(getClause(i) instanceof Goal)
+//				c.add(((Goal)getClause(i)).getName());
+//		}
+//		if(c.isEmpty())
+//			c.add(defaultGoal);
+//		for(Iterator iter = c.iterator(); iter.hasNext(); ) {
+//			String s = (String)iter.next();
+//			println("%goal " + s + ";");
+//		}
+//		for(Iterator iter = rules().iterator(); iter.hasNext(); ) {
+//			Rule r = (Rule)iter.next();
+//			r.pp();
+//		}
+//
+//		// generate _opt, _opt_list, _list
+//		for(Iterator iter = ruleNames().iterator(); iter.hasNext(); ) {
+//			String name = (String)iter.next();
+//			ArrayList list = rule(name);
+//			boolean genOpt = false;
+//			boolean genOptList = false;
+//			boolean genList = false;
+//			String typeName = "";
+//			for(Iterator i2 = list.iterator(); i2.hasNext(); ) {
+//				Rule r = (Rule)i2.next();
+//				if(r.genOpt())
+//					genOpt = true;
+//				if(r.genOptList())
+//					genOptList = true;
+//				if(r.genList())
+//					genList = true;
+//				typeName = r.type();
+//			}
+//			if(genOpt) {
+//				Rule r = (Rule)list.iterator().next();
+//				if(r.type().equals("List")) {
+//					println(name + "_opt =");
+//					printReturn("new List()");
+//					println("  | " + name + ".n");
+//					printReturn("n", "n", "n");
+//					println("  ;");
+//				} else if(r.type().equals("Opt")) {
+//					println(name + "_opt =");
+//					printReturn("new Opt()");
+//					println("  | " + name + ".n");
+//					printReturn("n", "n", "n");
+//					println("  ;");
+//				} else {
+//					println(name + "_opt =");
+//					printReturn("new Opt()");
+//					println("  | " + name + ".n");
+//					printReturn("new Opt(n)", "n", "n");
+//					println("  ;");
+//				}
+//			}
+//			if(genOptList) {
+//				println(name + "_opt_list =");
+//				printReturn("new List()");
+//				println("  | " + name + "_list.n");
+//				printReturn("n", "n", "n");
+//				println("  ;");
+//			}
+//			if(genList) {
+//				println(name + "_list =");
+//				println("	 " + name + ".n");
+//				printReturn("new List().add(n)", "n", "n");
+//				println("  | " + name + "_list.l " + name + ".n");
+//				printReturn("l.add(n)", "l", "n");
+//				println("  ;");
+//			}
+//		}
+//	}
+//
+//	private void Grammar.printReturn(String returnVal, String alias1, String alias2) {
+//		if (!beaver) {
+//			println("	 {: return " + returnVal + "; :}");
+//		} else {
+//			println("	 {: ASTNode _node_ = " + returnVal + ";");
+//			if(useTokenlist){
+//				println("	Object first = _symbol_" + alias1 + ".value;");
+//				println("	Object last = _symbol_" + alias2 + ".value;");
+//				println("  	if(first instanceof Token){");
+//				println("		_node_.setStartToken((Token) first);");
+//				println("  	} else {");
+//				println("  		ASTNode fn = (ASTNode) first;");
+//				println("  		_node_.setStartToken(fn.getStartToken());");
+//				println("  	}");
+//				println("  	if(last instanceof Token){");
+//				println("  		_node_.setEndToken((Token) last);");
+//				println("  	} else {");
+//				println(" 		ASTNode ln = (ASTNode) last;");
+//				println("  		_node_.setEndToken(ln.getEndToken());");
+//				println("  	}");
+//			}
+//			println("		_node_.setStart(Symbol.getLine(_symbol_" + alias1 +
+//					".getStart()), (short) Symbol.getColumn(_symbol_" + alias1 +".getStart()));");
+//			println("		_node_.setEnd(Symbol.getLine(_symbol_" + alias2 +
+//					".getEnd()), (short) Symbol.getColumn(_symbol_" + alias2 + ".getEnd()));");
+//			println("		return new Symbol(_node_); :}");
+//		}
+//	}
+//
+//	private void Grammar.printReturn(String returnVal) {
+//		if (!beaver) {
+//			println("	 {: return " + returnVal + "; :}");
+//		} else {
+//		  println("    {: return new Symbol(" + returnVal + "); :}");
+//		}
+//	}
+//
+//	public void Header.pp() {
+//		println("%header {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + " :};");
+//	}
+//	public void ClassCode.pp() {
+//		println("%embed {: // Generated from " + ASTNode.sourceName + "\n" + getCODE() + " :};");
+//	}
+//
+//	public void Assoc.pp() {
+//		print("%" + getASSOC() + " ");
+//		boolean first = true;
+//		for (IdUse sym : getSymbolList()) {
+//			if (!first) {
+//				print(", ");
+//			}
+//			first = false;
+//			print(sym.getID());
+//		}
+//		println(";");
+//	}
+//
+//	public void Rule.pp() {
+//		if (replaced()) {
+//			return;
+//		}
+//		println(name() + " =");
+//		print("    ");
+//		for(int i = 0; i < getNumDefinition(); i++) {
+//			if(i != 0)
+//				print("\n  | ");
+//			getDefinition(i).pp();
+//		}
+//		println("  ;");
+//	}
+//
+//	inh boolean Element.inlineOptional();
+//	eq Definition.getElement(int index).inlineOptional() =
+//			(getElement(index) instanceof OptionalElement || getElement(index) instanceof ListElement)&&
+//			(index == 0 || getElement(index-1).isNonTerminal() || getElement(index-1) instanceof OptionalElement ||
+//			(index < getNumElement() - 1 && (getElement(index+1).isNonTerminal() || getElement(index+1) instanceof OptionalElement)));
+//	/*
+// 	 eq Definition.getElement(int index).inlineOptional() =
+//	getElement(index) instanceof OptionalElement && (index == 0 || index == getNumElement() - 1 || getElement(index-1).isNonTerminal() || getElement(index-1) instanceof OptionalElement || getElement(index+1).isNonTerminal() || getElement(index+1) instanceof OptionalElement);
+//	// inlineLeft(index) || inlineRight(index);
+//*/
+//	syn lazy boolean Definition.inlineLeft(int index) =
+//	getElement(index) instanceof OptionalElement && (index == 0 || getElement(index-1) instanceof OptionalElement); //inlineLeft(index - 1));
+//	syn lazy boolean Definition.inlineRight(int index) =
+//	getElement(index) instanceof OptionalElement && (index == getNumElement() - 1 || getElement(index+1) instanceof OptionalElement); //inlineRight(index + 1));
+//
+//	syn lazy int Definition.permutations() {
+//		int num = 1;
+//			for(int i = 0; i < getNumElement(); i++)
+//				if(getElement(i).inlineOptional())
+//					num *=2;
+//			return num;
+//	}
+//
+//	public void Definition.pp() {
+//	for (int j = 0; j < permutations(); j++) {
+//			int optIndex = 1;
+//			int firstElementIndex = 0;
+//			int lastElementIndex = -1;
+//			LinkedList indexList = new LinkedList();
+//			LinkedList names = new LinkedList();
+//			if (j != 0)
+//				print("\n  | ");
+//			for (int i = 0; i < getNumElement(); i++) {
+//				if (getElement(i).inlineOptional()) {
+//					if ((j & optIndex) != 0) {
+//						getElement(i).pp();
+//						print(" ");
+//						lastElementIndex = i;
+//						indexList.add(i);
+//					} else if (i == firstElementIndex) {
+//						firstElementIndex++;
+//					}
+//					optIndex *= 2;
+//				} else {
+//					getElement(i).pp();
+//					print(" ");
+//					lastElementIndex = i;
+//					indexList.add(i);
+//				}
+//			}
+//			if (getNumPrecedence() > 0) {
+//				print("@ ");
+//				for (Precedence prec: getPrecedenceList()) {
+//					prec.getIdUse().pp();
+//					print(" ");
+//				}
+//			}
+//			if (getCODE() != null && !getCODE().equals("")) {
+//				String code = getCODE();
+//				optIndex = 1;
+//				for (int i = 0; i < getNumElement(); i++) {
+//					if (getElement(i).inlineOptional() && getElement(i).isNonTerminal()) {
+//						String name = getElement(i).alias();
+//						// the char before must be one of " ", "(", ")", ","
+//						// the char after must be one of " ", "," ")", "."
+//						String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
+//						java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+//						java.util.regex.Matcher m = p.matcher(code);
+//						StringBuffer sb = new StringBuffer();
+//						while (m.find()) {
+//							String returnType = getElement(i).rule().type();
+//							String elementType = getElement(i) instanceof OptionalElement ? "Opt" : "List";
+//							if ((j & optIndex) != 0) {
+//								if (returnType.equals("Opt") || returnType.equals("List") || elementType.equals("List"))
+//									m.appendReplacement(sb, "$1$2$3");
+//								else
+//									m.appendReplacement(sb, "$1new Opt($2)$3");
+//							} else {
+//								if (returnType.equals("List"))
+//									m.appendReplacement(sb, "$1new List()$3");
+//								else if (returnType.equals("Opt"))
+//									m.appendReplacement(sb, "$1new Opt()$3");
+//								else
+//									m.appendReplacement(sb, "$1new " + elementType + "()$3");
+//							}
+//						}
+//						m.appendTail(sb);
+//						code = sb.toString();
+//					} else if (!getElement(i).isNonTerminal()) {
+//						String name = getElement(i).alias();
+//						// the char before must be one of " ", "(", ")", ","
+//						// the char after must be one of " ", "," ")", "."
+//						String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
+//						java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+//						java.util.regex.Matcher m = p.matcher(code);
+//						StringBuffer sb = new StringBuffer();
+//						while (m.find()) {
+//							if (Character.isUpperCase(name.charAt(0)) && !beaver){
+//								m.appendReplacement(sb, "$1$2$3");
+//							} else {
+//								if(useTokenlist){
+//									m.appendReplacement(sb, "$1(((Token)$2.value).getValue())$3");
+//									names.add(name);
+//								} else {
+//									m.appendReplacement(sb, "$1((String)$2.value)$3");
+//								}
+//							}
+//						}
+//						m.appendTail(sb);
+//						code = sb.toString();
+//						// code = code.replaceAll(pattern, "((String)" + name + ".value)");
+//					}
+//					if (getElement(i).inlineOptional())
+//						optIndex *= 2;
+//				}
+//
+//				if (beaver) {
+//					String returnPattern = "return ([^;]*?);";
+//					java.util.regex.Pattern p = java.util.regex.Pattern.compile(returnPattern);
+//					java.util.regex.Matcher m = p.matcher(code);
+//					StringBuffer sb = new StringBuffer();
+//					while (m.find()) {
+//						if (firstElementIndex <= lastElementIndex) {
+//							m.appendReplacement(sb, "ASTNode _node_ = $1;\n");
+//							String firstNamePrefix = "";
+//							String lastNamePrefix = "";
+//							if(getElement(firstElementIndex).isNonTerminal())
+//								firstNamePrefix = "_symbol_";
+//							if(getElement(lastElementIndex).isNonTerminal())
+//								lastNamePrefix = "_symbol_";
+//							
+//							if(useTokenlist){
+//								if(names.size() > 0){
+//								sb.append("				String[] tokenNames = _node_.getTokens();\n");
+//								for(int i = 0; i < names.size(); i++){
+//									sb.append("				_node_.addToken(tokenNames[");
+//									sb.append(i);
+//									sb.append("], (SignificantToken) ");
+//									sb.append(names.get(i));
+//									sb.append(".value);\n");
+//								}
+//								}
+//								sb.append("	Object first = " + firstNamePrefix + getElement(firstElementIndex).alias() + ".value;\n");
+//								sb.append("	Object last = " + lastNamePrefix + getElement(lastElementIndex).alias() + ".value;\n");
+//								
+//								if(getElement(firstElementIndex).isNonTerminal()){
+//									sb.append("  		ASTNode fn = (ASTNode) first;\n");
+//									sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
+//								} else {
+//									sb.append("			_node_.setStartToken((Token) first);\n");
+//								}
+//								
+//								if(getElement(lastElementIndex).isNonTerminal()){
+//									sb.append(" 		ASTNode ln = (ASTNode) last;\n");
+//									sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+//								} else {
+//									sb.append("  		_node_.setEndToken((Token) last);\n");
+//								}
+//								
+//							}
+//								
+//							sb.append("		   _node_.setStart(Symbol.getLine(").append(firstNamePrefix);
+//							sb.append(getElement(firstElementIndex).alias()).append(".getStart()), ");
+//							sb.append("(short) Symbol.getColumn(").append(firstNamePrefix);
+//							sb.append(getElement(firstElementIndex).alias()).append(".getStart()));\n");
+//							sb.append("		   _node_.setEnd(Symbol.getLine(").append(lastNamePrefix);
+//							sb.append(getElement(lastElementIndex).alias()).append(".getEnd()), ");
+//							sb.append("(short) Symbol.getColumn(").append(lastNamePrefix);
+//							sb.append(getElement(lastElementIndex).alias()).append(".getEnd()));\n");
+//							sb.append("		   return new Symbol(_node_);");
+//						} else {
+//							m.appendReplacement(sb, "return new Symbol($1);");
+//						}
+//					}
+//					m.appendTail(sb);
+//					code = sb.toString();
+//				}
+//
+//				println("{: " + code + " :}");
+//			}
+//		}
+//	}
+//	
+//	
+//	public void Element.pp() {
+//		print(name());
+//		if(alias() != null)
+//		  print("." + alias());
+//	}
+//	public void OptionalElement.pp() {
+//		if(isNonTerminal()) {
+//			if(inlineOptional())
+//				print(name());
+//			else {
+//				print(name() +"_opt");
+//			}
+//			if(alias() != null)
+//				print("." + alias());
+//		} else {
+//			print(name());
+//			if(alias() != null)
+//				print("." + alias());
+//			if(!inlineOptional())
+//				print("?");
+//		}
+//	}
+//
+//	public void ListPlusElement.pp() {
+//		if(isNonTerminal()) {
+//			print(name() + "_list");
+//			if(alias() != null)
+//				print("." + alias());
+//		} else {
+//			print(name());
+//			if(alias() != null)
+//				print("." + alias());
+//			print("+");
+//		}
+//	}
+//
+//	public void ListElement.pp() {
+//		if(isNonTerminal()) {
+//			if (inlineOptional())
+//				print(name() + "_list");
+//			else
+//				print(name() + "_opt_list");
+//			if(alias() != null)
+//				print("." + alias());
+//		} else {
+//			print(name());
+//			if(alias() != null)
+//				print("." + alias());
+//			print("*");
+//		}
+//	}
+//
+//	public void IdUse.pp() {
+//		print(getID());
+//	}
+//
+//	public void IdDecl.pp() {
+//		print(getID());
+//	}
+//
+//	syn lazy boolean Rule.genOpt() {
+//		for(Iterator iter = uses().iterator(); iter.hasNext(); ) {
+//			Element e = (Element)iter.next();
+//			if(e.genOpt())
+//				return true;
+//		}
+//		return false;
+//	}
+//
+//	syn lazy boolean Rule.genOptList() {
+//		for(Iterator iter = uses().iterator(); iter.hasNext(); ) {
+//			Element e = (Element)iter.next();
+//			if(e.genOptList())
+//				return true;
+//		}
+//		return false;
+//	}
+//
+//	syn lazy boolean Rule.genList() {
+//		for(Iterator iter = uses().iterator(); iter.hasNext(); ) {
+//			Element e = (Element)iter.next();
+//			if(e.genList())
+//				return true;
+//		}
+//		return false;
+//	}
+//
+//	syn boolean Element.genOpt() = false;
+//	eq OptionalElement.genOpt() = !inlineOptional();
+//	syn boolean Element.genOptList() = false;
+//	eq ListElement.genOptList() = !inlineOptional();
+//	syn boolean Element.genList() = false;
+//	eq ListElement.genList() = true;
+//	eq ListPlusElement.genList() = true;
+//}
