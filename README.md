@@ -15,8 +15,10 @@ if the input consists of separate files, these must be concatenated
 before JastAddParser is invoked. In most cases, the order of
 concatenation is not relevant. 
 
-The available options are `--version` and
-`--no-beaver-symbol`. `--version` will print out version information
+The available options are `--tokenlist`, `--version` and
+`--no-beaver-symbol`. When using with 
+[jastadd-synthesizer]( https://bitbucket.org/jastadd/jastadd-synthesizer)
+ use the option `--tokenlist`. `--version` will print out version information
 and exit. If the option `--no-beaver-symbol` is specified, the 
 generated parser will not assume that the classes of the AST are
 sub-classes of Beaver's `Symbol` class. It will, however, assume that
