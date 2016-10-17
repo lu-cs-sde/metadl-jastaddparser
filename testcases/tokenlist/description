@@ -1,0 +1,4 @@
+Test for the --tokenlist option.
+
+This test checks that the generated parser code includes tokenlist
+building code in the semantic actions.
