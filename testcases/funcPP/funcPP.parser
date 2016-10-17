@@ -1,0 +1,30 @@
+%header {:
+	package gen;
+	import se.lth.cs.akesson.alfred.TokenList.*;
+:};
+%embed {:
+	static public class SyntaxError extends RuntimeException { public SyntaxError(String msg) {super(msg);}}
+	// Disable syntax error recovery
+	protected void recoverFromError(Symbol token, TokenStream in) {
+		throw new SyntaxError("Cannot recover from the syntax error" + token.value.toString());
+		
+	}
+:};
+
+%goal indent;
+
+Indent indent = INDENT LEFT_BRACE stmt.stmts* RIGHT_BRACE {: return new Indent(stmts); :};
+Example example = EXAMPLE {: return new Example(); :};
+Line line = LINE.line {: return new Line(line); :};
+Line onLine = ON LINE.line {: return new Line(line); :};
+Example onEx = ON example.ex {: return ex; :};
+Bar bar = example.e BAR indent.i {: return new Bar(e,i); :};
+Option opt = OPT onLine.l? onEx.e? {: return new Option(l,e); :};
+Test test = BAR LINE.l1 LINE.l2 BAR {: return new Test(l1,l2); :};
+
+Stmt stmt = indent.i {: return i; :}
+            | example.e {: return e; :}
+            | bar.b {: return b; :}
+            | opt.o {: return o; :}
+            | line.l {: return l; :}
+            | test.t {: return t; :};

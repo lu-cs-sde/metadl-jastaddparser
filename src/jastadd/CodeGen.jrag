@@ -52,6 +52,13 @@ aspect CodeGen {
    * beaver Symbol nodes in the generated semantic actions.
    */
   protected static boolean ASTNode.noBeaverSymbol;
+  
+  /**
+   * This is {@code true} if the parser should use
+   * Tokenlist for the jastadd-synthesizer
+   */
+  protected static boolean ASTNode.useTokenlist;
+  
 
   protected static void ASTNode.print(String s) {
     out.print(s);
@@ -70,9 +77,10 @@ aspect CodeGen {
   public void ASTNode.genCode() {
   }
 
-  public void Grammar.genCode(PrintStream out, boolean noBeaverSymbol) {
+  public void Grammar.genCode(PrintStream out, boolean noBeaverSymbol, boolean useTokenlist) {
     ASTNode.out = out;
     ASTNode.noBeaverSymbol = noBeaverSymbol;
+    ASTNode.useTokenlist = useTokenlist;
     for (Clause clause : getClauseList()) {
       if (clause instanceof Declaration) {
         clause.genCode();
@@ -192,6 +200,22 @@ aspect CodeGen {
   private void Grammar.printReturn(String returnVal, String alias1, String alias2) {
     if (noBeaverSymbol) {
       format("  {: ASTNode _node_ = %s;\n", returnVal);
+		if(useTokenlist){
+			println("	Object first = _symbol_" + alias1 + ".value;");
+			println("	Object last = _symbol_" + alias2 + ".value;");
+			println("  	if(first instanceof Token){");
+			println("		_node_.setStartToken((Token) first);");
+			println("  	} else {");
+			println("  		ASTNode fn = (ASTNode) first;");
+			println("  		_node_.setStartToken(fn.getStartToken());");
+			println("  	}");
+			println("  	if(last instanceof Token){");
+			println("  		_node_.setEndToken((Token) last);");
+			println("  	} else {");
+			println(" 		ASTNode ln = (ASTNode) last;");
+			println("  		_node_.setEndToken(ln.getEndToken());");
+			println("  	}");
+		}
       println("   _node_.setStart(Symbol.getLine(_symbol_" + alias1 +
           ".getStart()), (short) Symbol.getColumn(_symbol_" + alias1 +".getStart()));");
       println("   _node_.setEnd(Symbol.getLine(_symbol_" + alias2 +
@@ -290,6 +314,7 @@ aspect CodeGen {
       int optIndex = 1;
       int firstElementIndex = 0;
       int lastElementIndex = -1;
+      LinkedList names = new LinkedList();
       if (j != 0) {
         format("\n  | ");
       }
@@ -361,7 +386,12 @@ aspect CodeGen {
               if (Character.isUpperCase(name.charAt(0)) && !noBeaverSymbol) {
                 matcher.appendReplacement(sb, "$1$2$3");
               } else {
-                matcher.appendReplacement(sb, "$1((String)$2.value)$3");
+              	if(useTokenlist){
+					matcher.appendReplacement(sb, "$1(((Token)$2.value).getValue())$3");
+					names.add(name);
+				} else {
+					matcher.appendReplacement(sb, "$1((String)$2.value)$3");
+				}	
               }
             }
             matcher.appendTail(sb);
@@ -387,6 +417,34 @@ aspect CodeGen {
               if (getElement(lastElementIndex).isNonTerminal()) {
                 lastNamePrefix = "_symbol_";
               }
+              if(useTokenlist){
+				if(names.size() > 0){
+					sb.append("				String[] tokenNames = _node_.getTokens();\n");
+					for(int i = 0; i < names.size(); i++){
+						sb.append("				_node_.addToken(tokenNames[");
+						sb.append(i);
+						sb.append("], (SignificantToken) ");
+						sb.append(names.get(i));
+						sb.append(".value);\n");
+					}
+				}
+					sb.append("	Object first = " + firstNamePrefix + getElement(firstElementIndex).alias() + ".value;\n");
+					sb.append("	Object last = " + lastNamePrefix + getElement(lastElementIndex).alias() + ".value;\n");
+								
+				if(getElement(firstElementIndex).isNonTerminal()){
+					sb.append("  		ASTNode fn = (ASTNode) first;\n");
+					sb.append("  		_node_.setStartToken(fn.getStartToken());\n");
+				} else {
+					sb.append("			_node_.setStartToken((Token) first);\n");
+				}
+								
+				if(getElement(lastElementIndex).isNonTerminal()){
+					sb.append(" 		ASTNode ln = (ASTNode) last;\n");
+					sb.append("  		_node_.setEndToken(ln.getEndToken());\n");
+				} else {
+					sb.append("  		_node_.setEndToken((Token) last);\n");
+				}
+			  }
               sb.append("      _node_.setStart(Symbol.getLine(").append(firstNamePrefix);
               sb.append(getElement(firstElementIndex).alias()).append(".getStart()), ");
               sb.append("(short) Symbol.getColumn(").append(firstNamePrefix);
