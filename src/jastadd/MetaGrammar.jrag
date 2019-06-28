@@ -1,0 +1,40 @@
+import java.util.HashSet;
+
+aspect MetaGrammar {
+	//syn Set<Rule> Rule.mayAmbiguate() circular [new HashSet<Rule>()];
+
+
+	syn boolean Definition.maybeEmpty() circular [true] {
+		// trivially empty
+		if (getNumElement() == 0)
+			return true;
+		// may be empty if there are no terminals and
+		// all the non-terminals may be empty
+		for (Element e : this.getElements()) {
+			if (!e.isNonTerminal()) {
+				return false;
+			} else if (e instanceof OptionalElement
+					   || e instanceof ListElement) {
+				// skip, Optional and List may be empty
+			} else {
+				Grammar g = (Grammar) getParent().getParent().getParent().getParent();
+				for (Rule l : g.rule(e.getIdUse().getID())) {
+					if (!l.maybeEmpty())
+						return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	syn boolean Rule.maybeEmpty() circular [true] {
+		for (Definition d : getDefinitions()) {
+			if (d.maybeEmpty())
+				return true;
+		}
+		return false;
+	}
+
+
+}

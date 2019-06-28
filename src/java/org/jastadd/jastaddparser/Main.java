@@ -44,12 +44,14 @@ import org.jastadd.jastaddparser.parser.GrammarParser;
 import org.jastadd.jastaddparser.parser.GrammarScanner;
 import org.jastadd.jastaddparser.ast.ASTNode;
 import org.jastadd.jastaddparser.ast.Grammar;
+import org.jastadd.jastaddparser.ast.Rule;
 
 public class Main {
   public static void main(String[] args) {
     try {
       boolean noBeaverSymbol = false;
       boolean useTokenlist = false;
+	  boolean patternGrammar = false;
       if (args[0].equals("--version")) {
         System.out.println("JastAddParser version " + versionString());
         System.exit(0);
@@ -58,8 +60,10 @@ public class Main {
       } else if (args[0].equals("--tokenlist")) {
 		noBeaverSymbol = true;
 		useTokenlist = true;
-      }
-      if (args.length > 2 && !noBeaverSymbol) {
+      } else if (args[0].equals("--pattern_grammar")) {
+		patternGrammar = true;
+	  }
+      if (args.length > 2 && !noBeaverSymbol && !patternGrammar) {
         System.err.println("Unrecognized option \"" + args[0] + '\"');
         System.exit(1);
       }
@@ -69,7 +73,7 @@ public class Main {
       String dest = args[destIndex];
       File sourceFile = new File(source);
       File destFile = new File(dest);
-      if (sourceFile.exists() && destFile.exists()
+      if (false && sourceFile.exists() && destFile.exists()
           && sourceFile.lastModified() < destFile.lastModified()) {
         System.out.println("Parser specification " + dest + " need not be regenerated");
       } else {
@@ -92,6 +96,12 @@ public class Main {
         FileOutputStream os = new FileOutputStream(args[destIndex]);
         PrintStream out = new PrintStream(os);
         root.genCode(out, noBeaverSymbol,useTokenlist);
+		if (patternGrammar) {
+		  for (Rule r : root.rules()) {
+			if (r.maybeEmpty())
+			  System.out.println(r.getIdDecl().getID());
+		  }
+		}
         out.close();
         System.out.println("Parser specification " + dest + " generated from " + source);
       }
@@ -102,7 +112,7 @@ public class Main {
       e.printStackTrace();
       System.exit(1);
     } catch (ArrayIndexOutOfBoundsException e) {
-      System.err.println("Usage: java -jar JastAddParser.jar <options> " + 
+      System.err.println("Usage: java -jar JastAddParser.jar <options> " +
           "<source file name> <destination file name>");
       System.exit(1);
     } catch (beaver.Parser.Exception e) {
