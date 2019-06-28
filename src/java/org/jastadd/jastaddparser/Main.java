@@ -97,13 +97,26 @@ public class Main {
         PrintStream out = new PrintStream(os);
         root.genCode(out, noBeaverSymbol,useTokenlist);
 		if (patternGrammar) {
+		  System.out.println("digraph {");
+		  System.out.println("{");
+		  for (Rule r : root.rules())
+			if (!r.isAmbigous())
+			  System.out.println(r.getIdDecl().getID() + " [fillcolor=green style=filled]");
+		  System.out.println("}");
 		  for (Rule r : root.rules()) {
 			if (r.maybeEmpty())
-			  System.out.println(r.getIdDecl().getID());
+			  System.out.println("E: " + r.getIdDecl().getID());
+			for (Rule l : root.rules()) {
+			  if (r.mayAmbiguate(l)) {
+				System.out.println(r.getIdDecl().getID() + " -> " + l.getIdDecl().getID());
+
+			  }
+			}
 		  }
+		  System.out.println("}");
 		}
         out.close();
-        System.out.println("Parser specification " + dest + " generated from " + source);
+        System.err.println("Parser specification " + dest + " generated from " + source);
       }
     } catch (FileNotFoundException e) {
       System.err.println(e.getMessage());

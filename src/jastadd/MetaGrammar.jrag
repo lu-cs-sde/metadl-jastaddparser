@@ -3,6 +3,19 @@ import java.util.HashSet;
 aspect MetaGrammar {
 	//syn Set<Rule> Rule.mayAmbiguate() circular [new HashSet<Rule>()];
 
+	syn boolean Grammar.rulesMayBeEmpty(String name) circular [true] {
+		for (Rule l : rule(name)) {
+			if (l.maybeEmpty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	inh Grammar Clause.getGrammar();
+	eq Grammar.getClause().getGrammar() = this;
+	inh Grammar Element.getGrammar();
+	inh Grammar Definition.getGrammar();
 
 	syn boolean Definition.maybeEmpty() circular [true] {
 		// trivially empty
@@ -10,18 +23,16 @@ aspect MetaGrammar {
 			return true;
 		// may be empty if there are no terminals and
 		// all the non-terminals may be empty
-		for (Element e : this.getElements()) {
+		for (Element e : getElements()) {
 			if (!e.isNonTerminal()) {
 				return false;
 			} else if (e instanceof OptionalElement
 					   || e instanceof ListElement) {
 				// skip, Optional and List may be empty
 			} else {
-				Grammar g = (Grammar) getParent().getParent().getParent().getParent();
-				for (Rule l : g.rule(e.getIdUse().getID())) {
-					if (!l.maybeEmpty())
-						return false;
-				}
+				Grammar g = getGrammar();
+				if (!g.rulesMayBeEmpty(e.getIdUse().getID()))
+					return false;
 			}
 		}
 
@@ -36,5 +47,80 @@ aspect MetaGrammar {
 		return false;
 	}
 
+	syn boolean Element.mayAmbiguate(Rule other) circular [false] {
+		for (Rule l : getGrammar().rule(getIdUse().getID())) {
+			if (l.mayAmbiguate(other))
+				return true;
+		}
+		return false;
+	}
 
+	syn boolean Element.mayAmbiguate(Element other) circular [false] {
+		for (Rule r : getGrammar().rule(getIdUse().getID()))
+			for (Rule l : getGrammar().rule(other.getIdUse().getID()))
+				if (r.mayAmbiguate(l))
+					return true;
+		return false;
+	}
+
+	syn boolean Definition.mayAmbiguate(Rule other) circular [false] {
+		String otherName = other.getIdDecl().getID();
+		boolean present = false;
+		Grammar g = getGrammar();
+
+		for (Element e : getElements()) {
+			if (!e.isNonTerminal())
+				return false;
+			if (e.getIdUse().getID().equals(otherName))
+				present = true;
+		}
+
+		if (!present)
+			return false;
+
+		for (Element e : getElements()) {
+			if (!e.mayAmbiguate(other))
+				continue;
+			// e can clash with other; if the other elements can be empty
+			// then this rule can clash with the other rule
+			for (Element f : getElements()) {
+				if (e.mayAmbiguate(f))
+					continue;
+				if (!g.rulesMayBeEmpty(f.getIdUse().getID()))
+					return false;
+			}
+		}
+
+		return true;
+	}
+
+	syn boolean Rule.mayAmbiguate(Rule other) circular [false] {
+		for (Definition d : getDefinitions()) {
+			if (d.mayAmbiguate(other))
+				return true;
+		}
+
+		// transitive closure
+		// for (Rule l : getGrammar().rules()) {
+		// 	if (this != l && mayAmbiguate(l) && l.mayAmbiguate(other))
+		// 		return true;
+		// }
+		return false;
+	}
+
+	syn boolean Rule.isAmbigous() {
+		for (Rule l : getGrammar().rules())
+			if (mayAmbiguate(l))
+				return true;
+		return false;
+	}
+
+	syn List<Clause> Grammar.getMetaVariableClausesList() {
+		List<Clause> clauseList = new List<Clause>();
+		for (Rule r : rules()) {
+			if (!r.isAmbigous())
+				clauseList.add(r);
+		}
+		return clauseList;
+	}
 }
