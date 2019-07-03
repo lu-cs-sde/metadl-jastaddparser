@@ -95,7 +95,6 @@ public class Main {
           System.err.println(iter.next());
         FileOutputStream os = new FileOutputStream(args[destIndex]);
         PrintStream out = new PrintStream(os);
-        root.genCode(out, noBeaverSymbol,useTokenlist);
 		if (patternGrammar) {
 		  System.out.println("digraph {");
 		  System.out.println("{");
@@ -114,7 +113,16 @@ public class Main {
 			}
 		  }
 		  System.out.println("}");
+
+		  Iterator<String> rulePri = root.getRulePriority();
+		  while (rulePri.hasNext()) {
+			System.err.println(rulePri.next());
+		  }
 		}
+		if (patternGrammar) {
+		  root.addPatternGrammarClauses();
+		}
+        root.genCode(out, noBeaverSymbol,useTokenlist);
         out.close();
         System.err.println("Parser specification " + dest + " generated from " + source);
       }

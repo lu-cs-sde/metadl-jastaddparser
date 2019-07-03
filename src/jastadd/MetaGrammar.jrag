@@ -1,4 +1,7 @@
 import java.util.HashSet;
+import org.jgrapht.*;
+import org.jgrapht.graph.*;
+import org.jgrapht.traverse.*;
 
 aspect MetaGrammar {
 	//syn Set<Rule> Rule.mayAmbiguate() circular [new HashSet<Rule>()];
@@ -100,11 +103,6 @@ aspect MetaGrammar {
 				return true;
 		}
 
-		// transitive closure
-		// for (Rule l : getGrammar().rules()) {
-		// 	if (this != l && mayAmbiguate(l) && l.mayAmbiguate(other))
-		// 		return true;
-		// }
 		return false;
 	}
 
@@ -123,4 +121,98 @@ aspect MetaGrammar {
 		}
 		return clauseList;
 	}
+
+	public Iterator<String> Grammar.getRulePriority() {
+		Graph<String, DefaultEdge> directedGraph =
+            new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
+		for (Rule r : rules()) {
+			directedGraph.addVertex(r.getIdDecl().getID());
+		}
+		for (Rule r : rules()) {
+			for (Rule l : rules()) {
+				if (r.mayAmbiguate(l)) {
+					directedGraph.addEdge(r.getIdDecl().getID(),
+										  l.getIdDecl().getID());
+				}
+			}
+		}
+
+		java.util.Set<String> unambigousRules = new TreeSet<String>();
+
+		for (Rule r : rules()) {
+			if (!r.isAmbigous())
+				unambigousRules.add(r.getIdDecl().getID());
+		}
+
+		// Iterator<String> it = unambigousRules.iterator();
+		// if (it.hasNext()) {
+		// 	String current = it.next();
+		// 	while (it.hasNext()) {
+		// 		String next = it.next();
+		// 		directedGraph.addVertex(current);
+		// 		directedGraph.addVertex(next);
+		// 		directedGraph.addEdge(current, next);
+		// 	}
+		// }
+
+		return new TopologicalOrderIterator<String, DefaultEdge>(directedGraph);
+	}
+
+	private Rule Grammar.buildMetaVarRule(Rule r) {
+		Rule metaVarRule = new Rule();
+		metaVarRule.setIdUse(r.getIdUse().treeCopyNoTransform());
+		metaVarRule.setIdDecl(r.getIdDecl().treeCopyNoTransform());
+
+		Definition metaVarDef = new Definition();
+		Element el = new Element(new IdUse("METAVARID"), new Opt(new IdUse("id")));
+		metaVarDef.addElement(el);
+		Precedence prec = new Precedence(new IdUse("PREC_" + r.getIdDecl().getID()));
+		metaVarDef.addPrecedence(prec);
+
+		String code = String.format("MetaVar%s tmp = new MetaVar%s(); l.setVar(new MetaVariable(id)); return l;",
+									r.getIdUse().getID(), r.getIdUse().getID());
+		metaVarDef.setCODE(code);
+		metaVarRule.addDefinition(metaVarDef);
+
+		return metaVarRule;
+	}
+
+	private Assoc Grammar.buildPrecedenceStmt(Rule r) {
+		return new Assoc("nonassoc",
+						 new List(new IdUse("PREC_" + r.getIdDecl().getID())));
+	}
+
+	public void Grammar.addPatternGrammarClauses() {
+		HashSet<String> modifiedProductions = new HashSet<String>();
+		java.util.List<Rule> metaVarRules = new java.util.ArrayList<Rule>();
+		Map<String, Assoc> precendences = new HashMap<String, Assoc>();
+
+		for (Rule r : rules()) {
+			if (!r.isAmbigous())
+				continue;
+
+			if (modifiedProductions.contains(r.getIdDecl().getID()))
+				continue;
+			modifiedProductions.add(r.getIdDecl().getID());
+			if (r.type().equals("ASTNode"))
+				continue;
+			if (r.type().equals("List"))
+				continue;
+
+			metaVarRules.add(buildMetaVarRule(r));
+			precendences.put(r.getIdDecl().getID(), buildPrecedenceStmt(r));
+		}
+
+		getClauses().addAll(metaVarRules);
+
+		Iterator<String> rulePri = getRulePriority();
+		while (rulePri.hasNext()) {
+			Assoc a = precendences.get(rulePri.next());
+			if (a != null)
+				addClause(a);
+		}
+
+		flushAttrCache();
+	}
+
 }
