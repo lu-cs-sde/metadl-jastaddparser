@@ -28,7 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-Grammar ::= Clause* /MetaVariableClauses:Clause*/;
+Grammar ::= Clause*;
 
 abstract Clause;
 

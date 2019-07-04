@@ -120,6 +120,7 @@ public class Main {
 		  }
 		}
 		if (patternGrammar) {
+		  root.replaceHeader("package patlang.ast;");
 		  root.addPatternGrammarClauses();
 		}
         root.genCode(out, noBeaverSymbol,useTokenlist);

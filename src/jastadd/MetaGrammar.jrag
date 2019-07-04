@@ -113,6 +113,13 @@ aspect MetaGrammar {
 		return false;
 	}
 
+	syn boolean Rule.isAmbiguated() {
+		for (Rule l : getGrammar().rules())
+			if (l.mayAmbiguate(this))
+				return true;
+		return false;
+	}
+
 	syn List<Clause> Grammar.getMetaVariableClausesList() {
 		List<Clause> clauseList = new List<Clause>();
 		for (Rule r : rules()) {
@@ -169,7 +176,7 @@ aspect MetaGrammar {
 		Precedence prec = new Precedence(new IdUse("PREC_" + r.getIdDecl().getID()));
 		metaVarDef.addPrecedence(prec);
 
-		String code = String.format("MetaVar%s tmp = new MetaVar%s(); l.setVar(new MetaVariable(id)); return l;",
+		String code = String.format("MetaVar%s tmp = new MetaVar%s(); tmp.setVar(new MetaVariable(id)); return tmp;",
 									r.getIdUse().getID(), r.getIdUse().getID());
 		metaVarDef.setCODE(code);
 		metaVarRule.addDefinition(metaVarDef);
@@ -182,15 +189,23 @@ aspect MetaGrammar {
 						 new List(new IdUse("PREC_" + r.getIdDecl().getID())));
 	}
 
+	public void Grammar.replaceHeader(String s) {
+		for (Clause c : getClauses()) {
+			if (c instanceof Header) {
+				Header h = (Header)c;
+				h.setCODE(s);
+			}
+		}
+		flushAttrCache();
+	}
+
 	public void Grammar.addPatternGrammarClauses() {
-		HashSet<String> modifiedProductions = new HashSet<String>();
+		Set<String> modifiedProductions = new HashSet<String>();
 		java.util.List<Rule> metaVarRules = new java.util.ArrayList<Rule>();
 		Map<String, Assoc> precendences = new HashMap<String, Assoc>();
+		Set<String> goals = new TreeSet<String>();
 
 		for (Rule r : rules()) {
-			if (!r.isAmbigous())
-				continue;
-
 			if (modifiedProductions.contains(r.getIdDecl().getID()))
 				continue;
 			modifiedProductions.add(r.getIdDecl().getID());
@@ -198,6 +213,13 @@ aspect MetaGrammar {
 				continue;
 			if (r.type().equals("List"))
 				continue;
+
+			goals.add(r.getIdDecl().getID());
+
+			if (!r.isAmbigous() && r.isAmbiguated()) {
+				//goals.add(r.getIdDecl().getID());
+				continue;
+			}
 
 			metaVarRules.add(buildMetaVarRule(r));
 			precendences.put(r.getIdDecl().getID(), buildPrecedenceStmt(r));
@@ -210,6 +232,10 @@ aspect MetaGrammar {
 			Assoc a = precendences.get(rulePri.next());
 			if (a != null)
 				addClause(a);
+		}
+
+		for (String goalName : goals) {
+			addClause(new Goal(goalName));
 		}
 
 		flushAttrCache();
