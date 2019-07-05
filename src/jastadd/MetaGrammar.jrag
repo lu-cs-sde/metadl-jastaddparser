@@ -182,8 +182,8 @@ aspect MetaGrammar {
 			metaVarDef.addElement(el);
 			Precedence prec = new Precedence(new IdUse("PREC_1_" + r.getIdDecl().getID()));
 			metaVarDef.addPrecedence(prec);
-			String code = String.format("MetaVar%s tmp = new MetaVar%s(); tmp.setVar(new MetaVariable(id)); return tmp;",
-										r.getIdUse().getID(), r.getIdUse().getID());
+			String code = String.format("return new MetaVar%s().setVar(new MetaVariable(id));",
+										r.getIdUse().getID());
 			metaVarDef.setCODE(code);
 			metaVarRule.addDefinition(metaVarDef);
 		}
@@ -195,11 +195,8 @@ aspect MetaGrammar {
 			indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("id"))));
 			Precedence prec = new Precedence(new IdUse("PREC_2_" + r.getIdDecl().getID()));
 			indexVarDef.addPrecedence(prec);
-			String code1 = String.format("MetaVar%s tmp0 = new MetaVar%s(); tmp0.setVar(new MetaVariable(id));",
-										 r.getIdUse().getID(), r.getIdUse().getID());
-			String code2 = String.format(" return new IndexMetaVar%s(new MetaVariable(idx), tmp0);",
-										 r.getIdUse().getID());
-			indexVarDef.setCODE(code1 + code2);
+			String code = String.format("return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(new MetaVar%s().setVar(new MetaVariable(id)));", r.getIdUse().getID(), r.getIdUse().getID());
+			indexVarDef.setCODE(code);
 			metaVarRule.addDefinition(indexVarDef);
 		}
 
@@ -210,11 +207,24 @@ aspect MetaGrammar {
 			indexVarDef.addElement(new Element(new IdUse(r.getIdDecl().getID()), new Opt(new IdUse("id"))));
 			Precedence prec = new Precedence(new IdUse("PREC_3_" + r.getIdDecl().getID()));
 			indexVarDef.addPrecedence(prec);
-			String code2 = String.format(" return new IndexMetaVar%s(new MetaVariable(idx), id);",
+			String code = String.format(" return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(id);",
 										 r.getIdUse().getID());
-			indexVarDef.setCODE(code2);
+			indexVarDef.setCODE(code);
 			metaVarRule.addDefinition(indexVarDef);
 		}
+
+		{
+			Definition gapDef = new Definition();
+			Element el = new Element(new IdUse("GAP"), new Opt());
+			gapDef.addElement(el);
+			Precedence prec = new Precedence(new IdUse("PREC_4_" + r.getIdDecl().getID()));
+			gapDef.addPrecedence(prec);
+			String code = String.format("return new Gap%s();",
+										r.getIdUse().getID());
+			gapDef.setCODE(code);
+			metaVarRule.addDefinition(gapDef);
+		}
+
 
 		return metaVarRule;
 	}
@@ -262,7 +272,6 @@ aspect MetaGrammar {
 				for (Element e : d.getElements()) {
 					if (modifiedProductions.contains(e.getIdUse().getID())) {
 						e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
-						e.flushAttrCache();
 					}
 				}
 			}
@@ -278,12 +287,23 @@ aspect MetaGrammar {
 			addClause(buildPrecedenceStmt("PREC_1_" + rule));
 			addClause(buildPrecedenceStmt("PREC_2_" + rule));
 			addClause(buildPrecedenceStmt("PREC_3_" + rule));
+			addClause(buildPrecedenceStmt("PREC_4_" + rule));
 		}
 
 		for (String goalName : goals) {
 			addClause(new Goal(goalName));
 		}
 
+
+		for (Rule r : rules()) {
+			for (Definition d : r.getDefinitions()) {
+				for (Element e : d.getElements()) {
+					e.flushAttrCache();
+				}
+				d.flushAttrCache();
+			}
+			r.flushAttrCache();
+		}
 		flushAttrCache();
 	}
 
