@@ -50,23 +50,35 @@ aspect MetaGrammar {
 		return false;
 	}
 
-	syn boolean Element.mayAmbiguate(Rule other) circular [false] {
+	syn boolean Element.includes(Rule other) circular [false] {
 		for (Rule l : getGrammar().rule(getIdUse().getID())) {
-			if (l.mayAmbiguate(other))
+			if (l.includes(other))
 				return true;
 		}
 		return false;
 	}
 
-	syn boolean Element.mayAmbiguate(Element other) circular [false] {
+	inh Definition Element.parentDefinition();
+	eq Definition.getElement().parentDefinition() = this;
+
+	syn boolean Element.isAliased() {
+		if (parentDefinition().getNumElement() != 1)
+			return false;
+		if (parentDefinition().getElement(0).isList() ||
+			parentDefinition().getElement(0) instanceof ListPlusElement)
+			return false;
+		return true;
+	}
+
+	syn boolean Element.includes(Element other) circular [false] {
 		for (Rule r : getGrammar().rule(getIdUse().getID()))
 			for (Rule l : getGrammar().rule(other.getIdUse().getID()))
-				if (r.mayAmbiguate(l))
+				if (r.includes(l))
 					return true;
 		return false;
 	}
 
-	syn boolean Definition.mayAmbiguate(Rule other) circular [false] {
+	syn boolean Definition.includes(Rule other) circular [false] {
 		String otherName = other.getIdDecl().getID();
 		boolean present = false;
 		Grammar g = getGrammar();
@@ -82,12 +94,12 @@ aspect MetaGrammar {
 			return false;
 
 		for (Element e : getElements()) {
-			if (!e.mayAmbiguate(other))
+			if (!e.includes(other))
 				continue;
 			// e can clash with other; if the other elements can be empty
 			// then this rule can clash with the other rule
 			for (Element f : getElements()) {
-				if (e.mayAmbiguate(f))
+				if (e.includes(f))
 					continue;
 				if (!g.rulesMayBeEmpty(f.getIdUse().getID()))
 					return false;
@@ -97,25 +109,39 @@ aspect MetaGrammar {
 		return true;
 	}
 
-	syn boolean Rule.mayAmbiguate(Rule other) circular [false] {
+	syn boolean Rule.isUsed() {
+		for (Rule r : getGrammar().rules()) {
+			for (Definition d : r.getDefinitions()) {
+				if (d.includes(this))
+					continue;
+				for (Element e : d.getElements())
+					if (e.name().equals(name()))
+						return true;
+			}
+		}
+		return false;
+	}
+
+	syn boolean Rule.includes(Rule other) circular [false] {
 		for (Definition d : getDefinitions()) {
-			if (d.mayAmbiguate(other))
+			if (d.includes(other))
 				return true;
 		}
 
 		return false;
 	}
 
-	syn boolean Rule.isAmbigous() {
-		for (Rule l : getGrammar().rules())
-			if (mayAmbiguate(l))
+	syn boolean Rule.includes(String other) {
+		for (Rule r : getGrammar().rule(other)) {
+			if (includes(r))
 				return true;
+		}
 		return false;
 	}
 
-	syn boolean Rule.isAmbiguated() {
+	syn boolean Rule.isAmbigous() {
 		for (Rule l : getGrammar().rules())
-			if (l.mayAmbiguate(this))
+			if (includes(l))
 				return true;
 		return false;
 	}
@@ -137,7 +163,7 @@ aspect MetaGrammar {
 		}
 		for (Rule r : rules()) {
 			for (Rule l : rules()) {
-				if (r.mayAmbiguate(l)) {
+				if (r.includes(l)) {
 					directedGraph.addEdge(r.getIdDecl().getID(),
 										  l.getIdDecl().getID());
 				}
@@ -202,9 +228,11 @@ aspect MetaGrammar {
 
 		{
 			Definition indexVarDef = new Definition();
+			indexVarDef.addElement(new Element(new IdUse("LPARAN"), new Opt()));
 			indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("idx"))));
 			indexVarDef.addElement(new Element(new IdUse("COLON"), new Opt()));
 			indexVarDef.addElement(new Element(new IdUse(r.getIdDecl().getID()), new Opt(new IdUse("id"))));
+			indexVarDef.addElement(new Element(new IdUse("RPARAN"), new Opt()));
 			Precedence prec = new Precedence(new IdUse("PREC_3_" + r.getIdDecl().getID()));
 			indexVarDef.addPrecedence(prec);
 			String code = String.format(" return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(id);",
@@ -229,8 +257,8 @@ aspect MetaGrammar {
 		return metaVarRule;
 	}
 
-	private Assoc Grammar.buildPrecedenceStmt(String name) {
-		return new Assoc("nonassoc",
+	private Assoc Grammar.buildPrecedenceStmt(String prec, String name) {
+		return new Assoc(prec,
 						 new List(new IdUse(name)));
 	}
 
@@ -258,19 +286,15 @@ aspect MetaGrammar {
 				continue;
 
 			goals.add(r.getIdDecl().getID());
-			if (!r.isAmbigous() && r.isAmbiguated()) {
-				//goals.add(r.getIdDecl().getID());
-				continue;
-			}
+			metaVarRules.add(buildMetaVarRule(r));
 
 			modifiedProductions.add(r.getIdDecl().getID());
-			metaVarRules.add(buildMetaVarRule(r));
 		}
 
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
-					if (modifiedProductions.contains(e.getIdUse().getID())) {
+					if (modifiedProductions.contains(e.getIdUse().getID()) && (!e.isAliased() || r.type().equals("List"))) {
 						e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
 					}
 				}
@@ -284,11 +308,13 @@ aspect MetaGrammar {
 			String rule = rulePri.next();
 			if (!modifiedProductions.contains(rule))
 				continue;
-			addClause(buildPrecedenceStmt("PREC_1_" + rule));
-			addClause(buildPrecedenceStmt("PREC_2_" + rule));
-			addClause(buildPrecedenceStmt("PREC_3_" + rule));
-			addClause(buildPrecedenceStmt("PREC_4_" + rule));
+			addClause(buildPrecedenceStmt("nonassoc", "PREC_1_" + rule));
+			addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
+			addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
+			addClause(buildPrecedenceStmt("nonassoc", "PREC_4_" + rule));
 		}
+
+
 
 		for (String goalName : goals) {
 			addClause(new Goal(goalName));
