@@ -98,12 +98,6 @@ public class Main {
 		if (patternGrammar) {
 		  System.out.println("digraph {");
 		  System.out.println("{");
-		  for (Rule r : root.rules()) {
-			if (r.isUsed())
-			  System.out.println(r.getIdDecl().getID() + " [fillcolor=red style=filled]");
-			else if (!r.isAmbigous())
-			  System.out.println(r.getIdDecl().getID() + " [fillcolor=green style=filled]");
-		  }
 		  System.out.println("}");
 		  for (Rule r : root.rules()) {
 			if (r.maybeEmpty())
@@ -116,11 +110,6 @@ public class Main {
 			}
 		  }
 		  System.out.println("}");
-
-		  Iterator<String> rulePri = root.getRulePriority();
-		  while (rulePri.hasNext()) {
-			System.err.println(rulePri.next());
-		  }
 		}
 		if (patternGrammar) {
 		  //root.replaceHeader("package patlang.ast;");

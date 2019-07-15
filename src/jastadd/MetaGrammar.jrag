@@ -2,6 +2,7 @@ import java.util.HashSet;
 import org.jgrapht.*;
 import org.jgrapht.graph.*;
 import org.jgrapht.traverse.*;
+import org.jgrapht.alg.connectivity.*;
 
 aspect MetaGrammar {
 	//syn Set<Rule> Rule.mayAmbiguate() circular [new HashSet<Rule>()];
@@ -60,12 +61,18 @@ aspect MetaGrammar {
 
 	inh Definition Element.parentDefinition();
 	eq Definition.getElement().parentDefinition() = this;
+	inh Rule Definition.parentRule();
+	eq Rule.getDefinition().parentRule() = this;
 
-	syn boolean Element.isAliased() {
-		if (parentDefinition().getNumElement() != 1)
+	syn boolean Element.isAlias() {
+		return parentDefinition().isAlias();
+	}
+
+	syn boolean Definition.isAlias() {
+		if (getNumElement() != 1)
 			return false;
-		if (parentDefinition().getElement(0).isList() ||
-			parentDefinition().getElement(0) instanceof ListPlusElement)
+		if (getElement(0) instanceof ListElement ||
+			getElement(0) instanceof ListPlusElement)
 			return false;
 		return true;
 	}
@@ -109,26 +116,31 @@ aspect MetaGrammar {
 		return true;
 	}
 
-	syn boolean Rule.isUsed() {
-		for (Rule r : getGrammar().rules()) {
-			for (Definition d : r.getDefinitions()) {
-				if (d.includes(this))
-					continue;
-				for (Element e : d.getElements())
-					if (e.name().equals(name()))
-						return true;
-			}
-		}
-		return false;
-	}
+
 
 	syn boolean Rule.includes(Rule other) circular [false] {
+		if (type().equals("List"))
+			return false;
+
 		for (Definition d : getDefinitions()) {
 			if (d.includes(other))
 				return true;
 		}
 
+		// transitive closure
+		for (Rule t : getGrammar().rules())
+			if (includes(t) && t.includes(other))
+				return true;
+
 		return false;
+	}
+
+	syn Set<Rule> Rule.allIncludes() {
+		Set<Rule> inc = new HashSet<Rule>();
+		for (Rule r : getGrammar().rules())
+			if (includes(r))
+				inc.add(r);
+		return inc;
 	}
 
 	syn boolean Rule.includes(String other) {
@@ -139,23 +151,47 @@ aspect MetaGrammar {
 		return false;
 	}
 
-	syn boolean Rule.isAmbigous() {
-		for (Rule l : getGrammar().rules())
-			if (includes(l))
+	syn boolean Rule.isUnion() {
+		for (Definition d : getDefinitions()) {
+			if (!d.isAlias())
+				return false;
+		}
+		return true;
+	}
+
+
+	syn boolean Rule.hasMetaOrConcreteDecl() circular [false] {
+		if (type().equals("List"))
+			return false;
+
+		if (allIncludes().isEmpty()) {
+			for (Element e : uses())
+				if (!e.isAlias())
+					return true;
+		} else {
+			for (Rule r : allIncludes()) {
+				if (r.hasMetaOrConcreteDecl())
+					return false;
+			}
+		}
+		return true;
+	}
+
+	syn boolean Element.hasMetaOrConcreteDecl() {
+		if (!isNonTerminal())
+			return false;
+
+		if (this instanceof ListElement ||
+			this instanceof ListPlusElement)
+			return false;
+
+		for (Rule r : getGrammar().rule(getIdUse().getID()))
+			if (r.hasMetaOrConcreteDecl())
 				return true;
 		return false;
 	}
 
-	syn List<Clause> Grammar.getMetaVariableClausesList() {
-		List<Clause> clauseList = new List<Clause>();
-		for (Rule r : rules()) {
-			if (!r.isAmbigous())
-				clauseList.add(r);
-		}
-		return clauseList;
-	}
-
-	public Iterator<String> Grammar.getRulePriority() {
+	public java.util.List<String> Grammar.getRulePriority() {
 		Graph<String, DefaultEdge> directedGraph =
             new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 		for (Rule r : rules()) {
@@ -170,25 +206,17 @@ aspect MetaGrammar {
 			}
 		}
 
-		java.util.Set<String> unambigousRules = new TreeSet<String>();
+		KosarajuStrongConnectivityInspector<String, DefaultEdge> sccAlg = new KosarajuStrongConnectivityInspector(directedGraph);
+		TopologicalOrderIterator<Graph<String, DefaultEdge>, DefaultEdge> top = new TopologicalOrderIterator(sccAlg.getCondensation());
 
-		for (Rule r : rules()) {
-			if (!r.isAmbigous())
-				unambigousRules.add(r.getIdDecl().getID());
+		java.util.List<String> list = new java.util.ArrayList();
+		while (top.hasNext()) {
+			Graph<String, DefaultEdge> scc = top.next();
+			if (scc.vertexSet().size() == 1)
+				list.add(scc.vertexSet().iterator().next());
+
 		}
-
-		// Iterator<String> it = unambigousRules.iterator();
-		// if (it.hasNext()) {
-		// 	String current = it.next();
-		// 	while (it.hasNext()) {
-		// 		String next = it.next();
-		// 		directedGraph.addVertex(current);
-		// 		directedGraph.addVertex(next);
-		// 		directedGraph.addEdge(current, next);
-		// 	}
-		// }
-
-		return new TopologicalOrderIterator<String, DefaultEdge>(directedGraph);
+		return list;
 	}
 
 	private Rule Grammar.buildMetaVarRule(Rule r) {
@@ -214,32 +242,32 @@ aspect MetaGrammar {
 			metaVarRule.addDefinition(metaVarDef);
 		}
 
-		{
-			Definition indexVarDef = new Definition();
-			indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("idx"))));
-			indexVarDef.addElement(new Element(new IdUse("COLON"), new Opt()));
-			indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("id"))));
-			Precedence prec = new Precedence(new IdUse("PREC_2_" + r.getIdDecl().getID()));
-			indexVarDef.addPrecedence(prec);
-			String code = String.format("return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(new MetaVar%s().setVar(new MetaVariable(id)));", r.getIdUse().getID(), r.getIdUse().getID());
-			indexVarDef.setCODE(code);
-			metaVarRule.addDefinition(indexVarDef);
-		}
+		// {
+		// 	Definition indexVarDef = new Definition();
+		// 	indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("idx"))));
+		// 	indexVarDef.addElement(new Element(new IdUse("COLON"), new Opt()));
+		// 	indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("id"))));
+		// 	Precedence prec = new Precedence(new IdUse("PREC_2_" + r.getIdDecl().getID()));
+		// 	indexVarDef.addPrecedence(prec);
+		// 	String code = String.format("return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(new MetaVar%s().setVar(new MetaVariable(id)));", r.getIdUse().getID(), r.getIdUse().getID());
+		// 	indexVarDef.setCODE(code);
+		// 	metaVarRule.addDefinition(indexVarDef);
+		// }
 
-		{
-			Definition indexVarDef = new Definition();
-			indexVarDef.addElement(new Element(new IdUse("LPARAN"), new Opt()));
-			indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("idx"))));
-			indexVarDef.addElement(new Element(new IdUse("COLON"), new Opt()));
-			indexVarDef.addElement(new Element(new IdUse(r.getIdDecl().getID()), new Opt(new IdUse("id"))));
-			indexVarDef.addElement(new Element(new IdUse("RPARAN"), new Opt()));
-			Precedence prec = new Precedence(new IdUse("PREC_3_" + r.getIdDecl().getID()));
-			indexVarDef.addPrecedence(prec);
-			String code = String.format(" return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(id);",
-										 r.getIdUse().getID());
-			indexVarDef.setCODE(code);
-			metaVarRule.addDefinition(indexVarDef);
-		}
+		// {
+		// 	Definition indexVarDef = new Definition();
+		// 	// indexVarDef.addElement(new Element(new IdUse("LPARAN"), new Opt()));
+		// 	indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("idx"))));
+		// 	indexVarDef.addElement(new Element(new IdUse("COLON"), new Opt()));
+		// 	indexVarDef.addElement(new Element(new IdUse(r.getIdDecl().getID()), new Opt(new IdUse("id"))));
+		// 	// indexVarDef.addElement(new Element(new IdUse("RPARAN"), new Opt()));
+		// 	Precedence prec = new Precedence(new IdUse("PREC_3_" + r.getIdDecl().getID()));
+		// 	indexVarDef.addPrecedence(prec);
+		// 	String code = String.format(" return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(id);",
+		// 								 r.getIdUse().getID());
+		// 	indexVarDef.setCODE(code);
+		// 	metaVarRule.addDefinition(indexVarDef);
+		// }
 
 		{
 			Definition gapDef = new Definition();
@@ -258,8 +286,7 @@ aspect MetaGrammar {
 	}
 
 	private Assoc Grammar.buildPrecedenceStmt(String prec, String name) {
-		return new Assoc(prec,
-						 new List(new IdUse(name)));
+		return new Assoc(prec, new List(new IdUse(name)));
 	}
 
 	public void Grammar.replaceHeader(String s) {
@@ -273,51 +300,47 @@ aspect MetaGrammar {
 	}
 
 	public void Grammar.addPatternGrammarClauses() {
-		Set<String> modifiedProductions = new HashSet<String>();
-		java.util.List<Rule> metaVarRules = new java.util.ArrayList<Rule>();
+		TreeSet<Rule> metaRules = new TreeSet<Rule>(new Comparator<Rule>() {
+				public int compare(Rule r1, Rule r2) {
+					return r1.getIdDecl().getID().compareTo(r2.getIdDecl().getID());
+				}
+			});
+		java.util.List<Element> metaElems = new java.util.ArrayList<Element>();
 		Set<String> goals = new TreeSet<String>();
-
-		for (Rule r : rules()) {
-			if (r.type().equals("ASTNode"))
-				continue;
-			if (r.type().equals("List"))
-				continue;
-			if (modifiedProductions.contains(r.getIdDecl().getID()))
-				continue;
-
-			goals.add(r.getIdDecl().getID());
-			metaVarRules.add(buildMetaVarRule(r));
-
-			modifiedProductions.add(r.getIdDecl().getID());
-		}
 
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
-					if (modifiedProductions.contains(e.getIdUse().getID()) && (!e.isAliased() || r.type().equals("List"))) {
-						e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
-					}
+					if (!e.hasMetaOrConcreteDecl() || (e.isAlias() && !r.type().equals("List")))
+						continue;
+					metaElems.add(e);
 				}
 			}
+			if (r.hasMetaOrConcreteDecl()) {
+				metaRules.add(r);
+			}
+			if (!r.type().equals("ASTNode") && !r.type().equals("ASTList"))
+				goals.add(r.getIdDecl().getID());
 		}
 
-		getClauses().addAll(metaVarRules);
+		for (String goalName : goals) {
+			addClause(new Goal(goalName));
+		}
 
-		Iterator<String> rulePri = getRulePriority();
-		while (rulePri.hasNext()) {
-			String rule = rulePri.next();
-			if (!modifiedProductions.contains(rule))
-				continue;
+		for (Element e : metaElems) {
+			e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
+		}
+
+		for (Rule r : metaRules) {
+			Rule mvr = buildMetaVarRule(r);
+			addClause(mvr);
+		}
+
+		for (String rule : getRulePriority()) {
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_1_" + rule));
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_4_" + rule));
-		}
-
-
-
-		for (String goalName : goals) {
-			addClause(new Goal(goalName));
 		}
 
 
