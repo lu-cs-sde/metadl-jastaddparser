@@ -161,7 +161,7 @@ aspect MetaGrammar {
 
 
 	syn boolean Rule.hasMetaOrConcreteDecl() circular [false] {
-		if (type().equals("List"))
+		if (type().equals("List") || type().equals("String"))
 			return false;
 
 		if (allIncludes().isEmpty()) {
@@ -332,6 +332,11 @@ aspect MetaGrammar {
 		}
 
 		for (Element e : metaElems) {
+			if (!e.hasName()) {
+				// explicitly name the element to the name of
+				// the original, if it was unnamed; the code might use this name
+				e.setName(new IdUse(e.getIdUse().getID()));
+			}
 			e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
 		}
 
