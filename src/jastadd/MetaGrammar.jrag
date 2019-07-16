@@ -323,8 +323,12 @@ aspect MetaGrammar {
 				goals.add(r.getIdDecl().getID());
 		}
 
+		// Exclude the following keywords from goals, because they will clash with the
+		// Java language
+		java.util.List<String> keywords = java.util.Arrays.asList("super", "finally", "throws");
 		for (String goalName : goals) {
-			addClause(new Goal(goalName));
+			if (!keywords.contains(goalName))
+				addClause(new Goal(goalName));
 		}
 
 		for (Element e : metaElems) {
@@ -338,8 +342,8 @@ aspect MetaGrammar {
 
 		for (String rule : getRulePriority()) {
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_1_" + rule));
-			addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
-			addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
+			// addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
+			// addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_4_" + rule));
 		}
 
