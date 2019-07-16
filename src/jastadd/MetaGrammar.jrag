@@ -185,9 +185,27 @@ aspect MetaGrammar {
 			this instanceof ListPlusElement)
 			return false;
 
+		boolean ruleHasDecl = false;
 		for (Rule r : getGrammar().rule(getIdUse().getID()))
 			if (r.hasMetaOrConcreteDecl())
-				return true;
+				ruleHasDecl = true;
+
+		if (!ruleHasDecl)
+			return false;
+
+
+		if (!isAlias()) {
+			return true;
+		} else {
+			for (Definition d : parentDefinition().parentRule().getDefinitions()) {
+				if (d.isAlias()) {
+					if (d == parentDefinition())
+						return true;
+					return false;
+				}
+			}
+		}
+
 		return false;
 	}
 
@@ -311,7 +329,7 @@ aspect MetaGrammar {
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
-					if (!e.hasMetaOrConcreteDecl() || (e.isAlias() && !r.type().equals("List")))
+					if (!e.hasMetaOrConcreteDecl())
 						continue;
 					metaElems.add(e);
 				}
@@ -331,6 +349,10 @@ aspect MetaGrammar {
 				addClause(new Goal(goalName));
 		}
 
+		for (Rule r : metaRules) {
+			addClause(new Goal("META_OR_CONCRETE_" + r.getIdDecl().getID()));
+		}
+
 		for (Element e : metaElems) {
 			if (!e.hasName()) {
 				// explicitly name the element to the name of
@@ -340,6 +362,7 @@ aspect MetaGrammar {
 			e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
 		}
 
+		// Add these rules as goals, to silence the "Rule cannot be reduced error"
 		for (Rule r : metaRules) {
 			Rule mvr = buildMetaVarRule(r);
 			addClause(mvr);
