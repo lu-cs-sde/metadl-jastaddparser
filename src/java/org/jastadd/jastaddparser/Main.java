@@ -42,8 +42,10 @@ import java.util.Properties;
 
 import org.jastadd.jastaddparser.parser.GrammarParser;
 import org.jastadd.jastaddparser.parser.GrammarScanner;
+import org.jgrapht.Graph;
 import org.jastadd.jastaddparser.ast.ASTNode;
 import org.jastadd.jastaddparser.ast.Grammar;
+import org.jastadd.jastaddparser.ast.GrammarEdgeType;
 import org.jastadd.jastaddparser.ast.Rule;
 
 public class Main {
@@ -96,22 +98,9 @@ public class Main {
         FileOutputStream os = new FileOutputStream(args[destIndex]);
         PrintStream out = new PrintStream(os);
 		if (patternGrammar) {
-		  System.out.println("digraph {");
-		  System.out.println("{");
-		  System.out.println("}");
-		  for (Rule r : root.rules()) {
-			if (r.maybeEmpty())
-			  System.out.println("E: " + r.getIdDecl().getID());
-			for (Rule l : root.rules()) {
-			  if (r.includes(l)) {
-				System.out.println(r.getIdDecl().getID() + " -> " + l.getIdDecl().getID());
-
-			  }
-			}
-		  }
-		  System.out.println("}");
-		}
-		if (patternGrammar) {
+		  Graph<String, GrammarEdgeType> g = root.buildGrammarGraph();
+		  Grammar.exportGrammarGraph(g, dest + ".xdot");
+		  root.computeMetaVarRules(g);
 		  //root.replaceHeader("package patlang.ast;");
 		  root.addPatternGrammarClauses();
 		}

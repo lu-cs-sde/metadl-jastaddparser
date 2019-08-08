@@ -2,11 +2,12 @@ import java.util.HashSet;
 import org.jgrapht.*;
 import org.jgrapht.graph.*;
 import org.jgrapht.traverse.*;
+import org.jgrapht.io.*;
 import org.jgrapht.alg.connectivity.*;
+import java.io.*;
+
 
 aspect MetaGrammar {
-	//syn Set<Rule> Rule.mayAmbiguate() circular [new HashSet<Rule>()];
-
 	syn boolean Grammar.rulesMayBeEmpty(String name) circular [true] {
 		for (Rule l : rule(name)) {
 			if (l.maybeEmpty()) {
@@ -151,15 +152,6 @@ aspect MetaGrammar {
 		return false;
 	}
 
-	syn boolean Rule.isUnion() {
-		for (Definition d : getDefinitions()) {
-			if (!d.isAlias())
-				return false;
-		}
-		return true;
-	}
-
-
 	syn boolean Rule.hasMetaOrConcreteDecl() circular [false] {
 		if (type().equals("List") || type().equals("String"))
 			return false;
@@ -209,31 +201,164 @@ aspect MetaGrammar {
 		return false;
 	}
 
+	public class GrammarEdgeType {
+		private String type;
+		private GrammarEdgeType(String type) { this.type = type; }
+		public static GrammarEdgeType use() {
+			return new GrammarEdgeType("USE");
+		}
+		public static GrammarEdgeType include() {
+			return new GrammarEdgeType("INCLUDE");
+		}
+		public String toString() { return type; }
+		public boolean isUse() { return type.equals("USE"); }
+    }
+
+	public Graph<String, GrammarEdgeType> Grammar.buildGrammarGraph() {
+		Graph<String, GrammarEdgeType> directedGraph =
+            new DefaultDirectedGraph<String, GrammarEdgeType>(GrammarEdgeType.class);
+
+		for (Rule r : rules()) {
+			for (Definition d : r.getDefinitions()) {
+				for (Element e : d.getElements()) {
+					if (!e.isNonTerminal())
+						continue;
+					directedGraph.addVertex(r.getIdDecl().getID());
+					directedGraph.addVertex(e.getIdUse().getID());
+
+					GrammarEdgeType et;
+					if (r.includes(e.getIdUse().getID()))
+						et = GrammarEdgeType.include();
+					else
+						et = GrammarEdgeType.use();
+
+					directedGraph.addEdge(r.getIdDecl().getID(), e.getIdUse().getID(), et);
+				}
+			}
+		}
+		return directedGraph;
+	}
+
+	public Set<String> Grammar.computeMetaVarRules(Graph<String, GrammarEdgeType> g) {
+		TreeMap<String, String> coveredRules = new TreeMap<String, String>();
+		TreeSet<String> candidates = new TreeSet<String>();
+		TreeSet<String> pureAlias = new TreeSet<String>();
+
+		for (String n : g.vertexSet()) {
+			boolean isUsed = false;
+			for (GrammarEdgeType e : g.incomingEdgesOf(n))
+				if (e.isUse()) {
+					isUsed = true;
+					break;
+				}
+			boolean isAlias = false;
+			for (GrammarEdgeType e : g.outgoingEdgesOf(n))
+				if (!e.isUse()) {
+					isAlias = true;
+					break;
+				}
+
+			if (!isAlias) {
+				candidates.add(n);
+				coveredRules.put(n, n);
+			}
+
+			if (!isUsed)
+				pureAlias.add(n);
+		}
+
+		boolean change;
+		do {
+			change = false;
+			for (GrammarEdgeType e : g.edgeSet()) {
+				String src = g.getEdgeSource(e);
+				String tgt = g.getEdgeTarget(e);
+				if (e.isUse())
+					continue;
+				if (coveredRules.containsKey(tgt)) {
+					String oldVal = coveredRules.put(src, coveredRules.get(tgt));
+					if (oldVal == null) {
+						change = true;
+					} else if (!oldVal.equals(coveredRules.get(tgt))) {
+						System.out.println("Rule conflict at: " + src + " : "
+										   + oldVal + " - " + coveredRules.get(tgt));
+					}
+				}
+
+				if (coveredRules.containsKey(src) && coveredRules.containsKey(tgt) && pureAlias.contains(tgt)) {
+					coveredRules.put(tgt, coveredRules.get(src));
+				}
+			}
+		} while (change);
+
+		for (String r : g.vertexSet()) {
+			if (!coveredRules.containsKey(r)) {
+				System.out.println("Uncovered rule: " + r);
+			} else {
+				System.out.println("Covered rule: " + r);
+			}
+		}
+
+		return coveredRules.keySet();
+    }
+
+	public static void Grammar.exportGrammarGraph(Graph<String, GrammarEdgeType> g, String file) {
+		DOTExporter<String, GrammarEdgeType> exporter = new DOTExporter<String, GrammarEdgeType>
+			(new ComponentNameProvider<String>() {
+				 @Override public String getName(String t) { return t; }
+			 },
+			 null, /* vertexLabelProvider */
+			 null, /* edgeLabelProvider */
+			 null, /* vertexAttributeProvider */
+			 new ComponentAttributeProvider<GrammarEdgeType>() {
+				 @Override public Map<String, Attribute> getComponentAttributes(GrammarEdgeType e) {
+					 return Collections.singletonMap("color",
+													 DefaultAttribute.createAttribute(e.isUse() ? "blue" : "red"));
+				 }
+			 });
+		try {
+			Writer writer = new FileWriter(file);
+			exporter.exportGraph(g, writer);
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+	}
+
 	public java.util.List<String> Grammar.getRulePriority() {
 		Graph<String, DefaultEdge> directedGraph =
             new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
+
 		for (Rule r : rules()) {
-			directedGraph.addVertex(r.getIdDecl().getID());
-		}
-		for (Rule r : rules()) {
-			for (Rule l : rules()) {
-				if (r.includes(l)) {
-					directedGraph.addEdge(r.getIdDecl().getID(),
-										  l.getIdDecl().getID());
+			for (Definition d : r.getDefinitions()) {
+				for (Element e : d.getElements()) {
+					if (e.isNonTerminal()) {
+						directedGraph.addVertex(r.getIdDecl().getID());
+						directedGraph.addVertex(e.getIdUse().getID());
+						directedGraph.addEdge(r.getIdDecl().getID(),
+											  e.getIdUse().getID());
+					}
 				}
 			}
 		}
 
-		KosarajuStrongConnectivityInspector<String, DefaultEdge> sccAlg = new KosarajuStrongConnectivityInspector(directedGraph);
-		TopologicalOrderIterator<Graph<String, DefaultEdge>, DefaultEdge> top = new TopologicalOrderIterator(sccAlg.getCondensation());
+
+		String entry = null;
+		for (String v : directedGraph.vertexSet()) {
+			if (directedGraph.inDegreeOf(v) == 0) {
+				entry = v;
+				break;
+			}
+		}
+
+		System.out.println("Assumed grammar root: " + entry);
+
+		DepthFirstIterator<String, DefaultEdge> it = new DepthFirstIterator<String, DefaultEdge>(directedGraph, entry);
 
 		java.util.List<String> list = new java.util.ArrayList();
-		while (top.hasNext()) {
-			Graph<String, DefaultEdge> scc = top.next();
-			if (scc.vertexSet().size() == 1)
-				list.add(scc.vertexSet().iterator().next());
-
+		while (it.hasNext()) {
+			list.add(it.next());
 		}
+
 		return list;
 	}
 
@@ -260,45 +385,17 @@ aspect MetaGrammar {
 			metaVarRule.addDefinition(metaVarDef);
 		}
 
-		// {
-		// 	Definition indexVarDef = new Definition();
-		// 	indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("idx"))));
-		// 	indexVarDef.addElement(new Element(new IdUse("COLON"), new Opt()));
-		// 	indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("id"))));
-		// 	Precedence prec = new Precedence(new IdUse("PREC_2_" + r.getIdDecl().getID()));
-		// 	indexVarDef.addPrecedence(prec);
-		// 	String code = String.format("return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(new MetaVar%s().setVar(new MetaVariable(id)));", r.getIdUse().getID(), r.getIdUse().getID());
-		// 	indexVarDef.setCODE(code);
-		// 	metaVarRule.addDefinition(indexVarDef);
-		// }
-
-		// {
-		// 	Definition indexVarDef = new Definition();
-		// 	// indexVarDef.addElement(new Element(new IdUse("LPARAN"), new Opt()));
-		// 	indexVarDef.addElement(new Element(new IdUse("METAVARID"), new Opt(new IdUse("idx"))));
-		// 	indexVarDef.addElement(new Element(new IdUse("COLON"), new Opt()));
-		// 	indexVarDef.addElement(new Element(new IdUse(r.getIdDecl().getID()), new Opt(new IdUse("id"))));
-		// 	// indexVarDef.addElement(new Element(new IdUse("RPARAN"), new Opt()));
-		// 	Precedence prec = new Precedence(new IdUse("PREC_3_" + r.getIdDecl().getID()));
-		// 	indexVarDef.addPrecedence(prec);
-		// 	String code = String.format(" return new IndexMetaVar%s().setVar(new MetaVariable(idx)).setElement(id);",
-		// 								 r.getIdUse().getID());
-		// 	indexVarDef.setCODE(code);
-		// 	metaVarRule.addDefinition(indexVarDef);
-		// }
-
 		{
 			Definition gapDef = new Definition();
 			Element el = new Element(new IdUse("GAP"), new Opt());
 			gapDef.addElement(el);
-			Precedence prec = new Precedence(new IdUse("PREC_4_" + r.getIdDecl().getID()));
+			Precedence prec = new Precedence(new IdUse("PREC_2_" + r.getIdDecl().getID()));
 			gapDef.addPrecedence(prec);
 			String code = String.format("return new Gap%s();",
 										r.getIdUse().getID());
 			gapDef.setCODE(code);
 			metaVarRule.addDefinition(gapDef);
 		}
-
 
 		return metaVarRule;
 	}
@@ -325,6 +422,8 @@ aspect MetaGrammar {
 			});
 		java.util.List<Element> metaElems = new java.util.ArrayList<Element>();
 		Set<String> goals = new TreeSet<String>();
+
+		java.util.List<String> rulePriority = getRulePriority();
 
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
@@ -368,11 +467,9 @@ aspect MetaGrammar {
 			addClause(mvr);
 		}
 
-		for (String rule : getRulePriority()) {
+		for (String rule : rulePriority) {
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_1_" + rule));
-			// addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
-			// addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
-			addClause(buildPrecedenceStmt("nonassoc", "PREC_4_" + rule));
+			addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
 		}
 
 
