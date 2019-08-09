@@ -37,12 +37,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.Set;
 
 import org.jastadd.jastaddparser.parser.GrammarParser;
 import org.jastadd.jastaddparser.parser.GrammarScanner;
 import org.jgrapht.Graph;
+import org.jgrapht.graph.AbstractBaseGraph;
 import org.jastadd.jastaddparser.ast.ASTNode;
 import org.jastadd.jastaddparser.ast.Grammar;
 import org.jastadd.jastaddparser.ast.GrammarEdgeType;
@@ -100,9 +103,17 @@ public class Main {
 		if (patternGrammar) {
 		  Graph<String, GrammarEdgeType> g = root.buildGrammarGraph();
 		  Grammar.exportGrammarGraph(g, dest + ".xdot");
-		  root.computeMetaVarRules(g);
+		  // root.computeMetaVarRules(g);
 		  //root.replaceHeader("package patlang.ast;");
-		  root.addPatternGrammarClauses();
+		  HashSet<String> excludeRules = new HashSet<String>();
+		  for (Rule r : root.rules()) {
+			if (r.type().equals("List") || r.type().equals("String"))
+			  excludeRules.add(r.getIdDecl().getID());
+		  }
+
+		  MetaRuleSolver solver = new MetaRuleSolver((AbstractBaseGraph<String, GrammarEdgeType>)g, excludeRules);
+		  Set<String> rulesToTransform = solver.solve();
+		  root.addPatternGrammarClauses(rulesToTransform);
 		}
         root.genCode(out, noBeaverSymbol,useTokenlist);
         out.close();

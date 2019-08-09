@@ -236,6 +236,7 @@ aspect MetaGrammar {
 				}
 			}
 		}
+
 		return directedGraph;
 	}
 
@@ -414,7 +415,7 @@ aspect MetaGrammar {
 		flushAttrCache();
 	}
 
-	public void Grammar.addPatternGrammarClauses() {
+	public void Grammar.addPatternGrammarClauses(Set<String> rulesToTransform) {
 		TreeSet<Rule> metaRules = new TreeSet<Rule>(new Comparator<Rule>() {
 				public int compare(Rule r1, Rule r2) {
 					return r1.getIdDecl().getID().compareTo(r2.getIdDecl().getID());
@@ -428,12 +429,12 @@ aspect MetaGrammar {
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
-					if (!e.hasMetaOrConcreteDecl())
+					if (!rulesToTransform.contains(e.getIdUse().getID()))
 						continue;
 					metaElems.add(e);
 				}
 			}
-			if (r.hasMetaOrConcreteDecl()) {
+			if (rulesToTransform.contains(r.getIdDecl().getID())) {
 				metaRules.add(r);
 			}
 			if (!r.type().equals("ASTNode") && !r.type().equals("ASTList"))
