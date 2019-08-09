@@ -53,6 +53,9 @@ aspect MetaGrammar {
 	}
 
 	syn boolean Element.includes(Rule other) circular [false] {
+		if (getIdUse().getID().equals(other.getIdDecl().getID()))
+			return true;
+
 		for (Rule l : getGrammar().rule(getIdUse().getID())) {
 			if (l.includes(other))
 				return true;
@@ -64,19 +67,6 @@ aspect MetaGrammar {
 	eq Definition.getElement().parentDefinition() = this;
 	inh Rule Definition.parentRule();
 	eq Rule.getDefinition().parentRule() = this;
-
-	syn boolean Element.isAlias() {
-		return parentDefinition().isAlias();
-	}
-
-	syn boolean Definition.isAlias() {
-		if (getNumElement() != 1)
-			return false;
-		if (getElement(0) instanceof ListElement ||
-			getElement(0) instanceof ListPlusElement)
-			return false;
-		return true;
-	}
 
 	syn boolean Element.includes(Element other) circular [false] {
 		for (Rule r : getGrammar().rule(getIdUse().getID()))
@@ -107,9 +97,7 @@ aspect MetaGrammar {
 			// e can clash with other; if the other elements can be empty
 			// then this rule can clash with the other rule
 			for (Element f : getElements()) {
-				if (e.includes(f))
-					continue;
-				if (!g.rulesMayBeEmpty(f.getIdUse().getID()))
+				if (f != e && !g.rulesMayBeEmpty(f.getIdUse().getID()))
 					return false;
 			}
 		}
@@ -120,9 +108,6 @@ aspect MetaGrammar {
 
 
 	syn boolean Rule.includes(Rule other) circular [false] {
-		if (type().equals("List"))
-			return false;
-
 		for (Definition d : getDefinitions()) {
 			if (d.includes(other))
 				return true;
@@ -136,68 +121,11 @@ aspect MetaGrammar {
 		return false;
 	}
 
-	syn Set<Rule> Rule.allIncludes() {
-		Set<Rule> inc = new HashSet<Rule>();
-		for (Rule r : getGrammar().rules())
-			if (includes(r))
-				inc.add(r);
-		return inc;
-	}
-
 	syn boolean Rule.includes(String other) {
 		for (Rule r : getGrammar().rule(other)) {
 			if (includes(r))
 				return true;
 		}
-		return false;
-	}
-
-	syn boolean Rule.hasMetaOrConcreteDecl() circular [false] {
-		if (type().equals("List") || type().equals("String"))
-			return false;
-
-		if (allIncludes().isEmpty()) {
-			for (Element e : uses())
-				if (!e.isAlias())
-					return true;
-		} else {
-			for (Rule r : allIncludes()) {
-				if (r.hasMetaOrConcreteDecl())
-					return false;
-			}
-		}
-		return true;
-	}
-
-	syn boolean Element.hasMetaOrConcreteDecl() {
-		if (!isNonTerminal())
-			return false;
-
-		if (this instanceof ListElement ||
-			this instanceof ListPlusElement)
-			return false;
-
-		boolean ruleHasDecl = false;
-		for (Rule r : getGrammar().rule(getIdUse().getID()))
-			if (r.hasMetaOrConcreteDecl())
-				ruleHasDecl = true;
-
-		if (!ruleHasDecl)
-			return false;
-
-
-		if (!isAlias()) {
-			return true;
-		} else {
-			for (Definition d : parentDefinition().parentRule().getDefinitions()) {
-				if (d.isAlias()) {
-					if (d == parentDefinition())
-						return true;
-					return false;
-				}
-			}
-		}
-
 		return false;
 	}
 
@@ -239,69 +167,6 @@ aspect MetaGrammar {
 
 		return directedGraph;
 	}
-
-	public Set<String> Grammar.computeMetaVarRules(Graph<String, GrammarEdgeType> g) {
-		TreeMap<String, String> coveredRules = new TreeMap<String, String>();
-		TreeSet<String> candidates = new TreeSet<String>();
-		TreeSet<String> pureAlias = new TreeSet<String>();
-
-		for (String n : g.vertexSet()) {
-			boolean isUsed = false;
-			for (GrammarEdgeType e : g.incomingEdgesOf(n))
-				if (e.isUse()) {
-					isUsed = true;
-					break;
-				}
-			boolean isAlias = false;
-			for (GrammarEdgeType e : g.outgoingEdgesOf(n))
-				if (!e.isUse()) {
-					isAlias = true;
-					break;
-				}
-
-			if (!isAlias) {
-				candidates.add(n);
-				coveredRules.put(n, n);
-			}
-
-			if (!isUsed)
-				pureAlias.add(n);
-		}
-
-		boolean change;
-		do {
-			change = false;
-			for (GrammarEdgeType e : g.edgeSet()) {
-				String src = g.getEdgeSource(e);
-				String tgt = g.getEdgeTarget(e);
-				if (e.isUse())
-					continue;
-				if (coveredRules.containsKey(tgt)) {
-					String oldVal = coveredRules.put(src, coveredRules.get(tgt));
-					if (oldVal == null) {
-						change = true;
-					} else if (!oldVal.equals(coveredRules.get(tgt))) {
-						System.out.println("Rule conflict at: " + src + " : "
-										   + oldVal + " - " + coveredRules.get(tgt));
-					}
-				}
-
-				if (coveredRules.containsKey(src) && coveredRules.containsKey(tgt) && pureAlias.contains(tgt)) {
-					coveredRules.put(tgt, coveredRules.get(src));
-				}
-			}
-		} while (change);
-
-		for (String r : g.vertexSet()) {
-			if (!coveredRules.containsKey(r)) {
-				System.out.println("Uncovered rule: " + r);
-			} else {
-				System.out.println("Covered rule: " + r);
-			}
-		}
-
-		return coveredRules.keySet();
-    }
 
 	public static void Grammar.exportGrammarGraph(Graph<String, GrammarEdgeType> g, String file) {
 		DOTExporter<String, GrammarEdgeType> exporter = new DOTExporter<String, GrammarEdgeType>
