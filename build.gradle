@@ -20,7 +20,7 @@ configurations {
 }
 
 dependencies {
-	jastadd 'org.jastadd:jastadd:2.1.13'
+	jastadd 'org.jastadd:jastadd:2.3.4'
 	jastaddparser('org.jastadd:jastaddparser:1.0.3') { force = true /* Avoid conflict with local artifact. */ }
 	jflex 'de.jflex:jflex:1.6.1'
 	beaver 'net.sf.beaver:beaver-cc:0.9.11'
