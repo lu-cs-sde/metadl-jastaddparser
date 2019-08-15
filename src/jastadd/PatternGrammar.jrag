@@ -337,25 +337,56 @@ aspect PatternGrammar {
 		flushAttrCache();
 	}
 
+	syn boolean Rule.hasHigherPrioChain(Map<String, Integer> rulePriorityMap) {
+		int currentPrio = rulePriorityMap.get(getIdDecl().getID());
+		for (Rule c : chain()) {
+			int chainPrio = rulePriorityMap.get(c.getIdDecl().getID());
+			if (chainPrio < currentPrio)
+				return true;
+		}
+		return false;
+	}
+
 	public void Grammar.addPatternGrammarClauses() {
 		ArrayList<Rule> terminalRules = new ArrayList<Rule>();
 		ArrayList<Element> nonAliasElems = new ArrayList<Element>();
 		java.util.List<String> rulePriority = getRulePriority();
 		Set<String> goals = new TreeSet<String>();
 
+		HashMap<String, Integer> rulePriorityMap = new HashMap<String, Integer>();
+		Set<String> higherPrioChain = new HashSet<String>();
+
+		int prio = 0;
+		for (String r : rulePriority)
+			rulePriorityMap.put(r, prio++);
+
 		for (Rule r : rules()) {
-			if (r.type().equals("List") || r.type().equals("String"))
-				continue;
-			if (r.isTerminal()) {
+			if (r.hasHigherPrioChain(rulePriorityMap)) {
+				System.out.print("***");
+				higherPrioChain.add(r.getIdDecl().getID());
+			}
+			// System.out.print("Chain of " + r.getIdDecl().getID() + ": ");
+			// for (Rule c : r.chain()) {
+			// 	System.out.print(c.getIdDecl().getID() + " ");
+			// }
+			// System.out.println("");
+		}
+
+		for (Rule r : rules()) {
+			// if (r.type().equals("List") || r.type().equals("String"))
+			// 	continue;
+			if (false && r.isTerminal()) {
 				terminalRules.add(r);
 			} else {
 				for (Definition d : r.getDefinitions()) {
-					if (d.isChain())
-						continue;
+					// if (d.isChain())
+					// 	continue;
 					for (Element e : d.getElements()) {
 						if (!e.isNonTerminal())
 							continue;
-						if (e.isTerminal())
+						// if (e.isTerminal())
+						// 	continue;
+						if (higherPrioChain.contains(e.getIdUse().getID()))
 							continue;
 						if (e.type().equals("List") || e.type().equals("String"))
 							continue;
@@ -363,6 +394,7 @@ aspect PatternGrammar {
 					}
 				}
 			}
+			goals.add(r.getIdDecl().getID());
 		}
 
 		for (Rule r : terminalRules) {
@@ -389,6 +421,7 @@ aspect PatternGrammar {
 			Rule mvr = buildMetaVarRule(name, type);
 			addClause(mvr);
 			goals.add(mvr.getIdDecl().getID());
+			// goals.add(name);
 		}
 
 		// Exclude the following keywords from goals, because they will clash with the
@@ -402,8 +435,7 @@ aspect PatternGrammar {
 		for (String rule : rulePriority) {
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_1_" + rule));
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
-			addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
-
+			// addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
 		}
 
 		for (Rule r : rules()) {
@@ -416,6 +448,16 @@ aspect PatternGrammar {
 			r.flushAttrCache();
 		}
 		flushAttrCache();
-	}
+		flushCollectionCache();
 
+		// for (Rule r : rules()) {
+		// 	System.out.print("Chain of " + r.getIdDecl().getID() + ": ");
+		// 	for (Rule c : r.chain()) {
+		// 		System.out.print(c.getIdDecl().getID() + " ");
+		// 	}
+		// 	System.out.println("");
+		// }
+
+
+	}
 }

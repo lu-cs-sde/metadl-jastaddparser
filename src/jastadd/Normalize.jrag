@@ -40,16 +40,17 @@ aspect Normalize {
 		flushAttrCache();
 	}
 
-	// syn Set<Rule> Rule.chain() circular [new HashSet<Rule>();] {
-	// 	HashSet<Rule> newChain = (HashSet<Rule>) chain();
-	// 	for (Definition d : getDefinitions()) {
-	// 		if (d.isChain()) {
-	// 			Rule r = getGrammar().ruleByName().get(d.getElement(0).getIdUse().getID());
-	// 			newChain.add(r);
-	// 		}
-	// 	}
-	// 	return newChain;
-	// }
+	syn Set<Rule> Rule.chain() circular [new HashSet<Rule>()] {
+		HashSet<Rule> newChain = (HashSet<Rule>) chain();
+		for (Definition d : getDefinitions()) {
+			if (d.isChain()) {
+				Rule r = getGrammar().ruleByName().get(d.getElement(0).getIdUse().getID());
+				newChain.add(r);
+				newChain.addAll(r.chain());
+			}
+		}
+		return newChain;
+	}
 
 
 	// From:
