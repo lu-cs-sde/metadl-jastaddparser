@@ -57,6 +57,7 @@ public class Main {
       boolean noBeaverSymbol = false;
       boolean useTokenlist = false;
 	  boolean patternGrammar = false;
+	  boolean normalize = false;
       if (args[0].equals("--version")) {
         System.out.println("JastAddParser version " + versionString());
         System.exit(0);
@@ -67,8 +68,10 @@ public class Main {
 		useTokenlist = true;
       } else if (args[0].equals("--pattern_grammar")) {
 		patternGrammar = true;
+	  } else if (args[0].equals("--normalize")) {
+		normalize = true;
 	  }
-      if (args.length > 2 && !noBeaverSymbol && !patternGrammar) {
+      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !normalize) {
         System.err.println("Unrecognized option \"" + args[0] + '\"');
         System.exit(1);
       }
@@ -100,20 +103,16 @@ public class Main {
           System.err.println(iter.next());
         FileOutputStream os = new FileOutputStream(args[destIndex]);
         PrintStream out = new PrintStream(os);
+		if (normalize) {
+		  root.oneRule();
+		  root.eliminateChainRules();
+		}
 		if (patternGrammar) {
 		  Graph<String, GrammarEdgeType> g = root.buildGrammarGraph();
 		  Grammar.exportGrammarGraph(g, dest + ".xdot");
-		  // root.computeMetaVarRules(g);
-		  //root.replaceHeader("package patlang.ast;");
-		  HashSet<String> excludeRules = new HashSet<String>();
-		  for (Rule r : root.rules()) {
-			if (r.type().equals("List") || r.type().equals("String"))
-			  excludeRules.add(r.getIdDecl().getID());
-		  }
-
-		  MetaRuleSolver solver = new MetaRuleSolver((AbstractBaseGraph<String, GrammarEdgeType>)g, excludeRules);
-		  Set<String> rulesToTransform = solver.solve();
-		  root.addPatternGrammarClauses(rulesToTransform);
+		  // root.oneRule();
+		  // root.eliminateChainRules();
+		  root.addPatternGrammarClauses();
 		}
         root.genCode(out, noBeaverSymbol,useTokenlist);
         out.close();

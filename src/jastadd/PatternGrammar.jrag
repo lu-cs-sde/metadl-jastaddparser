@@ -7,7 +7,7 @@ import org.jgrapht.alg.connectivity.*;
 import java.io.*;
 
 
-aspect MetaGrammar {
+aspect PatternGrammar {
 	syn boolean Grammar.rulesMayBeEmpty(String name) circular [true] {
 		for (Rule l : rule(name)) {
 			if (l.maybeEmpty()) {
@@ -105,7 +105,38 @@ aspect MetaGrammar {
 		return true;
 	}
 
+	syn boolean Definition.isChain() {
+		if (getNumElement() != 1)
+			return false;
+		return getElement(0).isNonTerminal() && !getElement(0).isList();
+	}
 
+	syn boolean Definition.isTerminal() {
+		for (Element e : getElements())
+			if (e.isNonTerminal())
+				return false;
+		return true;
+	}
+
+	syn boolean Rule.isTerminal() {
+		for (Definition d : getDefinitions())
+			if (!d.isTerminal())
+				return false;
+		return true;
+	}
+
+	syn boolean Element.isTerminal() {
+		for (Rule r : getGrammar().rule(getIdUse().getID()))
+			if (r.isTerminal())
+				return true;
+		return false;
+	}
+
+	syn String Element.type() {
+		for (Rule r : getGrammar().rule(getIdUse().getID()))
+			return r.type();
+		return null;
+	}
 
 	syn boolean Rule.includes(Rule other) circular [false] {
 		for (Definition d : getDefinitions()) {
@@ -222,20 +253,22 @@ aspect MetaGrammar {
 
 		java.util.List<String> list = new java.util.ArrayList();
 		while (it.hasNext()) {
-			list.add(it.next());
+			String v = it.next();
+			System.out.println(v);
+			list.add(v);
 		}
 
 		return list;
 	}
 
-	private Rule Grammar.buildMetaVarRule(Rule r) {
+	private Rule Grammar.buildMetaVarRule(String name, String type) {
 		Rule metaVarRule = new Rule();
-		metaVarRule.setIdUse(r.getIdUse().treeCopyNoTransform());
-		metaVarRule.setIdDecl(new IdDecl("META_OR_CONCRETE_" + r.getIdDecl().getID()));
+		metaVarRule.setIdUse(new IdUse(type));
+		metaVarRule.setIdDecl(new IdDecl("META_OR_CONCRETE_" + name));
 
 		{
 			Definition originalDef = new Definition();
-			originalDef.addElement(new Element(new IdUse(r.getIdDecl().getID()), new Opt()));
+			originalDef.addElement(new Element(new IdUse(name), new Opt()));
 			metaVarRule.addDefinition(originalDef);
 		}
 
@@ -243,10 +276,9 @@ aspect MetaGrammar {
 			Definition metaVarDef = new Definition();
 			Element el = new Element(new IdUse("METAVARID"), new Opt(new IdUse("id")));
 			metaVarDef.addElement(el);
-			Precedence prec = new Precedence(new IdUse("PREC_1_" + r.getIdDecl().getID()));
+			Precedence prec = new Precedence(new IdUse("PREC_1_" + name));
 			metaVarDef.addPrecedence(prec);
-			String code = String.format("return new MetaVar%s().setVar(new MetaVariable(id));",
-										r.getIdUse().getID());
+			String code = String.format("return new MetaVar%s().setVar(new MetaVariable(id));", type);
 			metaVarDef.setCODE(code);
 			metaVarRule.addDefinition(metaVarDef);
 		}
@@ -255,15 +287,40 @@ aspect MetaGrammar {
 			Definition gapDef = new Definition();
 			Element el = new Element(new IdUse("GAP"), new Opt());
 			gapDef.addElement(el);
-			Precedence prec = new Precedence(new IdUse("PREC_2_" + r.getIdDecl().getID()));
+			Precedence prec = new Precedence(new IdUse("PREC_2_" + name));
 			gapDef.addPrecedence(prec);
-			String code = String.format("return new Gap%s();",
-										r.getIdUse().getID());
+			String code = String.format("return new Gap%s();", type);
 			gapDef.setCODE(code);
 			metaVarRule.addDefinition(gapDef);
 		}
 
 		return metaVarRule;
+	}
+
+	public void Rule.insertMetaVarDefinition() {
+		{
+			Definition metaVarDef = new Definition();
+			Element el = new Element(new IdUse("METAVARID"), new Opt(new IdUse("id")));
+			metaVarDef.addElement(el);
+			Precedence prec = new Precedence(new IdUse("PREC_1_" + getIdDecl().getID()));
+			metaVarDef.addPrecedence(prec);
+			String code = String.format("return new MetaVar%s().setVar(new MetaVariable(id));",
+										getIdUse().getID());
+			metaVarDef.setCODE(code);
+			addDefinition(metaVarDef);
+		}
+
+		{
+			Definition gapDef = new Definition();
+			Element el = new Element(new IdUse("GAP"), new Opt());
+			gapDef.addElement(el);
+			Precedence prec = new Precedence(new IdUse("PREC_2_" + getIdDecl().getID()));
+			gapDef.addPrecedence(prec);
+			String code = String.format("return new Gap%s();",
+										getIdUse().getID());
+			gapDef.setCODE(code);
+			addDefinition(gapDef);
+		}
 	}
 
 	private Assoc Grammar.buildPrecedenceStmt(String prec, String name) {
@@ -280,30 +337,58 @@ aspect MetaGrammar {
 		flushAttrCache();
 	}
 
-	public void Grammar.addPatternGrammarClauses(Set<String> rulesToTransform) {
-		TreeSet<Rule> metaRules = new TreeSet<Rule>(new Comparator<Rule>() {
-				public int compare(Rule r1, Rule r2) {
-					return r1.getIdDecl().getID().compareTo(r2.getIdDecl().getID());
-				}
-			});
-		java.util.List<Element> metaElems = new java.util.ArrayList<Element>();
+	public void Grammar.addPatternGrammarClauses() {
+		ArrayList<Rule> terminalRules = new ArrayList<Rule>();
+		ArrayList<Element> nonAliasElems = new ArrayList<Element>();
+		java.util.List<String> rulePriority = getRulePriority();
 		Set<String> goals = new TreeSet<String>();
 
-		java.util.List<String> rulePriority = getRulePriority();
-
 		for (Rule r : rules()) {
-			for (Definition d : r.getDefinitions()) {
-				for (Element e : d.getElements()) {
-					if (!rulesToTransform.contains(e.getIdUse().getID()))
+			if (r.type().equals("List") || r.type().equals("String"))
+				continue;
+			if (r.isTerminal()) {
+				terminalRules.add(r);
+			} else {
+				for (Definition d : r.getDefinitions()) {
+					if (d.isChain())
 						continue;
-					metaElems.add(e);
+					for (Element e : d.getElements()) {
+						if (!e.isNonTerminal())
+							continue;
+						if (e.isTerminal())
+							continue;
+						if (e.type().equals("List") || e.type().equals("String"))
+							continue;
+						nonAliasElems.add(e);
+					}
 				}
 			}
-			if (rulesToTransform.contains(r.getIdDecl().getID())) {
-				metaRules.add(r);
+		}
+
+		for (Rule r : terminalRules) {
+			r.insertMetaVarDefinition();
+			goals.add(r.getIdDecl().getID());
+		}
+
+		TreeMap<String, String> metaRules = new TreeMap<String, String>();
+		for (Element e : nonAliasElems) {
+			metaRules.put(e.getIdUse().getID(), e.type());
+
+			if (!e.hasName()) {
+				// explicitly name the element to the name of
+				// the original, if it was unnamed; the code might use this name
+				e.setName(new IdUse(e.getIdUse().getID()));
 			}
-			if (!r.type().equals("ASTNode") && !r.type().equals("ASTList"))
-				goals.add(r.getIdDecl().getID());
+			e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
+		}
+
+		for (Map.Entry<String, String> ruleName : metaRules.entrySet()) {
+			String name = ruleName.getKey();
+			String type = ruleName.getValue();
+
+			Rule mvr = buildMetaVarRule(name, type);
+			addClause(mvr);
+			goals.add(mvr.getIdDecl().getID());
 		}
 
 		// Exclude the following keywords from goals, because they will clash with the
@@ -314,30 +399,12 @@ aspect MetaGrammar {
 				addClause(new Goal(goalName));
 		}
 
-		for (Rule r : metaRules) {
-			addClause(new Goal("META_OR_CONCRETE_" + r.getIdDecl().getID()));
-		}
-
-		for (Element e : metaElems) {
-			if (!e.hasName()) {
-				// explicitly name the element to the name of
-				// the original, if it was unnamed; the code might use this name
-				e.setName(new IdUse(e.getIdUse().getID()));
-			}
-			e.setIdUse(new IdUse("META_OR_CONCRETE_" + e.getIdUse().getID()));
-		}
-
-		// Add these rules as goals, to silence the "Rule cannot be reduced error"
-		for (Rule r : metaRules) {
-			Rule mvr = buildMetaVarRule(r);
-			addClause(mvr);
-		}
-
 		for (String rule : rulePriority) {
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_1_" + rule));
 			addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
-		}
+			addClause(buildPrecedenceStmt("nonassoc", "PREC_3_" + rule));
 
+		}
 
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
