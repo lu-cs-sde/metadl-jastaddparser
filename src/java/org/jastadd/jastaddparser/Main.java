@@ -36,6 +36,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -57,7 +58,7 @@ public class Main {
       boolean noBeaverSymbol = false;
       boolean useTokenlist = false;
 	  boolean patternGrammar = false;
-	  boolean normalize = false;
+	  boolean pep = false;
       if (args[0].equals("--version")) {
         System.out.println("JastAddParser version " + versionString());
         System.exit(0);
@@ -68,10 +69,10 @@ public class Main {
 		useTokenlist = true;
       } else if (args[0].equals("--pattern_grammar")) {
 		patternGrammar = true;
-	  } else if (args[0].equals("--normalize")) {
-		normalize = true;
+	  } else if (args[0].equals("--pep")) {
+		pep = true;
 	  }
-      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !normalize) {
+      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !pep) {
         System.err.println("Unrecognized option \"" + args[0] + '\"');
         System.exit(1);
       }
@@ -103,9 +104,11 @@ public class Main {
           System.err.println(iter.next());
         FileOutputStream os = new FileOutputStream(args[destIndex]);
         PrintStream out = new PrintStream(os);
-		if (normalize) {
+		if (pep) {
+		  root.addPatternGrammarClauses();
 		  root.oneRule();
-		  root.eliminateChainRules();
+		  root.genPEP(out);
+		  out.flush();
 		}
 		if (patternGrammar) {
 		  Graph<String, GrammarEdgeType> g = root.buildGrammarGraph();
@@ -114,7 +117,9 @@ public class Main {
 		  // root.eliminateChainRules();
 		  root.addPatternGrammarClauses();
 		}
-        root.genCode(out, noBeaverSymbol,useTokenlist);
+		if (!pep) {
+		  root.genCode(out, noBeaverSymbol,useTokenlist);
+		}
         out.close();
         System.err.println("Parser specification " + dest + " generated from " + source);
       }

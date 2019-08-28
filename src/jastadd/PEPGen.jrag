@@ -1,0 +1,84 @@
+aspect PEPGen {
+	private static String Grammar.CLASS_NAME = "PatLangParserPEP";
+
+	private void Grammar.genImport(PrintWriter w) {
+		for (Clause c : getClauses()) {
+			if (c instanceof Header)
+				w.println(((Header)c).getCODE());
+		}
+
+		w.println("import edu.osu.ling.pep.*;");
+		w.println("import java.util.List;");
+		w.println("import java.util.Set;");
+
+	}
+
+	private void Grammar.genHeader(PrintWriter w) {
+		w.printf("public class %s {\n", CLASS_NAME);
+		w.println("private Grammar grammar = new Grammar(\"PatLangGrammar\");");
+		w.println("private EarleyParser parser = new EarleyParser(grammar);");
+		w.println();
+	}
+
+	private void Grammar.genCategories(PrintWriter w) {
+		for (String s : terminals()) {
+			w.printf("public Category t_%s = new Category(\"%s\");\n", s, s);
+		}
+		w.println();
+		for (Rule r : rules()) {
+			w.printf("public Category n_%s = new Category(\"%s\", /*terminal*/false);\n",
+					 r.getIdDecl().getID(), r.getIdDecl().getID());
+		}
+		w.println();
+	}
+
+	private void Grammar.genConstructor(PrintWriter w) {
+		w.printf("public %s() {\n", CLASS_NAME);
+		genRules(w);
+		w.println("}");
+	}
+
+	private void Grammar.genParseMethod(PrintWriter w) {
+		w.println("public Set<ParseTree> parse(List<String> tokens, Category startSymbol) throws PepException {");
+		w.println("return parser.parse(tokens, startSymbol).getParseTrees();");
+		w.println("}");
+	}
+
+	private void Grammar.genRules(PrintWriter w) {
+		for (Rule r : rules()) {
+			for (Definition d : r.getDefinitions()) {
+				// use qualified names here to avoid clashes
+				w.print("grammar.addRule(new edu.osu.ling.pep.Rule(");
+				w.printf("n_%s", r.getIdDecl().getID());
+				for (Element e : d.getElements()) {
+					if (e.isNonTerminal()) {
+						w.printf(", n_%s", e.getIdUse().getID());
+					} else {
+						w.printf(", t_%s", e.getIdUse().getID());
+					}
+				}
+				w.println("));");
+			}
+		}
+		w.println();
+	}
+
+	private void Grammar.genFooter(PrintWriter w) {
+		w.println("}");
+	}
+
+	public void Grammar.genPEP(PrintStream w) {
+		PrintWriter pw = new PrintWriter(new OutputStreamWriter(w));
+		genPEP(pw);
+		pw.flush();
+	}
+
+	public void Grammar.genPEP(PrintWriter w) {
+		genImport(w);
+		genHeader(w);
+		genCategories(w);
+		genConstructor(w);
+		genParseMethod(w);
+		genFooter(w);
+	}
+}
