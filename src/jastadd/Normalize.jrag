@@ -40,6 +40,117 @@ aspect Normalize {
 		flushAttrCache();
 	}
 
+	public class SubsetGenerator<T> {
+		java.util.List<T> l;
+		int n = 0;
+		SubsetGenerator(java.util.List<T> l) {
+			this.l = l;
+			assert l.size() <= 31;
+		}
+
+		boolean hasNext() {
+			return (n < (1 << l.size()));
+		}
+
+		Set<T> next() {
+			java.util.Set<T> r = new HashSet<T>();
+			for (int i = 0, tmp = n; tmp != 0; i++, tmp >>>= 1) {
+				if ((tmp & 1) != 0) {
+					r.add(l.get(i));
+				}
+			}
+			n++;
+			return r;
+		}
+	}
+
+	public static String Definition.replaceVariable(String code, String name, boolean isPresent, boolean isList) {
+		if (code == null)
+			return null;
+
+		String pattern = "([ (),=+])(" + name + ")([ ,)\\.+=;])";
+		Pattern p = Pattern.compile(pattern);
+		Matcher matcher = p.matcher(code);
+		StringBuffer sb = new StringBuffer();
+		while (matcher.find()) {
+			if (isPresent) {
+				if (isList) {
+					matcher.appendReplacement(sb, "$1$2$3");
+				} else {
+					matcher.appendReplacement(sb, "$1new Opt($2)$3");
+				}
+			} else {
+				if (isList) {
+					matcher.appendReplacement(sb, "$1new List()$3");
+				} else {
+					matcher.appendReplacement(sb, "$1new Opt()$3");
+				}
+			}
+		}
+		matcher.appendTail(sb);
+		return sb.toString();
+	}
+
+	public java.util.List<Definition> Definition.removeOpt() {
+		java.util.List<Integer> optIdx = new ArrayList<Integer>();
+		java.util.List<Definition> ret = new ArrayList<Definition>();
+		for (int i = 0; i < getNumElement(); i++) {
+			assert !getElement(i).isList() : "Lists are not supported";
+			if (getElement(i).isOptional())
+				optIdx.add(i);
+		}
+
+		SubsetGenerator<Integer> sg = new SubsetGenerator<Integer>(optIdx);
+		while (sg.hasNext()) {
+			Set<Integer> opts = sg.next();
+			Definition d = new Definition();
+			String code = getCODE();
+
+			for (int i = 0; i < getNumElement(); i++) {
+				Element e = getElement(i);
+				if (e.isOptional()) {
+					if (opts.contains(i)) {
+						// build a non-optional element
+						Element ne = new Element();
+						ne.setIdUse(e.getIdUse().treeCopyNoTransform());
+						ne.setNameOpt(e.getNameOpt().treeCopyNoTransform());
+						d.addElement(ne);
+						if (e.isNonTerminal())
+							code = replaceVariable(code, e.alias(), true, e.type().equals("List"));
+					} else {
+						if (e.isNonTerminal())
+							code = replaceVariable(code, e.alias(), false, e.type().equals("List"));
+					}
+				} else {
+					d.addElement(e.treeCopyNoTransform());
+				}
+			}
+			d.setCODE(code);
+
+			ret.add(d);
+		}
+
+		return ret;
+	}
+
+	public void Rule.removeOpt() {
+		java.util.List<Definition> newDefs = new ArrayList<Definition>();
+		for (int i = getNumDefinition() - 1; i >= 0; --i) {
+			Definition d = getDefinition(i);
+			java.util.List<Definition> expanded = d.removeOpt();
+			if (expanded.size() != 0) {
+				newDefs.addAll(expanded);
+				getDefinitionList().removeChild(i);
+			}
+		}
+		getDefinitionList().addAll(newDefs);
+	}
+
+	public void Grammar.removeOpt() {
+		for (Rule r : rules())
+			r.removeOpt();
+	}
+
 	syn Set<Rule> Rule.chain() circular [new HashSet<Rule>()] {
 		HashSet<Rule> newChain = (HashSet<Rule>) chain();
 		for (Definition d : getDefinitions()) {

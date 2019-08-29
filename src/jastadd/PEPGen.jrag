@@ -8,8 +8,11 @@ aspect PEPGen {
 		}
 
 		w.println("import edu.osu.ling.pep.*;");
-		w.println("import java.util.List;");
+		w.println("import java.lang.Iterable;");
 		w.println("import java.util.Set;");
+		w.println("import java.util.Map;");
+		w.println("import java.lang.StringBuffer;");
+		w.println("import beaver.Symbol;");
 
 	}
 
@@ -22,11 +25,11 @@ aspect PEPGen {
 
 	private void Grammar.genCategories(PrintWriter w) {
 		for (String s : terminals()) {
-			w.printf("public Category t_%s = new Category(\"%s\");\n", s, s);
+			w.printf("public static Category t_%s = new Category(\"%s\", /*terminal*/ true);\n", s, s);
 		}
 		w.println();
 		for (Rule r : rules()) {
-			w.printf("public Category n_%s = new Category(\"%s\", /*terminal*/false);\n",
+			w.printf("public static Category n_%s = new Category(\"%s\", /*terminal*/ false);\n",
 					 r.getIdDecl().getID(), r.getIdDecl().getID());
 		}
 		w.println();
@@ -34,21 +37,25 @@ aspect PEPGen {
 
 	private void Grammar.genConstructor(PrintWriter w) {
 		w.printf("public %s() {\n", CLASS_NAME);
-		genRules(w);
+		w.println("addRules(grammar);");
 		w.println("}");
 	}
 
 	private void Grammar.genParseMethod(PrintWriter w) {
-		w.println("public Set<ParseTree> parse(List<String> tokens, Category startSymbol) throws PepException {");
+		w.println("public Set<ParseTree> parse(Iterable<String> tokens, Category startSymbol) throws PepException {");
 		w.println("return parser.parse(tokens, startSymbol).getParseTrees();");
 		w.println("}");
 	}
 
 	private void Grammar.genRules(PrintWriter w) {
+		w.println("public static void addRules(Grammar g) {");
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
+				// silently drop empty productions
+				if (d.getNumElement() == 0)
+					continue;
 				// use qualified names here to avoid clashes
-				w.print("grammar.addRule(new edu.osu.ling.pep.Rule(");
+				w.print("g.addRule(new edu.osu.ling.pep.Rule(");
 				w.printf("n_%s", r.getIdDecl().getID());
 				for (Element e : d.getElements()) {
 					if (e.isNonTerminal()) {
@@ -60,7 +67,7 @@ aspect PEPGen {
 				w.println("));");
 			}
 		}
-		w.println();
+		w.println("}");
 	}
 
 	private void Grammar.genFooter(PrintWriter w) {
@@ -77,8 +84,61 @@ aspect PEPGen {
 		genImport(w);
 		genHeader(w);
 		genCategories(w);
+		genRules(w);
 		genConstructor(w);
-		genParseMethod(w);
+		// genParseMethod(w);
+		genRuleSignature(w);
+		genVisitor(w);
 		genFooter(w);
+	}
+
+	public void Grammar.genRuleSignature(PrintWriter w) {
+		w.println("public static String signature(final ParseTree pt) {");
+		w.println("StringBuffer sb = new StringBuffer(pt.getNode().getName());");
+		w.println("for (ParseTree ptc : pt.getChildren()) { sb.append('.'); sb.append(ptc.getNode().getName()); }");
+		w.println("return sb.toString();");
+		w.println("}");
+
+	}
+
+	public static String Grammar.replaceTokens(String code, String name) {
+		return null;
+	}
+
+
+	public void Grammar.genVisitor(PrintWriter w) {
+		w.println("public static Symbol visit(final Map<ParseTree, Symbol> pt2s, final ParseTree pt) {");
+		w.println("switch (signature(pt)) {");
+		w.println("default: return null;");
+		for (Rule r : rules()) {
+			for (Definition d : r.getDefinitions()) {
+				StringBuffer sb = new StringBuffer(r.getIdDecl().getID());
+				for (Element e : d.getElements()) {
+					sb.append(".");
+					sb.append(e.getIdUse().getID());
+				}
+
+				w.printf("case \"%s\": {\n", sb.toString());
+				if (d.getCODE() != null && d.getCODE().length() != 0) {
+					for (int i = 0; i < d.getNumElement(); ++i) {
+						Element e = d.getElement(i);
+						if (!d.getCODE().contains(e.alias()))
+							continue;
+						if (e.isNonTerminal()) {
+							w.printf("%s %s = (%s) pt2s.get(pt.getChildren()[%d])%s;\n", e.type(), e.alias(), e.type(), i,
+									 e.type().equals("String") ? ".value" : "");
+						} else {
+							w.printf("Symbol %s = pt2s.get(pt.getChildren()[%d]);\n", e.alias(), i);
+						}
+					}
+					w.println(d.getCODE());
+				} else {
+					w.println("return pt2s.get(pt.getChildren()[0]);");
+				}
+				w.println("}");
+			}
+		}
+		w.println("}");
+		w.println("}");
 	}
 }

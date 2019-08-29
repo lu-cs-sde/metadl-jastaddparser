@@ -105,6 +105,7 @@ public class Main {
         FileOutputStream os = new FileOutputStream(args[destIndex]);
         PrintStream out = new PrintStream(os);
 		if (pep) {
+		  root.removeOpt();
 		  root.addPatternGrammarClauses();
 		  root.oneRule();
 		  root.genPEP(out);
