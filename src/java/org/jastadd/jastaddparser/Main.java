@@ -112,10 +112,6 @@ public class Main {
 		  out.flush();
 		}
 		if (patternGrammar) {
-		  Graph<String, GrammarEdgeType> g = root.buildGrammarGraph();
-		  Grammar.exportGrammarGraph(g, dest + ".xdot");
-		  // root.oneRule();
-		  // root.eliminateChainRules();
 		  root.addPatternGrammarClauses();
 		}
 		if (!pep) {

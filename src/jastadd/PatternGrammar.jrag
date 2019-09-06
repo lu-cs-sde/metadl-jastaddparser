@@ -8,217 +8,23 @@ import java.io.*;
 
 
 aspect PatternGrammar {
-	syn boolean Grammar.rulesMayBeEmpty(String name) circular [true] {
-		for (Rule l : rule(name)) {
-			if (l.maybeEmpty()) {
-				return true;
-			}
-		}
-		return false;
-	}
+
 
 	inh Grammar Clause.getGrammar();
 	eq Grammar.getClause().getGrammar() = this;
 	inh Grammar Element.getGrammar();
 	inh Grammar Definition.getGrammar();
 
-	syn boolean Definition.maybeEmpty() circular [true] {
-		// trivially empty
-		if (getNumElement() == 0)
-			return true;
-		// may be empty if there are no terminals and
-		// all the non-terminals may be empty
-		for (Element e : getElements()) {
-			if (!e.isNonTerminal()) {
-				return false;
-			} else if (e instanceof OptionalElement
-					   || e instanceof ListElement) {
-				// skip, Optional and List may be empty
-			} else {
-				Grammar g = getGrammar();
-				if (!g.rulesMayBeEmpty(e.getIdUse().getID()))
-					return false;
-			}
-		}
-
-		return true;
-	}
-
-	syn boolean Rule.maybeEmpty() circular [true] {
-		for (Definition d : getDefinitions()) {
-			if (d.maybeEmpty())
-				return true;
-		}
-		return false;
-	}
-
-	syn boolean Element.includes(Rule other) circular [false] {
-		if (getIdUse().getID().equals(other.getIdDecl().getID()))
-			return true;
-
-		for (Rule l : getGrammar().rule(getIdUse().getID())) {
-			if (l.includes(other))
-				return true;
-		}
-		return false;
-	}
 
 	inh Definition Element.parentDefinition();
 	eq Definition.getElement().parentDefinition() = this;
 	inh Rule Definition.parentRule();
 	eq Rule.getDefinition().parentRule() = this;
 
-	syn boolean Element.includes(Element other) circular [false] {
-		for (Rule r : getGrammar().rule(getIdUse().getID()))
-			for (Rule l : getGrammar().rule(other.getIdUse().getID()))
-				if (r.includes(l))
-					return true;
-		return false;
-	}
-
-	syn boolean Definition.includes(Rule other) circular [false] {
-		String otherName = other.getIdDecl().getID();
-		boolean present = false;
-		Grammar g = getGrammar();
-
-		for (Element e : getElements()) {
-			if (!e.isNonTerminal())
-				return false;
-			if (e.getIdUse().getID().equals(otherName))
-				present = true;
-		}
-
-		if (!present)
-			return false;
-
-		for (Element e : getElements()) {
-			if (!e.includes(other))
-				continue;
-			// e can clash with other; if the other elements can be empty
-			// then this rule can clash with the other rule
-			for (Element f : getElements()) {
-				if (f != e && !g.rulesMayBeEmpty(f.getIdUse().getID()))
-					return false;
-			}
-		}
-
-		return true;
-	}
-
-	syn boolean Definition.isChain() {
-		if (getNumElement() != 1)
-			return false;
-		return getElement(0).isNonTerminal() && !getElement(0).isList();
-	}
-
-	syn boolean Definition.isTerminal() {
-		for (Element e : getElements())
-			if (e.isNonTerminal())
-				return false;
-		return true;
-	}
-
-	syn boolean Rule.isTerminal() {
-		for (Definition d : getDefinitions())
-			if (!d.isTerminal())
-				return false;
-		return true;
-	}
-
-	syn boolean Element.isTerminal() {
-		for (Rule r : getGrammar().rule(getIdUse().getID()))
-			if (r.isTerminal())
-				return true;
-		return false;
-	}
-
 	syn String Element.type() {
 		for (Rule r : getGrammar().rule(getIdUse().getID()))
 			return r.type();
 		return null;
-	}
-
-	syn boolean Rule.includes(Rule other) circular [false] {
-		for (Definition d : getDefinitions()) {
-			if (d.includes(other))
-				return true;
-		}
-
-		// transitive closure
-		for (Rule t : getGrammar().rules())
-			if (includes(t) && t.includes(other))
-				return true;
-
-		return false;
-	}
-
-	syn boolean Rule.includes(String other) {
-		for (Rule r : getGrammar().rule(other)) {
-			if (includes(r))
-				return true;
-		}
-		return false;
-	}
-
-	public class GrammarEdgeType {
-		private String type;
-		private GrammarEdgeType(String type) { this.type = type; }
-		public static GrammarEdgeType use() {
-			return new GrammarEdgeType("USE");
-		}
-		public static GrammarEdgeType include() {
-			return new GrammarEdgeType("INCLUDE");
-		}
-		public String toString() { return type; }
-		public boolean isUse() { return type.equals("USE"); }
-    }
-
-	public Graph<String, GrammarEdgeType> Grammar.buildGrammarGraph() {
-		Graph<String, GrammarEdgeType> directedGraph =
-            new DefaultDirectedGraph<String, GrammarEdgeType>(GrammarEdgeType.class);
-
-		for (Rule r : rules()) {
-			for (Definition d : r.getDefinitions()) {
-				for (Element e : d.getElements()) {
-					if (!e.isNonTerminal())
-						continue;
-					directedGraph.addVertex(r.getIdDecl().getID());
-					directedGraph.addVertex(e.getIdUse().getID());
-
-					GrammarEdgeType et;
-					if (r.includes(e.getIdUse().getID()))
-						et = GrammarEdgeType.include();
-					else
-						et = GrammarEdgeType.use();
-
-					directedGraph.addEdge(r.getIdDecl().getID(), e.getIdUse().getID(), et);
-				}
-			}
-		}
-
-		return directedGraph;
-	}
-
-	public static void Grammar.exportGrammarGraph(Graph<String, GrammarEdgeType> g, String file) {
-		DOTExporter<String, GrammarEdgeType> exporter = new DOTExporter<String, GrammarEdgeType>
-			(new ComponentNameProvider<String>() {
-				 @Override public String getName(String t) { return t; }
-			 },
-			 null, /* vertexLabelProvider */
-			 null, /* edgeLabelProvider */
-			 null, /* vertexAttributeProvider */
-			 new ComponentAttributeProvider<GrammarEdgeType>() {
-				 @Override public Map<String, Attribute> getComponentAttributes(GrammarEdgeType e) {
-					 return Collections.singletonMap("color",
-													 DefaultAttribute.createAttribute(e.isUse() ? "blue" : "red"));
-				 }
-			 });
-		try {
-			Writer writer = new FileWriter(file);
-			exporter.exportGraph(g, writer);
-		} catch (IOException e) {
-			System.err.println(e);
-		}
 	}
 
 	public java.util.List<String> Grammar.getRulePriority() {
@@ -317,16 +123,6 @@ aspect PatternGrammar {
 		return new Assoc(prec, new List(new IdUse(name)));
 	}
 
-	public void Grammar.replaceHeader(String s) {
-		for (Clause c : getClauses()) {
-			if (c instanceof Header) {
-				Header h = (Header)c;
-				h.setCODE(s);
-			}
-		}
-		flushAttrCache();
-	}
-
 	public void Grammar.addPatternGrammarClauses() {
 		ArrayList<Element> metaRuleElems = new ArrayList<Element>();
 		Set<Element> metaRuleListMember = new HashSet<Element>();
@@ -335,8 +131,6 @@ aspect PatternGrammar {
 
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
-				// if (d.isChain())
-				// 	continue;
 				for (Element e : d.getElements()) {
 					if (!e.isNonTerminal())
 						continue;

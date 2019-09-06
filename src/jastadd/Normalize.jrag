@@ -1,6 +1,9 @@
 import java.util.Collections;
 
-aspect Normalize {
+aspect OneRule {
+	// Ensure that for every non-terminal there is at most one rule that has the
+	// non-terminal on the RHS
+
 	coll Map<String, Rule> Grammar.ruleByName() [new HashMap<String, Rule>()] with putAll;
 	Rule contributes (Collections.singletonMap(getIdDecl().getID(), this)) to Grammar.ruleByName();
 
@@ -39,8 +42,12 @@ aspect Normalize {
 
 		flushAttrCache();
 	}
+}
 
+aspect RemoveOpt {
+	// Remove optional elements from the RHS.
 	public class SubsetGenerator<T> {
+		// WARNING: this is limited to lists of up to 31 elements.
 		java.util.List<T> l;
 		int n = 0;
 		SubsetGenerator(java.util.List<T> l) {
@@ -149,80 +156,5 @@ aspect Normalize {
 	public void Grammar.removeOpt() {
 		for (Rule r : rules())
 			r.removeOpt();
-	}
-
-	syn Set<Rule> Rule.chain() circular [new HashSet<Rule>()] {
-		HashSet<Rule> newChain = (HashSet<Rule>) chain();
-		for (Definition d : getDefinitions()) {
-			if (d.isChain()) {
-				Rule r = getGrammar().ruleByName().get(d.getElement(0).getIdUse().getID());
-				newChain.add(r);
-				newChain.addAll(r.chain());
-			}
-		}
-		return newChain;
-	}
-
-
-	// From:
-	// chainSrc := chainDst {: return new Wrapper(chainDst); :}
-	// chainDst := A B {: return new C(A, B); :}
-	// Generate:
-	// chainSrc := A B {: return new Wrapper(new C(A, B) ); :}
-	public static String Grammar.composeCode(String chainSrc, String chainDst, String varName) {
-		Pattern dstPattern = Pattern.compile("(\\b*)return(.*);(\\b*)");
-		Matcher dstMatcher = dstPattern.matcher(chainDst);
-
-		if (!dstMatcher.matches())
-			return null;
-
-		String code = dstMatcher.group(2);
-
-		if (chainSrc.indexOf(varName) < 0)
-			return null;
-		if (chainSrc.indexOf(varName) != chainSrc.lastIndexOf(varName))
-			return null;
-
-		return chainSrc.replace(varName, code);
-	}
-
-	syn String Element.varName() {
-		if (hasName())
-			return getName().getID();
-		return getIdUse().getID();
-	}
-
-	public void Grammar.eliminateChainRules() {
-		boolean change = false;
-		do {
-			change = false;
-			for (Rule r : rules()) {
-				ArrayList<Integer> removeList = new ArrayList<Integer>();
-
-				for (int i = r.getNumDefinition() - 1; i >= 0; --i) {
-					Definition d = r.getDefinition(i);
-					if (d.isChain()) {
-						Rule chainedRule = ruleByName().get(d.getElement(0).getIdUse().getID());
-						for (Definition chainedDef : chainedRule.getDefinitions()) {
-							Definition newDef = chainedDef.treeCopyNoTransform();
-							r.addDefinition(newDef);
-							if (!d.getCODE().isEmpty()) {
-								String chainedCode;
-								if (!chainedDef.getCODE().isEmpty()) {
-									chainedCode = Grammar.composeCode(d.getCODE(), chainedDef.getCODE(), d.getElement(0).varName());
-								} else {
-									chainedCode = d.getCODE().replace(d.getElement(0).varName(), chainedDef.getElement(0).varName());
-								}
-								newDef.setCODE(chainedCode);
-							}
-						}
-						change = true;
-						System.out.println("Removing production: " + r.getIdDecl().getID() + " -> " +
-										   r.getDefinition(i).getElement(0).getIdUse().getID());
-						r.getDefinitionList().removeChild(i);
-					}
-				}
-			}
-		} while (change);
 	}
 }
