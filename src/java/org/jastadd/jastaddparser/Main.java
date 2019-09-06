@@ -108,6 +108,7 @@ public class Main {
 		  root.removeOpt();
 		  root.addPatternGrammarClauses();
 		  root.oneRule();
+		  root.removeRedundantMetaVars();
 		  root.genPEP(out);
 		  out.flush();
 		}
