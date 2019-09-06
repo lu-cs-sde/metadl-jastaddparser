@@ -5,7 +5,9 @@ import org.jgrapht.traverse.*;
 import org.jgrapht.io.*;
 import org.jgrapht.alg.connectivity.*;
 import java.io.*;
-
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Collections;
+import org.jastadd.jastaddparser.MetaRuleSolver;
 
 aspect PatternGrammar {
 
@@ -129,17 +131,28 @@ aspect PatternGrammar {
 		java.util.List<String> rulePriority = getRulePriority();
 		Set<String> goals = new TreeSet<String>();
 
-		for (Rule r : rules()) {
-			System.out.println(r.getIdDecl().getID() + ":::" + r.chainRules().toString());
 
+
+		MetaRuleSolver s = new MetaRuleSolver(this);
+		Set<String> allowedMetaVarRules = new HashSet<String>();
+		for (Rule r : s.solve()) {
+			allowedMetaVarRules.add(r.getIdDecl().getID());
+			// System.out.println("MV: " + r.getIdDecl().getID());
+		}
+
+		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
 					if (!e.isNonTerminal())
 						continue;
 					if (e.type().equals("List") || e.type().equals("String"))
 						continue;
+					if (!allowedMetaVarRules.contains(e.getIdUse().getID()))
+						continue;
 					metaRuleElems.add(e);
-					if (r.type().equals("List"))
+					// TODO: improve the solver to handles lists. For now we add
+					// gap productions everywhere
+					if (true || r.type().equals("List"))
 						metaRuleListMember.add(e);
 				}
 			}
@@ -231,6 +244,34 @@ aspect PatternGrammar {
 			}
 		}
 		return chainedRules;
+	}
+
+	public class HashSetMap<K, V> extends HashMap<K, Set<V>> {
+		public void append(Map.Entry<K, V> e) {
+			Set<V> s = get(e.getKey());
+			if (s == null) {
+				s = new HashSet<V>();
+				put(e.getKey(), s);
+			}
+			s.add(e.getValue());
+		}
+	}
+
+	coll HashSetMap<Rule, Element> Grammar.ruleUses() [new HashSetMap<Rule, Element>()] with append;
+	Element contributes
+		new SimpleEntry<Rule, Element>(getGrammar().ruleByName().get(getIdUse().getID()), this)
+		when isNonTerminal()
+		to Grammar.ruleUses();
+
+	syn boolean Rule.hasNonTrivialUses() {
+		if (!getGrammar().ruleUses().containsKey(this))
+			return false;
+
+		for (Element e : getGrammar().ruleUses().get(this)) {
+			if (!e.isTrivialChain())
+				return true;
+		}
+		return false;
 	}
 
 	syn boolean Rule.hasMetaVar() {

@@ -107,6 +107,12 @@ public class Main {
 		if (pep) {
 		  root.removeOpt();
 		  root.oneRule();
+		  MetaRuleSolver s = new MetaRuleSolver(root);
+
+		  for (Rule r : s.solve()) {
+			  System.out.println("MV: " + r.getIdDecl().getID());
+		  }
+
 		  root.addPatternGrammarClauses();
 		  // root.removeRedundantMetaVars();
 		  root.genPEP(out);

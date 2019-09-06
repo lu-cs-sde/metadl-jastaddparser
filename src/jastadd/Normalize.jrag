@@ -40,7 +40,7 @@ aspect OneRule {
 			getClauseList().removeChild(i);
 		}
 
-		flushAttrCache();
+		flushTreeCache();
 	}
 }
 
@@ -133,7 +133,6 @@ aspect RemoveOpt {
 				}
 			}
 			d.setCODE(code);
-
 			ret.add(d);
 		}
 
@@ -156,5 +155,6 @@ aspect RemoveOpt {
 	public void Grammar.removeOpt() {
 		for (Rule r : rules())
 			r.removeOpt();
+		flushTreeCache();
 	}
 }
