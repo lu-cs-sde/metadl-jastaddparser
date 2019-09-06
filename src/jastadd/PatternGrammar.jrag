@@ -130,6 +130,8 @@ aspect PatternGrammar {
 		Set<String> goals = new TreeSet<String>();
 
 		for (Rule r : rules()) {
+			System.out.println(r.getIdDecl().getID() + ":::" + r.chainRules().toString());
+
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
 					if (!e.isNonTerminal())
@@ -216,6 +218,19 @@ aspect PatternGrammar {
 		if (getNumElement() != 1)
 			return false;
 		return getElement(0).getIdUse().getID().equals("METAVARID");
+	}
+
+	syn Set<Rule> Rule.chainRules() {
+		HashSet<Rule> chainedRules = new HashSet<Rule>();
+		for (Definition d : getDefinitions()) {
+			if (d.isTrivialChain()) {
+				String ruleId = d.getElement(0).getIdUse().getID();
+				Rule r = getGrammar().ruleByName().get(ruleId);
+				chainedRules.add(r);
+				chainedRules.addAll(r.chainRules());
+			}
+		}
+		return chainedRules;
 	}
 
 	syn boolean Rule.hasMetaVar() {

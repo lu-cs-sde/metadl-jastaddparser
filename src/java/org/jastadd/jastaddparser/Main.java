@@ -106,9 +106,9 @@ public class Main {
         PrintStream out = new PrintStream(os);
 		if (pep) {
 		  root.removeOpt();
-		  root.addPatternGrammarClauses();
 		  root.oneRule();
-		  root.removeRedundantMetaVars();
+		  root.addPatternGrammarClauses();
+		  // root.removeRedundantMetaVars();
 		  root.genPEP(out);
 		  out.flush();
 		}
