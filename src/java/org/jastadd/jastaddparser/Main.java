@@ -49,7 +49,6 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.AbstractBaseGraph;
 import org.jastadd.jastaddparser.ast.ASTNode;
 import org.jastadd.jastaddparser.ast.Grammar;
-import org.jastadd.jastaddparser.ast.GrammarEdgeType;
 import org.jastadd.jastaddparser.ast.Rule;
 
 public class Main {

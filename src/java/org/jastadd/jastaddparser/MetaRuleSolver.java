@@ -19,7 +19,6 @@ import org.jacop.search.Search;
 import org.jacop.search.SelectChoicePoint;
 import org.jacop.search.SimpleSelect;
 import org.jastadd.jastaddparser.ast.Grammar;
-import org.jastadd.jastaddparser.ast.GrammarEdgeType;
 import org.jastadd.jastaddparser.ast.Rule;
 
 public class MetaRuleSolver {
