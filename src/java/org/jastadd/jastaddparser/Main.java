@@ -58,6 +58,7 @@ public class Main {
       boolean useTokenlist = false;
 	  boolean patternGrammar = false;
 	  boolean pep = false;
+	  boolean sep = false;
       if (args[0].equals("--version")) {
         System.out.println("JastAddParser version " + versionString());
         System.exit(0);
@@ -70,8 +71,10 @@ public class Main {
 		patternGrammar = true;
 	  } else if (args[0].equals("--pep")) {
 		pep = true;
+	  } else if (args[0].equals("--sep")) {
+		sep = true;
 	  }
-      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !pep) {
+      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !pep && !sep) {
         System.err.println("Unrecognized option \"" + args[0] + '\"');
         System.exit(1);
       }
@@ -117,10 +120,19 @@ public class Main {
 		  root.genPEP(out);
 		  out.flush();
 		}
+		if (sep) {
+		  root.removeOpt();
+		  root.oneRule();
+		  root.addPatternGrammarClauses();
+		  // root.removeRedundantMetaVars();
+		  root.genSEP(out);
+		  out.flush();
+		}
+
 		if (patternGrammar) {
 		  root.addPatternGrammarClauses();
 		}
-		if (!pep) {
+		if (!pep && !sep) {
 		  root.genCode(out, noBeaverSymbol,useTokenlist);
 		}
         out.close();
