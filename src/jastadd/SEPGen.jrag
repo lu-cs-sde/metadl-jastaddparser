@@ -76,12 +76,12 @@ aspect SEPGen {
 		genCategories(w);
 		genRulesSEP(w);
 		genConstructorSEP(w);
-		genVisitorSEP(w);
+		genSemanticAction(w);
 		genFooterSEP(w);
 	}
 
-	public void Grammar.genVisitorSEP(PrintWriter w) {
-		w.println("public static Symbol visit(final Map<SPPFNode, Symbol> pt2s, final java.util.List<Symbol> children, final String signature) {");
+	public void Grammar.genSemanticAction(PrintWriter w) {
+		w.println("public static Symbol doAction(final java.util.List<Symbol> children, final String signature) {");
 		w.println("switch (signature) {");
 		w.println("default: return null;");
 		for (Rule r : rules()) {
@@ -99,15 +99,15 @@ aspect SEPGen {
 						if (!d.getCODE().contains(e.alias()))
 							continue;
 						if (e.isNonTerminal()) {
-							w.printf("%s %s = (%s) pt2s.get(children.get(%d))%s;\n", e.type(), e.alias(), e.type(), i,
+							w.printf("%s %s = (%s) children.get(%d)%s;\n", e.type(), e.alias(), e.type(), i,
 									 e.type().equals("String") ? ".value" : "");
 						} else {
-							w.printf("Symbol %s = pt2s.get(children.get(%d));\n", e.alias(), i);
+							w.printf("Symbol %s = children.get(%d);\n", e.alias(), i);
 						}
 					}
 					w.println(d.getCODE());
 				} else {
-					w.println("return pt2s.get(children.get(0));");
+					w.println("return children.get(0);");
 				}
 				w.println("}");
 			}
