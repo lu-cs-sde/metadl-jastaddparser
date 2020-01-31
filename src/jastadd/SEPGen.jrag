@@ -15,18 +15,19 @@ aspect SEPGen {
 		w.println("import se.lth.sep.Category;");
 		w.println("import se.lth.sep.EarleyParser;");
 		w.println("import se.lth.sep.Grammar;");
+		w.println("import se.lth.sep.SPPFNode;");
 	}
 
 	private void Grammar.genHeaderSEP(PrintWriter w) {
 		w.printf("public class %s {\n", SEP_CLASS_NAME);
-		w.println("private Grammar grammar = new Grammar();");
-		w.println("private EarleyParser parser = new EarleyParser(grammar);");
+		// w.println("private Grammar grammar = new Grammar();");
+		// w.println("private EarleyParser parser = new EarleyParser(grammar);");
 		w.println();
 	}
 
 	private void Grammar.genConstructorSEP(PrintWriter w) {
-		w.printf("public %s() {\n", SEP_CLASS_NAME);
-		w.println("addRules(grammar);");
+		w.printf("private %s() {\n", SEP_CLASS_NAME);
+		// w.println("addRules(grammar);");
 		w.println("}");
 	}
 
@@ -75,21 +76,13 @@ aspect SEPGen {
 		genCategories(w);
 		genRulesSEP(w);
 		genConstructorSEP(w);
-		genRuleSignatureSEP(w);
-		// genVisitorSEP(w);
+		genVisitorSEP(w);
 		genFooterSEP(w);
 	}
 
-	public void Grammar.genRuleSignatureSEP(PrintWriter w) {
-		w.println("public static String signature(Object o) {");
-		w.println("return null;");
-		w.println("}");
-
-	}
-
 	public void Grammar.genVisitorSEP(PrintWriter w) {
-		w.println("public static Symbol visit(final Map<ParseTree, Symbol> pt2s, final ParseTree pt) {");
-		w.println("switch (signature(pt)) {");
+		w.println("public static Symbol visit(final Map<SPPFNode, Symbol> pt2s, final java.util.List<Symbol> children, final String signature) {");
+		w.println("switch (signature) {");
 		w.println("default: return null;");
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
@@ -106,15 +99,15 @@ aspect SEPGen {
 						if (!d.getCODE().contains(e.alias()))
 							continue;
 						if (e.isNonTerminal()) {
-							w.printf("%s %s = (%s) pt2s.get(pt.getChildren()[%d])%s;\n", e.type(), e.alias(), e.type(), i,
+							w.printf("%s %s = (%s) pt2s.get(children.get(%d))%s;\n", e.type(), e.alias(), e.type(), i,
 									 e.type().equals("String") ? ".value" : "");
 						} else {
-							w.printf("Symbol %s = pt2s.get(pt.getChildren()[%d]);\n", e.alias(), i);
+							w.printf("Symbol %s = pt2s.get(children.get(%d));\n", e.alias(), i);
 						}
 					}
 					w.println(d.getCODE());
 				} else {
-					w.println("return pt2s.get(pt.getChildren()[0]);");
+					w.println("return pt2s.get(children.get(0));");
 				}
 				w.println("}");
 			}

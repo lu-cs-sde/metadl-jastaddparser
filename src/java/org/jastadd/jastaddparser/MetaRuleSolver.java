@@ -59,7 +59,7 @@ public class MetaRuleSolver {
 			}
 		}
 
-		System.out.println(store);
+		// System.out.println(store);
 
 		IntVar[] allVarsArray = allVars.toArray(new IntVar[allVars.size()]);
 
