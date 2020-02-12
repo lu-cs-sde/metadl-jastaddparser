@@ -85,7 +85,7 @@ aspect PatternGrammar {
 			metaVarDef.addElement(el);
 			Precedence prec = new Precedence(new IdUse("PREC_1_" + name));
 			metaVarDef.addPrecedence(prec);
-			String code = "new MetaVariable(id);";
+			String code = "return new MetaVariable(id);";
 			metaVarDef.setCODE(code);
 			metaOrConcreteNoGapRule.addDefinition(metaVarDef);
 
