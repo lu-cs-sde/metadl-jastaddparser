@@ -122,23 +122,69 @@ aspect SEPGen {
 			String type = r.type();
 
 			assert !catToType.containsKey(name) || catToType.get(name).equals(type);
-
 			catToType.put(name, type);
 		}
 		return catToType;
 	}
 
+	private Map<String, String> Grammar.computeListElementTypeMap() {
+		// This is a special handlin of lists, which are typically defined as
+		// l -> e
+		// l -> l, e
+		//
+		// When pushing the metavariables up, we may end up with a tree
+		// that is l -> METAVARID, where the type of l (i.e. List) can't be
+		// use to build the AST node with the right type.
+
+		TreeMap<String, String> catToType = new TreeMap<String, String>();
+		for (Rule r : rules()) {
+			String name = r.getIdDecl().getID();
+
+			if (!r.type().equals("List"))
+				continue;
+
+			HashSet<String> possibleTypes = new HashSet<String>();
+			for (Definition d : r.getDefinitions()) {
+				for (Element e : d.getElements()) {
+					if (e.isNonTerminal() && !e.type().equals("List")) {
+						possibleTypes.add(e.type());
+					}
+				}
+			}
+			if (possibleTypes.size() == 1) {
+				String type = possibleTypes.iterator().next();
+				assert !catToType.containsKey(name) || catToType.get(name).equals(type);
+				catToType.put(name, type);
+			}
+
+		}
+		return catToType;
+
+	}
+
 	public void Grammar.genCategoryToMetaVarType(PrintWriter w) {
 		Map<String, String> catToType = computeTypeMap();
+		Map<String, String> catToElemType = computeListElementTypeMap();
 
 		w.println("public static Symbol buildMetaVar(Category c, MetaVariable mv) {");
 		w.println("switch (c.getName()) {");
 		w.println("default: return null;");
 		for (Map.Entry<String, String> ct : catToType.entrySet()) {
-			if (ct.getValue().equals("List") ||
-				ct.getValue().equals("String"))
+			if (ct.getValue().equals("String"))
 				continue;
-			w.printf("case \"%s\": return new MetaVar%s().setVar(mv);\n", ct.getKey(), ct.getValue());
+			if (ct.getValue().equals("List")) {
+				String elementType = catToElemType.get(ct.getKey());
+				if (elementType != null) {
+					if (!elementType.equals("String")) {
+						w.printf("case \"%s\": return new List(new MetaVar%s().setVar(mv));\n", ct.getKey(), elementType);
+					}
+				} else {
+					System.err.println("Unable to infer type of list element in " + ct.getKey());
+					// System.exit(1);
+				}
+			} else {
+				w.printf("case \"%s\": return new MetaVar%s().setVar(mv);\n", ct.getKey(), ct.getValue());
+			}
 		}
 		w.println("}");
 		w.println("}");
