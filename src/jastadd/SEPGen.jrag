@@ -109,9 +109,53 @@ aspect SEPGen {
 		genHeaderSEP(w);
 		genCategories(w);
 		genRulesSEP(w);
+		genCategoryToMetaVarType(w);
 		genConstructorSEP(w);
 		// genTrivialRulePredicate(w);
 		genFooterSEP(w);
+	}
+
+	private Map<String, String> Grammar.computeTypeMap() {
+		TreeMap<String, String> catToType = new TreeMap<String, String>();
+		for (Rule r : rules()) {
+			String name = r.getIdDecl().getID();
+			String type = r.type();
+
+			assert !catToType.containsKey(name) || catToType.get(name).equals(type);
+
+			catToType.put(name, type);
+		}
+		return catToType;
+	}
+
+	public void Grammar.genCategoryToMetaVarType(PrintWriter w) {
+		Map<String, String> catToType = computeTypeMap();
+
+		w.println("public static Symbol buildMetaVar(Category c, MetaVariable mv) {");
+		w.println("switch (c.getName()) {");
+		w.println("default: return null;");
+		for (Map.Entry<String, String> ct : catToType.entrySet()) {
+			if (ct.getValue().equals("List") ||
+				ct.getValue().equals("String"))
+				continue;
+			w.printf("case \"%s\": return new MetaVar%s().setVar(mv);\n", ct.getKey(), ct.getValue());
+		}
+		w.println("}");
+		w.println("}");
+
+
+		w.println("public static Symbol buildGap(Category c) {");
+		w.println("switch (c.getName()) {");
+		w.println("default: return null;");
+		for (Map.Entry<String, String> ct : catToType.entrySet()) {
+			if (ct.getValue().equals("List") ||
+				ct.getValue().equals("String"))
+				continue;
+
+			w.printf("case \"%s\": return new Gap%s();\n", ct.getKey(), ct.getValue());
+		}
+		w.println("}");
+		w.println("}");
 	}
 
 	public void Grammar.genTrivialRulePredicate(PrintWriter w) {
