@@ -85,7 +85,7 @@ aspect PatternGrammar {
 			metaVarDef.addElement(el);
 			Precedence prec = new Precedence(new IdUse("PREC_1_" + name));
 			metaVarDef.addPrecedence(prec);
-			String code = "return new MetaVariable(id);";
+			String code = String.format("return new MetaVar%s().setVar(new MetaVariable(id));", type);
 			metaVarDef.setCODE(code);
 			metaOrConcreteNoGapRule.addDefinition(metaVarDef);
 
@@ -112,7 +112,7 @@ aspect PatternGrammar {
 			gapDef.addElement(el);
 			Precedence prec = new Precedence(new IdUse("PREC_2_" + name));
 			gapDef.addPrecedence(prec);
-			String code = "return new Gap();";
+			String code = String.format("return new Gap%s();", type);
 			gapDef.setCODE(code);
 			metaOrConcreteRule.addDefinition(gapDef);
 

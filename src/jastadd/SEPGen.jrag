@@ -16,6 +16,7 @@ aspect SEPGen {
 		w.println("import se.lth.sep.EarleyParser;");
 		w.println("import se.lth.sep.Grammar;");
 		w.println("import se.lth.sep.SPPFNode;");
+		w.println("import se.lth.sep.SemanticAction;");
 	}
 
 	private void Grammar.genHeaderSEP(PrintWriter w) {
@@ -37,6 +38,38 @@ aspect SEPGen {
 		w.println("}");
 	}
 
+	public String Definition.genSemanticAction(PrintWriter w) {
+		if (getCODE() != null && getCODE().length() != 0) {
+			String name = "semanticAction_" + hashCode();
+
+			w.println("SemanticAction semanticAction_" + hashCode() + " = new SemanticAction() {");
+			w.println("@Override public Object act(java.util.List<Object> children) {");
+			for (int i = 0; i < getNumElement(); ++i) {
+				Element e = getElement(i);
+				if (!getCODE().contains(e.alias()))
+					continue;
+				if (e.isNonTerminal()) {
+					boolean isString = e.type().equals("String");
+					if (isString) {
+						w.printf("String %s = (String) ((Symbol)(children.get(%d))).value;\n",
+								 e.alias(), i);
+					} else {
+						w.printf("%s %s = (%s) children.get(%d);\n", e.type(), e.alias(), e.type(), i);
+					}
+				} else {
+					w.printf("Symbol %s = (Symbol) children.get(%d);\n", e.alias(), i);
+				}
+			}
+			w.println(getCODE());
+			w.println("}\n};");
+
+			return name;
+		} else {
+			// no code, this is a passthrough
+			return "SemanticAction.PASSTHROUGH";
+		}
+	}
+
 	private void Grammar.genRulesSEP(PrintWriter w) {
 		w.println("public static void addRules(Grammar g) {");
 		for (Rule r : rules()) {
@@ -44,8 +77,9 @@ aspect SEPGen {
 				// silently drop empty productions
 				if (d.getNumElement() == 0)
 					continue;
+				String actionName = d.genSemanticAction(w);
 				// use qualified names here to avoid clashes
-				w.print("g.addRule(new se.lth.sep.Rule(");
+				w.print("g.addRule(new se.lth.sep.Rule(" + actionName + ", ");
 				w.printf("n_%s", r.getIdDecl().getID());
 				for (Element e : d.getElements()) {
 					if (e.isNonTerminal()) {
@@ -76,14 +110,13 @@ aspect SEPGen {
 		genCategories(w);
 		genRulesSEP(w);
 		genConstructorSEP(w);
-		genSemanticAction(w);
+		// genTrivialRulePredicate(w);
 		genFooterSEP(w);
 	}
 
-	public void Grammar.genSemanticAction(PrintWriter w) {
-		w.println("public static Symbol doAction(final java.util.List<Symbol> children, final String signature) {");
+	public void Grammar.genTrivialRulePredicate(PrintWriter w) {
+		w.println("public static boolean isTrivialRule(final String signature) {");
 		w.println("switch (signature) {");
-		w.println("default: return null;");
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				StringBuffer sb = new StringBuffer(r.getIdDecl().getID());
@@ -91,27 +124,12 @@ aspect SEPGen {
 					sb.append(".");
 					sb.append(e.getIdUse().getID());
 				}
-
-				w.printf("case \"%s\": {\n", sb.toString());
-				if (d.getCODE() != null && d.getCODE().length() != 0) {
-					for (int i = 0; i < d.getNumElement(); ++i) {
-						Element e = d.getElement(i);
-						if (!d.getCODE().contains(e.alias()))
-							continue;
-						if (e.isNonTerminal()) {
-							w.printf("%s %s = (%s) children.get(%d)%s;\n", e.type(), e.alias(), e.type(), i,
-									 e.type().equals("String") ? ".value" : "");
-						} else {
-							w.printf("Symbol %s = children.get(%d);\n", e.alias(), i);
-						}
-					}
-					w.println(d.getCODE());
-				} else {
-					w.println("return children.get(0);");
+				if (d.getCODE() == null || d.getCODE().length() == 0) {
+					w.printf("case \"%s\": return true;\n", sb.toString());
 				}
-				w.println("}");
 			}
 		}
+		w.println("default: return false; ");
 		w.println("}");
 		w.println("}");
 	}
