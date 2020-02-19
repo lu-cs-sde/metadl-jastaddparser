@@ -19,3 +19,6 @@ TEST*.xml
 # Gradle
 /.gradle
 /build/
+
+# Other
+/.settings
