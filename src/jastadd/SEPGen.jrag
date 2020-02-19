@@ -137,27 +137,38 @@ aspect SEPGen {
 		// use to build the AST node with the right type.
 
 		TreeMap<String, String> catToType = new TreeMap<String, String>();
-		for (Rule r : rules()) {
-			String name = r.getIdDecl().getID();
 
-			if (!r.type().equals("List"))
-				continue;
+		boolean change;
+		do {
+			change = false;
+			for (Rule r : rules()) {
+				String name = r.getIdDecl().getID();
 
-			HashSet<String> possibleTypes = new HashSet<String>();
-			for (Definition d : r.getDefinitions()) {
-				for (Element e : d.getElements()) {
-					if (e.isNonTerminal() && !e.type().equals("List")) {
-						possibleTypes.add(e.type());
+				if (!r.type().equals("List"))
+					continue;
+
+				HashSet<String> possibleTypes = new HashSet<String>();
+				for (Definition d : r.getDefinitions()) {
+					for (Element e : d.getElements()) {
+						if (e.isNonTerminal() && !e.type().equals("List")) {
+							possibleTypes.add(e.type());
+						} else if (e.isNonTerminal() &&
+								   e.type().equals("List") &&
+								   catToType.containsKey(e.getIdUse().getID())) {
+							possibleTypes.add(catToType.get(e.getIdUse().getID()));
+						}
 					}
 				}
+				if (possibleTypes.size() == 1) {
+					String type = possibleTypes.iterator().next();
+					assert !catToType.containsKey(name) || catToType.get(name).equals(type);
+					if (!catToType.containsKey(name))
+						change = true;
+					catToType.put(name, type);
+				}
 			}
-			if (possibleTypes.size() == 1) {
-				String type = possibleTypes.iterator().next();
-				assert !catToType.containsKey(name) || catToType.get(name).equals(type);
-				catToType.put(name, type);
-			}
+		} while (change);
 
-		}
 		return catToType;
 
 	}
@@ -194,11 +205,18 @@ aspect SEPGen {
 		w.println("switch (c.getName()) {");
 		w.println("default: return null;");
 		for (Map.Entry<String, String> ct : catToType.entrySet()) {
-			if (ct.getValue().equals("List") ||
-				ct.getValue().equals("String"))
+			if (ct.getValue().equals("String"))
 				continue;
-
-			w.printf("case \"%s\": return new Gap%s();\n", ct.getKey(), ct.getValue());
+			if (ct.getValue().equals("List")) {
+				String elementType = catToElemType.get(ct.getKey());
+				if (elementType != null) {
+					if (!elementType.equals("String")) {
+						w.printf("case \"%s\": return new List(new Gap%s());\n", ct.getKey(), elementType);
+					}
+				}
+			} else {
+				w.printf("case \"%s\": return new Gap%s();\n", ct.getKey(), ct.getValue());
+			}
 		}
 		w.println("}");
 		w.println("}");
