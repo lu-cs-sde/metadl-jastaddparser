@@ -1,7 +1,7 @@
 aspect SEPGen {
 	private static String Grammar.SEP_CLASS_NAME = "PatLangParserSEP";
 
-	private void Grammar.genImportSEP(PrintWriter w) {
+	private void Grammar.genImport(PrintWriter w) {
 		for (Clause c : getClauses()) {
 			if (c instanceof Header)
 				w.println(((Header)c).getCODE());
@@ -19,20 +19,20 @@ aspect SEPGen {
 		w.println("import se.lth.sep.SemanticAction;");
 	}
 
-	private void Grammar.genHeaderSEP(PrintWriter w) {
+	private void Grammar.genHeader(PrintWriter w) {
 		w.printf("public class %s {\n", SEP_CLASS_NAME);
 		// w.println("private Grammar grammar = new Grammar();");
 		// w.println("private EarleyParser parser = new EarleyParser(grammar);");
 		w.println();
 	}
 
-	private void Grammar.genConstructorSEP(PrintWriter w) {
+	private void Grammar.genConstructor(PrintWriter w) {
 		w.printf("private %s() {\n", SEP_CLASS_NAME);
 		// w.println("addRules(grammar);");
 		w.println("}");
 	}
 
-	private void Grammar.genParseMethodSEP(PrintWriter w) {
+	private void Grammar.genParseMethod(PrintWriter w) {
 		w.println("public Set<ParseTree> parse(Iterable<String> tokens, Category startSymbol) throws PepException {");
 		w.println("return parser.parse(tokens, startSymbol).getParseTrees();");
 		w.println("}");
@@ -70,7 +70,7 @@ aspect SEPGen {
 		}
 	}
 
-	private void Grammar.genRulesSEP(PrintWriter w) {
+	private void Grammar.genRules(PrintWriter w) {
 		w.println("public static void addRules(Grammar g) {");
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
@@ -94,8 +94,20 @@ aspect SEPGen {
 		w.println("}");
 	}
 
-	private void Grammar.genFooterSEP(PrintWriter w) {
+	private void Grammar.genFooter(PrintWriter w) {
 		w.println("}");
+	}
+
+	private void Grammar.genCategories(PrintWriter w) {
+		for (String s : terminals()) {
+			w.printf("public static Category t_%s = new Category(\"%s\", /*terminal*/ true);\n", s, s);
+		}
+		w.println();
+		for (Rule r : rules()) {
+			w.printf("public static Category n_%s = new Category(\"%s\", /*terminal*/ false);\n",
+					 r.getIdDecl().getID(), r.getIdDecl().getID());
+		}
+		w.println();
 	}
 
 	public void Grammar.genSEP(PrintStream w) {
@@ -105,14 +117,13 @@ aspect SEPGen {
 	}
 
 	public void Grammar.genSEP(PrintWriter w) {
-		genImportSEP(w);
-		genHeaderSEP(w);
+		genImport(w);
+		genHeader(w);
 		genCategories(w);
-		genRulesSEP(w);
+		genRules(w);
 		genCategoryToMetaVarType(w);
-		genConstructorSEP(w);
-		// genTrivialRulePredicate(w);
-		genFooterSEP(w);
+		genConstructor(w);
+		genFooter(w);
 	}
 
 	private Map<String, String> Grammar.computeTypeMap() {
@@ -218,26 +229,6 @@ aspect SEPGen {
 				w.printf("case \"%s\": return new Gap%s();\n", ct.getKey(), ct.getValue());
 			}
 		}
-		w.println("}");
-		w.println("}");
-	}
-
-	public void Grammar.genTrivialRulePredicate(PrintWriter w) {
-		w.println("public static boolean isTrivialRule(final String signature) {");
-		w.println("switch (signature) {");
-		for (Rule r : rules()) {
-			for (Definition d : r.getDefinitions()) {
-				StringBuffer sb = new StringBuffer(r.getIdDecl().getID());
-				for (Element e : d.getElements()) {
-					sb.append(".");
-					sb.append(e.getIdUse().getID());
-				}
-				if (d.getCODE() == null || d.getCODE().length() == 0) {
-					w.printf("case \"%s\": return true;\n", sb.toString());
-				}
-			}
-		}
-		w.println("default: return false; ");
 		w.println("}");
 		w.println("}");
 	}

@@ -57,7 +57,6 @@ public class Main {
       boolean noBeaverSymbol = false;
       boolean useTokenlist = false;
 	  boolean patternGrammar = false;
-	  boolean pep = false;
 	  boolean sep = false;
       if (args[0].equals("--version")) {
         System.out.println("JastAddParser version " + versionString());
@@ -69,12 +68,10 @@ public class Main {
 		useTokenlist = true;
       } else if (args[0].equals("--pattern_grammar")) {
 		patternGrammar = true;
-	  } else if (args[0].equals("--pep")) {
-		pep = true;
 	  } else if (args[0].equals("--sep")) {
 		sep = true;
 	  }
-      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !pep && !sep) {
+      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !sep) {
         System.err.println("Unrecognized option \"" + args[0] + '\"');
         System.exit(1);
       }
@@ -106,20 +103,6 @@ public class Main {
           System.err.println(iter.next());
         FileOutputStream os = new FileOutputStream(args[destIndex]);
         PrintStream out = new PrintStream(os);
-		if (pep) {
-		  root.removeOpt();
-		  root.oneRule();
-		  // MetaRuleSolver s = new MetaRuleSolver(root);
-
-		  // for (Rule r : s.solve()) {
-		  // 	  System.out.println("MV: " + r.getIdDecl().getID());
-		  // }
-
-		  root.addPatternGrammarClauses();
-		  // root.removeRedundantMetaVars();
-		  root.genPEP(out);
-		  out.flush();
-		}
 		if (sep) {
 		  root.removeOpt();
 		  root.oneRule();
@@ -132,7 +115,7 @@ public class Main {
 		if (patternGrammar) {
 		  root.addPatternGrammarClauses();
 		}
-		if (!pep && !sep) {
+		if (!sep) {
 		  root.genCode(out, noBeaverSymbol,useTokenlist);
 		}
         out.close();
