@@ -97,12 +97,6 @@ aspect PatternGrammar {
 			metaOrConcreteRule.setIdUse(new IdUse(type));
 			metaOrConcreteRule.setIdDecl(new IdDecl("META_OR_CONCRETE_" + name));
 
-			// Definition originalParenDef = new Definition();
-			// originalParenDef.addElement(new Element(new IdUse("MLPAREN"), new Opt()));
-			// originalParenDef.addElement(new Element(new IdUse(name), new Opt()));
-			// originalParenDef.addElement(new Element(new IdUse("MRPAREN"), new Opt()));
-			// metaOrConcreteRule.addDefinition(originalParenDef);
-
 			Definition metaOrConcreteNoGap = new Definition();
 			metaOrConcreteNoGap.addElement(new Element(new IdUse("META_OR_CONCRETE_NO_GAP_" + name), new Opt()));
 			metaOrConcreteRule.addDefinition(metaOrConcreteNoGap);
@@ -131,32 +125,25 @@ aspect PatternGrammar {
 		java.util.List<String> rulePriority = getRulePriority();
 		Set<String> goals = new TreeSet<String>();
 
-
-
-		MetaRuleSolver s = new MetaRuleSolver(this);
-		Set<String> allowedMetaVarRules = new HashSet<String>();
-		for (Rule r : s.solve()) {
-			allowedMetaVarRules.add(r.getIdDecl().getID());
-			// System.out.println("MV: " + r.getIdDecl().getID());
-		}
-
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
+					// no metavariables for non-terminals
 					if (!e.isNonTerminal())
 						continue;
+					// no metavariables for list or strings
 					if (e.type().equals("List") || e.type().equals("String"))
 						continue;
-					if (!allowedMetaVarRules.contains(e.getIdUse().getID()))
-						continue;
+
+					// record element, to replace it with a metavariable element
 					metaRuleElems.add(e);
-					// TODO: improve the solver to handles lists. For now we add
-					// gap productions everywhere
-					if (true || r.type().equals("List"))
+
+					// if the rule is a list, the we want to also allow gaps for
+					// the elements
+					if (r.type().equals("List"))
 						metaRuleListMember.add(e);
 				}
 			}
-
 			goals.add(r.getIdDecl().getID());
 		}
 
@@ -168,8 +155,6 @@ aspect PatternGrammar {
 				// the original, if it was unnamed; the code might use this name
 				e.setName(new IdUse(e.getIdUse().getID()));
 			}
-
-
 			e.setIdUse(new IdUse("META_OR_CONCRETE_" + (metaRuleListMember.contains(e) ? "" : "NO_GAP_") + e.getIdUse().getID()));
 		}
 
