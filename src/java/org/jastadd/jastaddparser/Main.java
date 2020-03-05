@@ -107,7 +107,6 @@ public class Main {
 		  root.removeOpt();
 		  root.oneRule();
 		  root.addPatternGrammarClauses();
-		  // root.removeRedundantMetaVars();
 		  root.genSEP(out);
 		  out.flush();
 		}

@@ -55,14 +55,11 @@ aspect PatternGrammar {
 			}
 		}
 
-		System.out.println("Assumed grammar root: " + entry);
-
 		DepthFirstIterator<String, DefaultEdge> it = new DepthFirstIterator<String, DefaultEdge>(directedGraph, entry);
 
 		java.util.List<String> list = new java.util.ArrayList();
 		while (it.hasNext()) {
 			String v = it.next();
-			System.out.println(v);
 			list.add(v);
 		}
 
@@ -271,41 +268,5 @@ aspect PatternGrammar {
 			}
 		}
 		return false;
-	}
-
-	public boolean Rule.removeRedundantMetaVar() {
-		int mvIndex = -1;
-		boolean hasMetaVar = false;
-		for (int i = 0; i < getNumDefinition(); ++i) {
-			Definition d = getDefinition(i);
-			if (d.isMetaVar())
-				mvIndex = i;
-			if (d.isTrivialChain()) {
-				String ruleId = d.getElement(0).getIdUse().getID();
-				Rule r = getGrammar().ruleByName().get(ruleId);
-				hasMetaVar = hasMetaVar || r.hasMetaVar();
-			}
-		}
-
-		if (mvIndex >= 0 && hasMetaVar) {
-			// a trivial chain production can directly result in metavariable;
-			// remove the metavariable production from this rule
-			getDefinitionList().removeChild(mvIndex);
-			return true;
-		}
-		return false;
-	}
-
-	public void Grammar.removeRedundantMetaVars() {
-		boolean change;
-		do {
-			change = false;
-			for (Rule r : rules()) {
-				boolean removed =  r.removeRedundantMetaVar();
-				change = change || removed;
-				if (removed)
-					System.out.println("Simplified >>> " + r.getIdDecl().getID());
-			}
-		} while (change);
 	}
 }
