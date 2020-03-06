@@ -38,6 +38,13 @@ aspect SEPGen {
 		w.println("}");
 	}
 
+	private void Grammar.genClassCode(PrintWriter w) {
+		for (Clause c : getClauses()) {
+			if (c instanceof ClassCode)
+				w.println(((ClassCode) c).getCODE());
+		}
+	}
+
 	public String Definition.genSemanticAction(PrintWriter w) {
 		if (getCODE() != null && getCODE().length() != 0) {
 			String name = "semanticAction_" + hashCode();
@@ -119,10 +126,12 @@ aspect SEPGen {
 	public void Grammar.genSEP(PrintWriter w) {
 		genImport(w);
 		genHeader(w);
+		genTerminals(w);
 		genCategories(w);
 		genRules(w);
 		genCategoryToMetaVarType(w);
 		genConstructor(w);
+		genClassCode(w);
 		genFooter(w);
 	}
 
@@ -138,8 +147,31 @@ aspect SEPGen {
 		return catToType;
 	}
 
+	private void Grammar.genTerminals(PrintWriter w) {
+		w.println("static public class Terminals {");
+		w.println("static public final short EOF = 0;");
+		TreeSet<String> sortedTerminals = new TreeSet<String>(terminals());
+
+		int index = 1;
+		for (String s : sortedTerminals) {
+			w.printf("static public final short %s = %d;\n", s, index);
+			index++;
+		}
+
+		w.println();
+
+		w.println("static public final String[] NAMES = {");
+		w.println("\"EOF\"");
+		for (String s : sortedTerminals) {
+			w.printf(",\n\"%s\"", s);
+		}
+		w.println("};");
+		w.println("}");
+		w.println();
+	}
+
 	private Map<String, String> Grammar.computeListElementTypeMap() {
-		// This is a special handlin of lists, which are typically defined as
+		// This is a special handling of lists, which are typically defined as
 		// l -> e
 		// l -> l, e
 		//
