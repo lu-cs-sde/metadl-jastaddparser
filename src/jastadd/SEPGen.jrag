@@ -45,7 +45,11 @@ aspect SEPGen {
 		}
 	}
 
-	public String Definition.genSemanticAction(PrintWriter w) {
+	public String Definition.genSemanticAction(PrintWriter w, boolean nullSemanticAction) {
+		if (nullSemanticAction) {
+			return "SemanticAction.NULL";
+		}
+
 		if (getCODE() != null && getCODE().length() != 0) {
 			String name = "semanticAction_" + hashCode();
 
@@ -77,14 +81,14 @@ aspect SEPGen {
 		}
 	}
 
-	private void Grammar.genRules(PrintWriter w) {
+	private void Grammar.genRules(PrintWriter w, boolean nullSemanticAction) {
 		w.println("public static void addRules(Grammar g) {");
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				// silently drop empty productions
 				if (d.getNumElement() == 0)
 					continue;
-				String actionName = d.genSemanticAction(w);
+				String actionName = d.genSemanticAction(w, nullSemanticAction);
 				// use qualified names here to avoid clashes
 				w.print("g.addRule(new se.lth.sep.Rule(" + actionName + ", ");
 				w.printf("n_%s", r.getIdDecl().getID());
@@ -117,22 +121,27 @@ aspect SEPGen {
 		w.println();
 	}
 
-	public void Grammar.genSEP(PrintStream w) {
+	public void Grammar.genSEP(PrintStream w, boolean nullSemanticAction) {
 		PrintWriter pw = new PrintWriter(new OutputStreamWriter(w));
-		genSEP(pw);
+		genSEP(pw, nullSemanticAction);
 		pw.flush();
 	}
 
-	public void Grammar.genSEP(PrintWriter w) {
+	public void Grammar.genSEP(PrintWriter w, boolean nullSemanticAction) {
 		genImport(w);
 		genHeader(w);
 		genTerminals(w);
 		genCategories(w);
-		genRules(w);
-		genCategoryToMetaVarType(w);
+		genRules(w, nullSemanticAction);
+		if (!nullSemanticAction)
+			genCategoryToMetaVarType(w);
 		genConstructor(w);
 		genClassCode(w);
 		genFooter(w);
+	}
+
+	public void Grammar.genSEPDebug(PrintWriter w) {
+
 	}
 
 	private Map<String, String> Grammar.computeTypeMap() {

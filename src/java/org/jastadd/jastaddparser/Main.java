@@ -58,6 +58,7 @@ public class Main {
       boolean useTokenlist = false;
 	  boolean patternGrammar = false;
 	  boolean sep = false;
+	  boolean nullSemanticAction = false;
       if (args[0].equals("--version")) {
         System.out.println("JastAddParser version " + versionString());
         System.exit(0);
@@ -70,6 +71,9 @@ public class Main {
 		patternGrammar = true;
 	  } else if (args[0].equals("--sep")) {
 		sep = true;
+	  } else if (args[0].equals("--sep-null-action")) {
+		sep = true;
+		nullSemanticAction = true;
 	  }
       if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !sep) {
         System.err.println("Unrecognized option \"" + args[0] + '\"');
@@ -107,7 +111,7 @@ public class Main {
 		  root.removeOpt();
 		  root.oneRule();
 		  root.addPatternGrammarClauses();
-		  root.genSEP(out);
+		  root.genSEP(out, nullSemanticAction);
 		  out.flush();
 		}
 
