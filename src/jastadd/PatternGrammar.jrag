@@ -29,43 +29,6 @@ aspect PatternGrammar {
 		return null;
 	}
 
-	public java.util.List<String> Grammar.getRulePriority() {
-		Graph<String, DefaultEdge> directedGraph =
-            new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
-
-		for (Rule r : rules()) {
-			for (Definition d : r.getDefinitions()) {
-				for (Element e : d.getElements()) {
-					if (e.isNonTerminal()) {
-						directedGraph.addVertex(r.getIdDecl().getID());
-						directedGraph.addVertex(e.getIdUse().getID());
-						directedGraph.addEdge(r.getIdDecl().getID(),
-											  e.getIdUse().getID());
-					}
-				}
-			}
-		}
-
-
-		String entry = null;
-		for (String v : directedGraph.vertexSet()) {
-			if (directedGraph.inDegreeOf(v) == 0) {
-				entry = v;
-				break;
-			}
-		}
-
-		DepthFirstIterator<String, DefaultEdge> it = new DepthFirstIterator<String, DefaultEdge>(directedGraph, entry);
-
-		java.util.List<String> list = new java.util.ArrayList();
-		while (it.hasNext()) {
-			String v = it.next();
-			list.add(v);
-		}
-
-		return list;
-	}
-
 	private java.util.List<Rule> Grammar.buildMetaVarRule(String name, String type) {
 		java.util.List<Rule> clauseList = new java.util.ArrayList<Rule>();
 		{
@@ -119,8 +82,6 @@ aspect PatternGrammar {
 	public void Grammar.addPatternGrammarClauses() {
 		ArrayList<Element> metaRuleElems = new ArrayList<Element>();
 		Set<Element> metaRuleListMember = new HashSet<Element>();
-		java.util.List<String> rulePriority = getRulePriority();
-		Set<String> goals = new TreeSet<String>();
 
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
@@ -141,7 +102,6 @@ aspect PatternGrammar {
 						metaRuleListMember.add(e);
 				}
 			}
-			goals.add(r.getIdDecl().getID());
 		}
 
 		TreeMap<String, String> metaRules = new TreeMap<String, String>();
@@ -162,21 +122,7 @@ aspect PatternGrammar {
 			java.util.List<Rule> mvrs = buildMetaVarRule(name, type);
 			for (Rule mvr : mvrs) {
 				addClause(mvr);
-				goals.add(mvr.getIdDecl().getID());
 			}
-		}
-
-		// Exclude the following keywords from goals, because they will clash with the
-		// Java language
-		java.util.List<String> keywords = java.util.Arrays.asList("super", "finally", "throws");
-		for (String goalName : goals) {
-			if (!keywords.contains(goalName))
-				addClause(new Goal(goalName));
-		}
-
-		for (String rule : rulePriority) {
-			addClause(buildPrecedenceStmt("nonassoc", "PREC_1_" + rule));
-			addClause(buildPrecedenceStmt("nonassoc", "PREC_2_" + rule));
 		}
 
 		for (Rule r : rules()) {
