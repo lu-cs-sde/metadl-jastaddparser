@@ -133,8 +133,10 @@ aspect SEPGen {
 		genTerminals(w);
 		genCategories(w);
 		genRules(w, nullSemanticAction);
-		if (!nullSemanticAction)
+		if (!nullSemanticAction) {
 			genCategoryToMetaVarType(w);
+			genCategoryToGap(w);
+		}
 		genConstructor(w);
 		genClassCode(w);
 		genFooter(w);
@@ -179,7 +181,7 @@ aspect SEPGen {
 		w.println();
 	}
 
-	private Map<String, String> Grammar.computeListElementTypeMap() {
+	syn Map<String, String> Grammar.computeListElementTypeMap() {
 		// This is a special handling of lists, which are typically defined as
 		// l -> e
 		// l -> l, e
@@ -221,8 +223,18 @@ aspect SEPGen {
 			}
 		} while (change);
 
-		return catToType;
+		/* TODO: this is a horrible hack to accomodate this rule in the Java grammar
+		   List switch_statements =
+		     switch_label.s                             {: return new List().add(s); :}
+		   | switch_statements.l switch_label.s         {: return l.add(s); :}
+		   | switch_statements.l block_statement.b      {: return l.add(b); :}
 
+		  The proper fix would be to retrieve the class hierarchy from JastAdd, and compute the
+		  common supertype of switch_label and block statement. For now, we just hardcode the
+		  result */
+		catToType.put("switch_statements", "Stmt");
+
+		return catToType;
 	}
 
 	public void Grammar.genCategoryToMetaVarType(PrintWriter w) {
@@ -251,7 +263,11 @@ aspect SEPGen {
 		}
 		w.println("}");
 		w.println("}");
+	}
 
+	public void Grammar.genCategoryToGap(PrintWriter w) {
+		Map<String, String> catToType = computeTypeMap();
+		Map<String, String> catToElemType = computeListElementTypeMap();
 
 		w.println("public static Symbol buildGap(Category c) {");
 		w.println("switch (c.getName()) {");
