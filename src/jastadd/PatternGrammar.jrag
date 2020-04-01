@@ -75,35 +75,58 @@ aspect PatternGrammar {
 		return clauseList;
 	}
 
-	private Assoc Grammar.buildPrecedenceStmt(String prec, String name) {
-		return new Assoc(prec, new List(new IdUse(name)));
+	private Rule Grammar.buildMetaSymRule(String name) {
+		Rule symRule = new Rule();
+		symRule.setIdUse(new IdUse("Symbol"));
+		symRule.setIdDecl(new IdDecl("META_SYM_" + name));
+
+		Definition def = new Definition();
+		def.addElement(new Element(new IdUse(name), new Opt()));
+
+		Definition meta = new Definition();
+		meta.addElement(new Element(new IdUse("METAVARID"), new Opt()));
+
+		symRule.addDefinition(def).addDefinition(meta);
+
+		return symRule;
+	}
+
+	public boolean Element.canBeMetaSymbol() {
+		// TODO: this is hardcoded for the Java grammar
+		return name().equals("IDENTIFIER");
 	}
 
 	public void Grammar.addPatternGrammarClauses() {
 		ArrayList<Element> metaRuleElems = new ArrayList<Element>();
 		Set<Element> metaRuleListMember = new HashSet<Element>();
+		java.util.List<Element> metaSymbolElems = new ArrayList<Element>();
 
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
-					// no metavariables for non-terminals
-					if (!e.isNonTerminal())
-						continue;
-					// no metavariables for list or strings
-					if (e.type().equals("List") || e.type().equals("String"))
-						continue;
+					// no metavariables for terminals, except..
+					if (e.isNonTerminal()) {
+						// no metavariables for list or strings
+						if (e.type().equals("List") || e.type().equals("String"))
+							continue;
 
-					// record element, to replace it with a metavariable element
-					metaRuleElems.add(e);
+						// record element, to replace it with a metavariable element
+						metaRuleElems.add(e);
 
-					// if the rule is a list, the we want to also allow gaps for
-					// the elements
-					if (r.type().equals("List"))
-						metaRuleListMember.add(e);
+						// if the rule is a list, the we want to also allow gaps for
+						// the elements
+						if (r.type().equals("List"))
+							metaRuleListMember.add(e);
+					} else {
+						// ... except some terminals.
+						if (e.canBeMetaSymbol())
+							metaSymbolElems.add(e);
+					}
 				}
 			}
 		}
 
+		// add new rules for metavariables replacing non-terminals
 		TreeMap<String, String> metaRules = new TreeMap<String, String>();
 		for (Element e : metaRuleElems) {
 			metaRules.put(e.getIdUse().getID(), e.type());
@@ -125,6 +148,23 @@ aspect PatternGrammar {
 			}
 		}
 
+		// add new rules for metavariables replacing terminals
+		TreeSet<String> metaSymRules = new TreeSet<String>();
+		for (Element e : metaSymbolElems) {
+			metaSymRules.add(e.getIdUse().getID());
+			if (!e.hasName()) {
+				// explicitly name the element to the name of
+				// the original, if it was unnamed; the code might use this name
+				e.setName(new IdUse(e.getIdUse().getID()));
+			}
+			e.setIdUse(new IdUse("META_SYM_" + e.getIdUse().getID()));
+		}
+
+		for (String ruleName : metaSymRules) {
+			addClause(buildMetaSymRule(ruleName));
+		}
+
+		// flush any existing cached attributes
 		for (Rule r : rules()) {
 			for (Definition d : r.getDefinitions()) {
 				for (Element e : d.getElements()) {
