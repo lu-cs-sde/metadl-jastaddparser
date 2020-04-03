@@ -241,26 +241,27 @@ aspect SEPGen {
 		Map<String, String> catToType = computeTypeMap();
 		Map<String, String> catToElemType = computeListElementTypeMap();
 
-		w.println("public static Symbol buildMetaVar(Category c, MetaVariable mv) {");
+		w.println("public static Symbol buildMetaVar(Category c, Symbol mv) {");
 		w.println("switch (c.getName()) {");
 		w.println("default: return null;");
 		for (Map.Entry<String, String> ct : catToType.entrySet()) {
 			if (ct.getValue().equals("String"))
 				continue;
-			if (ct.getValue().equals("Symbol"))
-				continue;
-			if (ct.getValue().equals("List")) {
+			if (ct.getValue().equals("Symbol")) {
+				w.printf("case \"%s\": return mv;\n", ct.getKey(), ct.getValue());
+			}
+			else if (ct.getValue().equals("List")) {
 				String elementType = catToElemType.get(ct.getKey());
 				if (elementType != null) {
 					if (!elementType.equals("String")) {
-						w.printf("case \"%s\": return new List(new MetaVar%s().setVar(mv));\n", ct.getKey(), elementType);
+						w.printf("case \"%s\": return new List(new MetaVar%s().setVar(new MetaVariable(mv)));\n", ct.getKey(), elementType);
 					}
 				} else {
 					System.err.println("Unable to infer type of list element in " + ct.getKey());
 					// System.exit(1);
 				}
 			} else {
-				w.printf("case \"%s\": return new MetaVar%s().setVar(mv);\n", ct.getKey(), ct.getValue());
+				w.printf("case \"%s\": return new MetaVar%s().setVar(new MetaVariable(mv));\n", ct.getKey(), ct.getValue());
 			}
 		}
 		w.println("}");
