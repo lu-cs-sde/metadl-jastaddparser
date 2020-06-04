@@ -81,9 +81,10 @@ aspect SEPGen {
 		}
 	}
 
-	private void Grammar.genRules(PrintWriter w, boolean nullSemanticAction) {
-		w.println("public static void addRules(Grammar g) {");
-		for (Rule r : rules()) {
+	private void Grammar.genRulesPartial(PrintWriter w, Collection<Rule> rules, String methodName,
+										 boolean nullSemanticAction) {
+		w.printf("public static void %s(Grammar g) {\n", methodName);
+		for (Rule r : rules) {
 			for (Definition d : r.getDefinitions()) {
 				// silently drop empty productions
 				if (d.getNumElement() == 0)
@@ -103,6 +104,26 @@ aspect SEPGen {
 			}
 		}
 		w.println("}");
+	}
+
+	private void Grammar.genRules(PrintWriter w, boolean nullSemanticAction) {
+		// A single method to add all the rules to the grammar
+		// may be larger than 64KB of bytecode ("code too large" error),
+		// so we split the rules into two methods.
+		java.util.List<Rule> rules1 = new ArrayList<Rule>();
+		java.util.List<Rule> rules2 = new ArrayList<Rule>();
+		int count = 0;
+		int nrules = rules().size();
+		for (Rule r : rules()) {
+			if (count > nrules / 2) {
+				rules2.add(r);
+			} else {
+				rules1.add(r);
+			}
+			count++;
+		}
+		genRulesPartial(w, rules1, "addRules1", nullSemanticAction);
+		genRulesPartial(w, rules2, "addRules2", nullSemanticAction);
 	}
 
 	private void Grammar.genFooter(PrintWriter w) {
