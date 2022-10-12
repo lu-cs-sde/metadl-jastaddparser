@@ -114,7 +114,7 @@ public class Main {
 		  if (patternGrammar) {
 			  root.addPatternGrammarClauses();
 		  }
-		  root.genSEP(out, nullSemanticAction);
+		  root.genSEP(out, patternGrammar, nullSemanticAction);
 		  out.flush();
 		} else {
 			if (patternGrammar) {

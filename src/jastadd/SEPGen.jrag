@@ -1,5 +1,7 @@
 aspect SEPGen {
-	private static String Grammar.SEP_CLASS_NAME = "PatLangParserSEP";
+	private static String Grammar.getSEPClassName(boolean patternGrammar) {
+		return patternGrammar ? "PatLangParserSEP" : "ObjLangParserSEP";
+	}
 
 	private void Grammar.genImport(PrintWriter w) {
 		for (Clause c : getClauses()) {
@@ -19,15 +21,15 @@ aspect SEPGen {
 		w.println("import se.lth.sep.SemanticAction;");
 	}
 
-	private void Grammar.genHeader(PrintWriter w) {
-		w.printf("public class %s {\n", SEP_CLASS_NAME);
+	private void Grammar.genHeader(PrintWriter w, boolean patternGrammar) {
+		w.printf("public class %s {\n", getSEPClassName(patternGrammar));
 		// w.println("private Grammar grammar = new Grammar();");
 		// w.println("private EarleyParser parser = new EarleyParser(grammar);");
 		w.println();
 	}
 
-	private void Grammar.genConstructor(PrintWriter w) {
-		w.printf("private %s() {\n", SEP_CLASS_NAME);
+	private void Grammar.genConstructor(PrintWriter w, boolean patternGrammar) {
+		w.printf("private %s() {\n", getSEPClassName(patternGrammar));
 		// w.println("addRules(grammar);");
 		w.println("}");
 	}
@@ -142,23 +144,23 @@ aspect SEPGen {
 		w.println();
 	}
 
-	public void Grammar.genSEP(PrintStream w, boolean nullSemanticAction) {
+	public void Grammar.genSEP(PrintStream w, boolean patternGrammar, boolean nullSemanticAction) {
 		PrintWriter pw = new PrintWriter(new OutputStreamWriter(w));
-		genSEP(pw, nullSemanticAction);
+		genSEP(pw, patternGrammar, nullSemanticAction);
 		pw.flush();
 	}
 
-	public void Grammar.genSEP(PrintWriter w, boolean nullSemanticAction) {
+	public void Grammar.genSEP(PrintWriter w, boolean patternGrammar, boolean nullSemanticAction) {
 		genImport(w);
-		genHeader(w);
+		genHeader(w, patternGrammar);
 		genTerminals(w);
 		genCategories(w);
 		genRules(w, nullSemanticAction);
-		if (!nullSemanticAction) {
+		if (!nullSemanticAction && patternGrammar) {
 			genCategoryToMetaVarType(w);
 			genCategoryToGap(w);
 		}
-		genConstructor(w);
+		genConstructor(w, patternGrammar);
 		genClassCode(w);
 		genFooter(w);
 	}
