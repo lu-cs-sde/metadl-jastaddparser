@@ -69,6 +69,7 @@ public class Main {
 		useTokenlist = true;
       } else if (args[0].equals("--pattern_grammar")) {
 		patternGrammar = true;
+		sep = true;
 	  } else if (args[0].equals("--sep")) {
 		sep = true;
 	  } else if (args[0].equals("--sep-null-action")) {
@@ -110,16 +111,16 @@ public class Main {
 		if (sep) {
 		  root.removeOpt();
 		  root.oneRule();
-		  root.addPatternGrammarClauses();
+		  if (patternGrammar) {
+			  root.addPatternGrammarClauses();
+		  }
 		  root.genSEP(out, nullSemanticAction);
 		  out.flush();
-		}
-
-		if (patternGrammar) {
-		  root.addPatternGrammarClauses();
-		}
-		if (!sep) {
-		  root.genCode(out, noBeaverSymbol,useTokenlist);
+		} else {
+			if (patternGrammar) {
+				root.addPatternGrammarClauses();
+			}
+			root.genCode(out, noBeaverSymbol,useTokenlist);
 		}
         out.close();
         System.err.println("Parser specification " + dest + " generated from " + source);
