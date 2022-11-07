@@ -89,8 +89,8 @@ aspect SEPGen {
 		for (Rule r : rules) {
 			for (Definition d : r.getDefinitions()) {
 				// silently drop empty productions
-				if (d.getNumElement() == 0)
-					continue;
+				// if (d.getNumElement() == 0)
+				// 	continue;
 				String actionName = d.genSemanticAction(w, nullSemanticAction);
 				// use qualified names here to avoid clashes
 				w.print("g.addRule(new se.lth.sep.Rule(" + actionName + ", ");
