@@ -12,247 +12,255 @@ import org.jastadd.jastaddparser.MetaRuleSolver;
 aspect PatternGrammar {
 
 
-	inh Grammar Clause.getGrammar();
-	eq Grammar.getClause().getGrammar() = this;
-	inh Grammar Element.getGrammar();
-	inh Grammar Definition.getGrammar();
+  inh Grammar Clause.getGrammar();
+  eq Grammar.getClause().getGrammar() = this;
+  inh Grammar Element.getGrammar();
+  inh Grammar Definition.getGrammar();
 
 
-	inh Definition Element.parentDefinition();
-	eq Definition.getElement().parentDefinition() = this;
-	inh Rule Definition.parentRule();
-	eq Rule.getDefinition().parentRule() = this;
+  inh Definition Element.parentDefinition();
+  eq Definition.getElement().parentDefinition() = this;
+  inh Rule Definition.parentRule();
+  eq Rule.getDefinition().parentRule() = this;
 
-	syn String Element.type() {
-		for (Rule r : getGrammar().rule(getIdUse().getID()))
-			return r.type();
-		return null;
-	}
+  syn String Element.type() {
+    for (Rule r : getGrammar().rule(getIdUse().getID()))
+      return r.type();
+    return null;
+  }
 
-	private java.util.List<Rule> Grammar.buildMetaVarRule(String name, String type) {
-		java.util.List<Rule> clauseList = new java.util.ArrayList<Rule>();
-		{
-			Rule metaOrConcreteNoGapRule = new Rule();
-			metaOrConcreteNoGapRule.setIdUse(new IdUse(type));
-			metaOrConcreteNoGapRule.setIdDecl(new IdDecl("META_OR_CONCRETE_NO_GAP_" + name));
+  private java.util.List<Rule> Grammar.buildMetaVarRule(String name, String type) {
+    java.util.List<Rule> clauseList = new java.util.ArrayList<Rule>();
+    {
+      Rule metaOrConcreteNoGapRule = new Rule();
+      metaOrConcreteNoGapRule.setIdUse(new IdUse(type));
+      metaOrConcreteNoGapRule.setIdDecl(new IdDecl("META_OR_CONCRETE_NO_GAP_" + name));
 
-			Definition originalDef = new Definition();
-			originalDef.addElement(new Element(new IdUse(name), new Opt()));
-			metaOrConcreteNoGapRule.addDefinition(originalDef);
+      Definition originalDef = new Definition();
+      originalDef.addElement(new Element(new IdUse(name), new Opt()));
+      metaOrConcreteNoGapRule.addDefinition(originalDef);
 
-			Definition metaVarDef = new Definition();
-			Element el = new Element(new IdUse("METAVARID"), new Opt(new IdUse("id")));
-			metaVarDef.addElement(el);
-			Precedence prec = new Precedence(new IdUse("PREC_1_" + name));
-			metaVarDef.addPrecedence(prec);
-			String code = String.format("return new MetaVar%s().setVar(new MetaVariable(id));", type);
-			metaVarDef.setCODE(code);
-			metaOrConcreteNoGapRule.addDefinition(metaVarDef);
+      Definition metaVarDef = new Definition();
+      Element el = new Element(new IdUse("METAVARID"), new Opt(new IdUse("id")));
+      metaVarDef.addElement(el);
+      Precedence prec = new Precedence(new IdUse("PREC_1_" + name));
+      metaVarDef.addPrecedence(prec);
+      String code = String.format("return new MetaVar%s().setVar(new MetaVariable(id));", type);
+      metaVarDef.setCODE(code);
+      metaOrConcreteNoGapRule.addDefinition(metaVarDef);
 
-			clauseList.add(metaOrConcreteNoGapRule);
-		}
+      clauseList.add(metaOrConcreteNoGapRule);
+    }
 
-		{
-			Rule metaOrConcreteRule = new Rule();
-			metaOrConcreteRule.setIdUse(new IdUse(type));
-			metaOrConcreteRule.setIdDecl(new IdDecl("META_OR_CONCRETE_" + name));
+    {
+      Rule metaOrConcreteRule = new Rule();
+      metaOrConcreteRule.setIdUse(new IdUse(type));
+      metaOrConcreteRule.setIdDecl(new IdDecl("META_OR_CONCRETE_" + name));
 
-			Definition metaOrConcreteNoGap = new Definition();
-			metaOrConcreteNoGap.addElement(new Element(new IdUse("META_OR_CONCRETE_NO_GAP_" + name), new Opt()));
-			metaOrConcreteRule.addDefinition(metaOrConcreteNoGap);
+      Definition metaOrConcreteNoGap = new Definition();
+      metaOrConcreteNoGap.addElement(new Element(new IdUse("META_OR_CONCRETE_NO_GAP_" + name), new Opt()));
+      metaOrConcreteRule.addDefinition(metaOrConcreteNoGap);
 
-			Definition gapDef = new Definition();
-			Element el = new Element(new IdUse("GAP"), new Opt());
-			gapDef.addElement(el);
-			Precedence prec = new Precedence(new IdUse("PREC_2_" + name));
-			gapDef.addPrecedence(prec);
-			String code = String.format("return new Gap%s();", type);
-			gapDef.setCODE(code);
-			metaOrConcreteRule.addDefinition(gapDef);
+      Definition gapDef = new Definition();
+      Element el = new Element(new IdUse("GAP"), new Opt());
+      gapDef.addElement(el);
+      Precedence prec = new Precedence(new IdUse("PREC_2_" + name));
+      gapDef.addPrecedence(prec);
+      String code = String.format("return new Gap%s();", type);
+      gapDef.setCODE(code);
+      metaOrConcreteRule.addDefinition(gapDef);
 
-			clauseList.add(metaOrConcreteRule);
-		}
-		return clauseList;
-	}
+      clauseList.add(metaOrConcreteRule);
+    }
+    return clauseList;
+  }
 
-	private Rule Grammar.buildMetaSymRule(String name) {
-		Rule symRule = new Rule();
-		symRule.setIdUse(new IdUse("Symbol"));
-		symRule.setIdDecl(new IdDecl("META_SYM_" + name));
+  private Rule Grammar.buildMetaSymRule(String name) {
+    Rule symRule = new Rule();
+    symRule.setIdUse(new IdUse("Symbol"));
+    symRule.setIdDecl(new IdDecl("META_SYM_" + name));
 
-		Definition def = new Definition();
-		def.addElement(new Element(new IdUse(name), new Opt()));
+    Definition def = new Definition();
+    def.addElement(new Element(new IdUse(name), new Opt()));
 
-		Definition meta = new Definition();
-		meta.addElement(new Element(new IdUse("METAVARID"), new Opt()));
+    Definition meta = new Definition();
+    meta.addElement(new Element(new IdUse("METAVARID"), new Opt()));
 
-		symRule.addDefinition(def).addDefinition(meta);
+    symRule.addDefinition(def).addDefinition(meta);
 
-		return symRule;
-	}
+    return symRule;
+  }
 
-	public boolean Element.canBeMetaSymbol() {
-		// TODO: this is hardcoded for the Java grammar
-		return name().equals("IDENTIFIER");
-	}
+  public boolean Element.canBeMetaSymbol() {
+    // TODO: this is hardcoded for the Java grammar
+    return name().equals("IDENTIFIER");
+  }
 
-	public void Grammar.addPatternGrammarClauses() {
-		ArrayList<Element> metaRuleElems = new ArrayList<Element>();
-		Set<Element> metaRuleListMember = new HashSet<Element>();
-		java.util.List<Element> metaSymbolElems = new ArrayList<Element>();
+  public void Grammar.addPatternGrammarClauses(Set<String> explicitMetaVarSymbols) {
+    ArrayList<Element> metaRuleElems = new ArrayList<Element>();
+    Set<Element> metaRuleListMember = new HashSet<Element>();
+    java.util.List<Element> metaSymbolElems = new ArrayList<Element>();
 
-		for (Rule r : rules()) {
-			for (Definition d : r.getDefinitions()) {
-				for (Element e : d.getElements()) {
-					// no metavariables for terminals, except..
-					if (e.isNonTerminal()) {
-						// no metavariables for list or strings
-						if (e.type().equals("List") || e.type().equals("String"))
-							continue;
+    for (Rule r : rules()) {
+      for (Definition d : r.getDefinitions()) {
+        for (Element e : d.getElements()) {
+          // no metavariables for terminals, except..
+          if (e.isNonTerminal()) {
+            // no metavariables for list or strings
+            if (e.type().equals("List") || e.type().equals("String"))
+              continue;
 
-						// record element, to replace it with a metavariable element
-						metaRuleElems.add(e);
+            // if there is an explicit list for non-terminals to be replaced
+            // with metavars, then skip all non-terminals not in the list
+            if (explicitMetaVarSymbols != null && !explicitMetaVarSymbols.contains(e.name()))
+              continue;
 
-						// if the rule is a list, the we want to also allow gaps for
-						// the elements
-						if (r.type().equals("List"))
-							metaRuleListMember.add(e);
-					} else {
-						// ... except some terminals.
-						if (e.canBeMetaSymbol())
-							metaSymbolElems.add(e);
-					}
-				}
-			}
-		}
+            // record element, to replace it with a metavariable element
+            metaRuleElems.add(e);
 
-		// add new rules for metavariables replacing non-terminals
-		TreeMap<String, String> metaRules = new TreeMap<String, String>();
-		for (Element e : metaRuleElems) {
-			metaRules.put(e.getIdUse().getID(), e.type());
-			if (!e.hasName()) {
-				// explicitly name the element to the name of
-				// the original, if it was unnamed; the code might use this name
-				e.setName(new IdUse(e.getIdUse().getID()));
-			}
-			e.setIdUse(new IdUse("META_OR_CONCRETE_" + (metaRuleListMember.contains(e) ? "" : "NO_GAP_") + e.getIdUse().getID()));
-		}
+            // if the rule is a list, the we want to also allow gaps for
+            // the elements
+            if (r.type().equals("List"))
+              metaRuleListMember.add(e);
+          } else {
+            // ... except some terminals.
+            if (explicitMetaVarSymbols != null && !explicitMetaVarSymbols.contains(e.name()))
+              continue;
 
-		for (Map.Entry<String, String> ruleName : metaRules.entrySet()) {
-			String name = ruleName.getKey();
-			String type = ruleName.getValue();
+            if (e.canBeMetaSymbol())
+              metaSymbolElems.add(e);
+          }
+        }
+      }
+    }
 
-			java.util.List<Rule> mvrs = buildMetaVarRule(name, type);
-			for (Rule mvr : mvrs) {
-				addClause(mvr);
-			}
-		}
+    // add new rules for metavariables replacing non-terminals
+    TreeMap<String, String> metaRules = new TreeMap<String, String>();
+    for (Element e : metaRuleElems) {
+      metaRules.put(e.getIdUse().getID(), e.type());
+      if (!e.hasName()) {
+        // explicitly name the element to the name of
+        // the original, if it was unnamed; the code might use this name
+        e.setName(new IdUse(e.getIdUse().getID()));
+      }
+      e.setIdUse(new IdUse("META_OR_CONCRETE_" + (metaRuleListMember.contains(e) ? "" : "NO_GAP_") + e.getIdUse().getID()));
+    }
 
-		// add new rules for metavariables replacing terminals
-		TreeSet<String> metaSymRules = new TreeSet<String>();
-		for (Element e : metaSymbolElems) {
-			metaSymRules.add(e.getIdUse().getID());
-			if (!e.hasName()) {
-				// explicitly name the element to the name of
-				// the original, if it was unnamed; the code might use this name
-				e.setName(new IdUse(e.getIdUse().getID()));
-			}
-			e.setIdUse(new IdUse("META_SYM_" + e.getIdUse().getID()));
-		}
+    for (Map.Entry<String, String> ruleName : metaRules.entrySet()) {
+      String name = ruleName.getKey();
+      String type = ruleName.getValue();
 
-		for (String ruleName : metaSymRules) {
-			addClause(buildMetaSymRule(ruleName));
-		}
+      java.util.List<Rule> mvrs = buildMetaVarRule(name, type);
+      for (Rule mvr : mvrs) {
+        addClause(mvr);
+      }
+    }
 
-		// flush any existing cached attributes
-		for (Rule r : rules()) {
-			for (Definition d : r.getDefinitions()) {
-				for (Element e : d.getElements()) {
-					e.flushAttrCache();
-				}
-				d.flushAttrCache();
-			}
-			r.flushAttrCache();
-		}
-		flushAttrCache();
-		flushCollectionCache();
-	}
+    // add new rules for metavariables replacing terminals
+    TreeSet<String> metaSymRules = new TreeSet<String>();
+    for (Element e : metaSymbolElems) {
+      metaSymRules.add(e.getIdUse().getID());
+      if (!e.hasName()) {
+        // explicitly name the element to the name of
+        // the original, if it was unnamed; the code might use this name
+        e.setName(new IdUse(e.getIdUse().getID()));
+      }
+      e.setIdUse(new IdUse("META_SYM_" + e.getIdUse().getID()));
+    }
 
-	syn boolean Element.isTrivialChain() {
-		if (isOptional())
-			return false;
-		if (isList())
-			return false;
-		Definition d = parentDefinition();
-		if (d.getCODE() != null && d.getCODE().length() != 0)
-			return false;
-		if (d.getNumElement() != 1)
-			return false;
-		return true;
-	}
+    for (String ruleName : metaSymRules) {
+      addClause(buildMetaSymRule(ruleName));
+    }
 
-	syn boolean Definition.isTrivialChain() {
-		return getNumElement() == 1 && getElement(0).isTrivialChain();
-	}
+    // flush any existing cached attributes
+    for (Rule r : rules()) {
+      for (Definition d : r.getDefinitions()) {
+        for (Element e : d.getElements()) {
+          e.flushAttrCache();
+        }
+        d.flushAttrCache();
+      }
+      r.flushAttrCache();
+    }
+    flushAttrCache();
+    flushCollectionCache();
+  }
 
-	syn boolean Definition.isMetaVar() {
-		if (getNumElement() != 1)
-			return false;
-		return getElement(0).getIdUse().getID().equals("METAVARID");
-	}
+  syn boolean Element.isTrivialChain() {
+    if (isOptional())
+      return false;
+    if (isList())
+      return false;
+    Definition d = parentDefinition();
+    if (d.getCODE() != null && d.getCODE().length() != 0)
+      return false;
+    if (d.getNumElement() != 1)
+      return false;
+    return true;
+  }
 
-	syn Set<Rule> Rule.chainRules() {
-		HashSet<Rule> chainedRules = new HashSet<Rule>();
-		for (Definition d : getDefinitions()) {
-			if (d.isTrivialChain()) {
-				String ruleId = d.getElement(0).getIdUse().getID();
-				Rule r = getGrammar().ruleByName().get(ruleId);
-				chainedRules.add(r);
-				chainedRules.addAll(r.chainRules());
-			}
-		}
-		return chainedRules;
-	}
+  syn boolean Definition.isTrivialChain() {
+    return getNumElement() == 1 && getElement(0).isTrivialChain();
+  }
 
-	public class HashSetMap<K, V> extends HashMap<K, Set<V>> {
-		public void append(Map.Entry<K, V> e) {
-			Set<V> s = get(e.getKey());
-			if (s == null) {
-				s = new HashSet<V>();
-				put(e.getKey(), s);
-			}
-			s.add(e.getValue());
-		}
-	}
+  syn boolean Definition.isMetaVar() {
+    if (getNumElement() != 1)
+      return false;
+    return getElement(0).getIdUse().getID().equals("METAVARID");
+  }
 
-	coll HashSetMap<Rule, Element> Grammar.ruleUses() [new HashSetMap<Rule, Element>()] with append;
-	Element contributes
-		new SimpleEntry<Rule, Element>(getGrammar().ruleByName().get(getIdUse().getID()), this)
-		when isNonTerminal()
-		to Grammar.ruleUses();
+  syn Set<Rule> Rule.chainRules() {
+    HashSet<Rule> chainedRules = new HashSet<Rule>();
+    for (Definition d : getDefinitions()) {
+      if (d.isTrivialChain()) {
+        String ruleId = d.getElement(0).getIdUse().getID();
+        Rule r = getGrammar().ruleByName().get(ruleId);
+        chainedRules.add(r);
+        chainedRules.addAll(r.chainRules());
+      }
+    }
+    return chainedRules;
+  }
 
-	syn boolean Rule.hasNonTrivialUses() {
-		if (!getGrammar().ruleUses().containsKey(this))
-			return false;
+  public class HashSetMap<K, V> extends HashMap<K, Set<V>> {
+    public void append(Map.Entry<K, V> e) {
+      Set<V> s = get(e.getKey());
+      if (s == null) {
+        s = new HashSet<V>();
+        put(e.getKey(), s);
+      }
+      s.add(e.getValue());
+    }
+  }
 
-		for (Element e : getGrammar().ruleUses().get(this)) {
-			if (!e.isTrivialChain())
-				return true;
-		}
-		return false;
-	}
+  coll HashSetMap<Rule, Element> Grammar.ruleUses() [new HashSetMap<Rule, Element>()] with append;
+  Element contributes
+    new SimpleEntry<Rule, Element>(getGrammar().ruleByName().get(getIdUse().getID()), this)
+    when isNonTerminal()
+    to Grammar.ruleUses();
 
-	syn boolean Rule.hasMetaVar() {
-		for (Definition d : getDefinitions()) {
-			if (d.isMetaVar())
-				return true;
-			if (d.isTrivialChain()) {
-				String ruleId = d.getElement(0).getIdUse().getID();
-				Rule r = getGrammar().ruleByName().get(ruleId);
-				if (r.hasMetaVar())
-					return true;
-			}
-		}
-		return false;
-	}
+  syn boolean Rule.hasNonTrivialUses() {
+    if (!getGrammar().ruleUses().containsKey(this))
+      return false;
+
+    for (Element e : getGrammar().ruleUses().get(this)) {
+      if (!e.isTrivialChain())
+        return true;
+    }
+    return false;
+  }
+
+  syn boolean Rule.hasMetaVar() {
+    for (Definition d : getDefinitions()) {
+      if (d.isMetaVar())
+        return true;
+      if (d.isTrivialChain()) {
+        String ruleId = d.getElement(0).getIdUse().getID();
+        Rule r = getGrammar().ruleByName().get(ruleId);
+        if (r.hasMetaVar())
+          return true;
+      }
+    }
+    return false;
+  }
 }

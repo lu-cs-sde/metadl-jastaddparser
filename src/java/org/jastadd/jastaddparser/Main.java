@@ -36,62 +36,95 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import org.jastadd.jastaddparser.parser.GrammarParser;
-import org.jastadd.jastaddparser.parser.GrammarScanner;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.AbstractBaseGraph;
 import org.jastadd.jastaddparser.ast.ASTNode;
 import org.jastadd.jastaddparser.ast.Grammar;
-import org.jastadd.jastaddparser.ast.Rule;
+import org.jastadd.jastaddparser.parser.GrammarParser;
+import org.jastadd.jastaddparser.parser.GrammarScanner;
+
 
 public class Main {
   public static void main(String[] args) {
     try {
       boolean noBeaverSymbol = false;
       boolean useTokenlist = false;
-	  boolean patternGrammar = false;
-	  boolean sep = false;
-	  boolean nullSemanticAction = false;
-      if (args[0].equals("--version")) {
-        System.out.println("JastAddParser version " + versionString());
-        System.exit(0);
-      } else if (args[0].equals("--no-beaver-symbol")) {
-        noBeaverSymbol = true;
-      } else if (args[0].equals("--tokenlist")) {
-		noBeaverSymbol = true;
-		useTokenlist = true;
-      } else if (args[0].equals("--pattern_grammar")) {
-		patternGrammar = true;
-		sep = true;
-	  } else if (args[0].equals("--sep")) {
-		sep = true;
-	  } else if (args[0].equals("--sep-null-action")) {
-		sep = true;
-		nullSemanticAction = true;
-	  }
-      if (args.length > 2 && !noBeaverSymbol && !patternGrammar && !sep) {
-        System.err.println("Unrecognized option \"" + args[0] + '\"');
+      boolean patternGrammar = false;
+      boolean sep = false;
+      boolean nullSemanticAction = false;
+
+      String source = null;
+      String dest = null;
+      Set<String> explicitMetaVarSymbols = null;
+
+      for (int i = 0; i < args.length; ++i) {
+        if (args[i].startsWith("--")) {
+          // flag argument
+          switch (args[i]) {
+          case "--version":
+            System.out.println("JastAddParser version " + versionString());
+            System.exit(0);
+            break;
+          case "--no-beaver-symbol":
+            noBeaverSymbol = true;
+            break;
+          case "--tokenlist":
+            noBeaverSymbol = true;
+            useTokenlist = true;
+            break;
+          case "--sep-null-action":
+            sep = true;
+            nullSemanticAction = true;
+            break;
+          case "--sep":
+            sep = true;
+            break;
+          default:
+            if (args[i].startsWith("--pattern_grammar")) {
+              patternGrammar = true;
+              sep = true;
+              int eqIdx = args[i].indexOf("=");
+              if (eqIdx >= 0) {
+                // explicit non-terminals for metavariables
+                String[] nonTerms = args[i].substring(eqIdx + 1).split(":");
+                explicitMetaVarSymbols = new HashSet<String>(List.of(nonTerms));
+              }
+            } else {
+              System.err.println("Unrecognized option \"" + args[i] + '\"');
+              System.exit(1);
+            }
+            break;
+          }
+        } else {
+          if (source == null) {
+            source = args[i];
+          } else if (dest == null) {
+            dest = args[i];
+          } else {
+            System.err.println("Unrecognized option \"" + args[i] + '\"');
+            System.exit(1);
+          }
+        }
+      }
+
+      if (source == null || dest == null) {
+        System.err.println("Unknown source or destination files");
         System.exit(1);
       }
-      int sourceIndex = args.length == 3 ? 1 : 0;
-      int destIndex = args.length == 3 ? 2 : 1;
-      String source = args[sourceIndex];
-      String dest = args[destIndex];
+
       File sourceFile = new File(source);
       File destFile = new File(dest);
       if (false && sourceFile.exists() && destFile.exists()
           && sourceFile.lastModified() < destFile.lastModified()) {
         System.out.println("Parser specification " + dest + " need not be regenerated");
       } else {
-        ASTNode.sourceName = args[sourceIndex];
-        GrammarScanner scanner = new GrammarScanner(new FileReader(args[sourceIndex]));
+        ASTNode.sourceName = source;
+        GrammarScanner scanner = new GrammarScanner(new FileReader(source));
         GrammarParser parser = new GrammarParser();
         Object o = parser.parse(scanner);
         Grammar root = (Grammar) o;
@@ -99,29 +132,29 @@ public class Main {
         ArrayList<String> warnings = new ArrayList<String>();
         root.errorCheck(errors, warnings);
         if (!errors.isEmpty()) {
-          System.err.println("There were errors in " + args[sourceIndex] + ":");
+          System.err.println("There were errors in " + source + ":");
           for (Iterator iter = errors.iterator(); iter.hasNext(); )
             System.err.println(iter.next());
           System.exit(1);
         }
         for (Iterator iter = warnings.iterator(); iter.hasNext(); )
           System.err.println(iter.next());
-        FileOutputStream os = new FileOutputStream(args[destIndex]);
+        FileOutputStream os = new FileOutputStream(dest);
         PrintStream out = new PrintStream(os);
-		if (sep) {
-		  root.removeOpt();
-		  root.oneRule();
-		  if (patternGrammar) {
-			  root.addPatternGrammarClauses();
-		  }
-		  root.genSEP(out, patternGrammar, nullSemanticAction);
-		  out.flush();
-		} else {
-			if (patternGrammar) {
-				root.addPatternGrammarClauses();
-			}
-			root.genCode(out, noBeaverSymbol,useTokenlist);
-		}
+        if (sep) {
+          root.removeOpt();
+          root.oneRule();
+          if (patternGrammar) {
+              root.addPatternGrammarClauses(explicitMetaVarSymbols);
+          }
+          root.genSEP(out, patternGrammar, nullSemanticAction);
+          out.flush();
+        } else {
+            if (patternGrammar) {
+                root.addPatternGrammarClauses(explicitMetaVarSymbols);
+            }
+            root.genCode(out, noBeaverSymbol,useTokenlist);
+        }
         out.close();
         System.err.println("Parser specification " + dest + " generated from " + source);
       }
