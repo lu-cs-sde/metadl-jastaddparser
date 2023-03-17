@@ -61,6 +61,7 @@ public class Main {
       String source = null;
       String dest = null;
       Set<String> explicitMetaVarSymbols = null;
+      Set<String> explicitGapSymbols = null;
 
       for (int i = 0; i < args.length; ++i) {
         if (args[i].startsWith("--")) {
@@ -92,7 +93,21 @@ public class Main {
               if (eqIdx >= 0) {
                 // explicit non-terminals for metavariables
                 String[] nonTerms = args[i].substring(eqIdx + 1).split(":");
-                explicitMetaVarSymbols = new HashSet<String>(List.of(nonTerms));
+                explicitMetaVarSymbols = new HashSet<String>();
+                explicitGapSymbols = new HashSet<String>();
+                for (String nt : nonTerms) {
+                  if (nt.endsWith(".")) {
+                    // gap only
+                    explicitGapSymbols.add(nt.substring(0, nt.length() - 1));
+                  } else if (nt.endsWith("$")) {
+                    // metavar only
+                    explicitMetaVarSymbols.add(nt.substring(0, nt.length() - 1));
+                  } else {
+                    // both gap and metavar
+                    explicitGapSymbols.add(nt);
+                    explicitMetaVarSymbols.add(nt);
+                  }
+                }
               }
             } else {
               System.err.println("Unrecognized option \"" + args[i] + '\"');
@@ -145,13 +160,13 @@ public class Main {
           root.removeOpt();
           root.oneRule();
           if (patternGrammar) {
-              root.addPatternGrammarClauses(explicitMetaVarSymbols);
+            root.addPatternGrammarClauses(explicitMetaVarSymbols, explicitGapSymbols);
           }
           root.genSEP(out, patternGrammar, nullSemanticAction);
           out.flush();
         } else {
             if (patternGrammar) {
-                root.addPatternGrammarClauses(explicitMetaVarSymbols);
+              root.addPatternGrammarClauses(explicitMetaVarSymbols, explicitGapSymbols);
             }
             root.genCode(out, noBeaverSymbol,useTokenlist);
         }

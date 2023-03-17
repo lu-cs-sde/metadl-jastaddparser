@@ -10,8 +10,6 @@ import java.util.Collections;
 import org.jastadd.jastaddparser.MetaRuleSolver;
 
 aspect PatternGrammar {
-
-
   inh Grammar Clause.getGrammar();
   eq Grammar.getClause().getGrammar() = this;
   inh Grammar Element.getGrammar();
@@ -29,9 +27,11 @@ aspect PatternGrammar {
     return null;
   }
 
-  private java.util.List<Rule> Grammar.buildMetaVarRule(String name, String type) {
+  private java.util.List<Rule> Grammar.buildMetaVarRule(String name, String type, boolean isMetaVar, boolean isGap) {
     java.util.List<Rule> clauseList = new java.util.ArrayList<Rule>();
-    {
+
+    if (isMetaVar) {
+      // Original definition and metavar definition
       Rule metaOrConcreteNoGapRule = new Rule();
       metaOrConcreteNoGapRule.setIdUse(new IdUse(type));
       metaOrConcreteNoGapRule.setIdDecl(new IdDecl("META_OR_CONCRETE_NO_GAP_" + name));
@@ -52,7 +52,8 @@ aspect PatternGrammar {
       clauseList.add(metaOrConcreteNoGapRule);
     }
 
-    {
+    if (isMetaVar && isGap) {
+      // Original definition, metavar definition and gaps
       Rule metaOrConcreteRule = new Rule();
       metaOrConcreteRule.setIdUse(new IdUse(type));
       metaOrConcreteRule.setIdDecl(new IdDecl("META_OR_CONCRETE_" + name));
@@ -72,6 +73,29 @@ aspect PatternGrammar {
 
       clauseList.add(metaOrConcreteRule);
     }
+
+    if (isGap && !isMetaVar) {
+      // Original definition and gaps
+      Rule gapOrConcreteRule = new Rule();
+      gapOrConcreteRule.setIdUse(new IdUse(type));
+      gapOrConcreteRule.setIdDecl(new IdDecl("GAP_OR_CONCRETE_" + name));
+
+      Definition originalDef = new Definition();
+      originalDef.addElement(new Element(new IdUse(name), new Opt()));
+      gapOrConcreteRule.addDefinition(originalDef);
+
+      Definition gapDef = new Definition();
+      Element el = new Element(new IdUse("GAP"), new Opt());
+      gapDef.addElement(el);
+      Precedence prec = new Precedence(new IdUse("PREC_2_" + name));
+      gapDef.addPrecedence(prec);
+      String code = String.format("return new Gap%s();", type);
+      gapDef.setCODE(code);
+      gapOrConcreteRule.addDefinition(gapDef);
+
+      clauseList.add(gapOrConcreteRule);
+    }
+
     return clauseList;
   }
 
@@ -96,9 +120,11 @@ aspect PatternGrammar {
     return name().equals("IDENTIFIER");
   }
 
-  public void Grammar.addPatternGrammarClauses(Set<String> explicitMetaVarSymbols) {
+  public void Grammar.addPatternGrammarClauses(Set<String> explicitMetaVarSymbols,
+                                               Set<String> explicitGapSymbols) {
     ArrayList<Element> metaRuleElems = new ArrayList<Element>();
-    Set<Element> metaRuleListMember = new HashSet<Element>();
+    Set<Element> gapElems = new HashSet<Element>();
+    Set<Element> metaVarElems = new HashSet<Element>();
     java.util.List<Element> metaSymbolElems = new ArrayList<Element>();
 
     for (Rule r : rules()) {
@@ -110,25 +136,33 @@ aspect PatternGrammar {
             if (e.type().equals("List") || e.type().equals("String"))
               continue;
 
+
+            if (explicitMetaVarSymbols == null || explicitMetaVarSymbols.contains(e.name())
+                || explicitGapSymbols == null || explicitGapSymbols.contains(e.name())) {
+              metaRuleElems.add(e);
+            }
+
+
             // if there is an explicit list for non-terminals to be replaced
             // with metavars, then skip all non-terminals not in the list
-            if (explicitMetaVarSymbols != null && !explicitMetaVarSymbols.contains(e.name()))
-              continue;
+            if (explicitMetaVarSymbols == null || explicitMetaVarSymbols.contains(e.name())) {
+              // record element, to replace it with a metavariable element
+              metaVarElems.add(e);
+            }
 
-            // record element, to replace it with a metavariable element
-            metaRuleElems.add(e);
-
-            // if the rule is a list, the we want to also allow gaps for
-            // the elements
-            if (r.type().equals("List"))
-              metaRuleListMember.add(e);
+            if (r.type().equals("List")) {
+              // if the rule is a list, the we want to also allow gaps for
+              // the elements
+              if (explicitGapSymbols == null || explicitGapSymbols.contains(e.name())) {
+                gapElems.add(e);
+              }
+            }
           } else {
             // ... except some terminals.
-            if (explicitMetaVarSymbols != null && !explicitMetaVarSymbols.contains(e.name()))
-              continue;
-
-            if (e.canBeMetaSymbol())
-              metaSymbolElems.add(e);
+            if (e.canBeMetaSymbol()) {
+              if (explicitMetaVarSymbols == null || explicitMetaVarSymbols.contains(e.name()))
+                metaSymbolElems.add(e);
+            }
           }
         }
       }
@@ -136,6 +170,8 @@ aspect PatternGrammar {
 
     // add new rules for metavariables replacing non-terminals
     TreeMap<String, String> metaRules = new TreeMap<String, String>();
+    HashSet<String> gaps = new HashSet<>();
+    HashSet<String> metavars = new HashSet<>();
     for (Element e : metaRuleElems) {
       metaRules.put(e.getIdUse().getID(), e.type());
       if (!e.hasName()) {
@@ -143,14 +179,32 @@ aspect PatternGrammar {
         // the original, if it was unnamed; the code might use this name
         e.setName(new IdUse(e.getIdUse().getID()));
       }
-      e.setIdUse(new IdUse("META_OR_CONCRETE_" + (metaRuleListMember.contains(e) ? "" : "NO_GAP_") + e.getIdUse().getID()));
+
+      boolean isGapElem = gapElems.contains(e);
+      boolean isMetaVarElem = metaVarElems.contains(e);
+      String prefix;
+      if (isGapElem && isMetaVarElem) {
+        prefix = "META_OR_CONCRETE_";
+        gaps.add(e.getIdUse().getID());
+        metavars.add(e.getIdUse().getID());
+      } else if (isGapElem) {
+        prefix = "GAP_OR_CONCRETE_";
+        gaps.add(e.getIdUse().getID());
+      } else if (isMetaVarElem) {
+        prefix = "META_OR_CONCRETE_NO_GAP_";
+        metavars.add(e.getIdUse().getID());
+      } else {
+        throw new RuntimeException("An element must be a gap, a metavar, or both.");
+      }
+
+      e.setIdUse(new IdUse(prefix + e.getIdUse().getID()));
     }
 
     for (Map.Entry<String, String> ruleName : metaRules.entrySet()) {
       String name = ruleName.getKey();
       String type = ruleName.getValue();
 
-      java.util.List<Rule> mvrs = buildMetaVarRule(name, type);
+      java.util.List<Rule> mvrs = buildMetaVarRule(name, type, metavars.contains(name), gaps.contains(name));
       for (Rule mvr : mvrs) {
         addClause(mvr);
       }
