@@ -172,6 +172,7 @@ aspect PatternGrammar {
     TreeMap<String, String> metaRules = new TreeMap<String, String>();
     HashSet<String> gaps = new HashSet<>();
     HashSet<String> metavars = new HashSet<>();
+
     for (Element e : metaRuleElems) {
       metaRules.put(e.getIdUse().getID(), e.type());
       if (!e.hasName()) {
@@ -194,7 +195,7 @@ aspect PatternGrammar {
         prefix = "META_OR_CONCRETE_NO_GAP_";
         metavars.add(e.getIdUse().getID());
       } else {
-        throw new RuntimeException("An element must be a gap, a metavar, or both.");
+        continue;
       }
 
       e.setIdUse(new IdUse(prefix + e.getIdUse().getID()));

@@ -57,9 +57,6 @@ aspect NameChecking {
   }
 
   protected void Rule.nameCheck() {
-    if (uses().isEmpty() && !isGoal()) {
-      error("Non terminal production " + name() + " is not used");
-    }
     if (Character.isUpperCase(name().charAt(0))) {
       error("Non-terminals must start with a lower case letter: " + name());
     }
